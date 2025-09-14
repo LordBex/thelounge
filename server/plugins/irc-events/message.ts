@@ -114,27 +114,27 @@ export default <IrcEventHandler>function (irc, network) {
 				}
 			}
 
- 		from = chan.getUser(data.nick);
+			from = chan.getUser(data.nick);
 
- 		// Attempt mIRC FiSH Blowfish decryption if applicable
- 		if (chan.blowfishKey) {
- 			const decrypted = tryDecryptFishLine(data.message, chan.blowfishKey);
+			// Attempt mIRC FiSH Blowfish decryption if applicable
+			if (chan.blowfishKey) {
+				const decrypted = tryDecryptFishLine(data.message, chan.blowfishKey);
 
- 			if (decrypted !== null) {
- 				data.message = decrypted;
- 			}
- 		}
+				if (decrypted !== null) {
+					data.message = decrypted;
+				}
+			}
 
- 		// Query messages (unless self or muted) always highlight
- 		if (chan.type === ChanType.QUERY) {
- 			highlight = !self;
- 		} else if (chan.type === ChanType.CHANNEL) {
- 			from.lastMessage = data.time || Date.now();
- 		}
- 	}
+			// Query messages (unless self or muted) always highlight
+			if (chan.type === ChanType.QUERY) {
+				highlight = !self;
+			} else if (chan.type === ChanType.CHANNEL) {
+				from.lastMessage = data.time || Date.now();
+			}
+		}
 
- 		// msg is constructed down here because `from` is being copied in the constructor
- 		const msg = new Msg({
+		// msg is constructed down here because `from` is being copied in the constructor
+		const msg = new Msg({
 			type: data.type,
 			time: data.time ? new Date(data.time) : undefined,
 			text: data.message,

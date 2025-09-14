@@ -9,10 +9,11 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 	}
 
 	let targetName = args[0];
-	let message = args.slice(1).join(" ");
+	const message = args.slice(1).join(" ");
 
 	// Encrypt if a FiSH key is set for the target channel/query
-	const targetChan = network.getChannel(targetName) || (chan.name === targetName ? chan : undefined);
+	const targetChan =
+		network.getChannel(targetName) || (chan.name === targetName ? chan : undefined);
 	const key = targetChan?.blowfishKey;
 	const toSend = key ? "+OK " + fishEncryptPayload(message, key) : message;
 
@@ -32,6 +33,7 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 		const targetChan2 = network.getChannel(targetName);
 
 		let displayMessage = toSend;
+
 		if (typeof targetChan2 === "undefined") {
 			displayMessage = "{to " + args[0] + "} " + message;
 		}

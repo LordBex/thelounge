@@ -366,7 +366,10 @@ class Network {
 	}
 
 	private resolveBlowKeyFor(name: string): string | undefined {
-		if (!name) return this.fishGlobalKey || undefined;
+		if (!name) {
+			return this.fishGlobalKey || undefined;
+		}
+
 		const keyMap = this.fishKeys || {};
 		const lower = name.toLowerCase();
 		return keyMap[lower] || this.fishGlobalKey || undefined;
@@ -374,7 +377,10 @@ class Network {
 
 	private applyBlowKeysToChannels() {
 		for (const c of this.channels) {
-			if (c.type !== ChanType.CHANNEL && c.type !== ChanType.QUERY) continue;
+			if (c.type !== ChanType.CHANNEL && c.type !== ChanType.QUERY) {
+				continue;
+			}
+
 			c.blowfishKey = this.resolveBlowKeyFor(c.name);
 		}
 	}
@@ -447,17 +453,30 @@ class Network {
 		if (Object.prototype.hasOwnProperty.call(args, "fishGlobalKey")) {
 			this.fishGlobalKey = String(args.fishGlobalKey || "").trim();
 		}
+
 		if (Object.prototype.hasOwnProperty.call(args, "fishKeysText")) {
 			const fishKeysText = String(args.fishKeysText || "").replace(/\r\n|\r|\n/g, "\n");
 			const map: Record<string, string> = {};
 			fishKeysText.split("\n").forEach((line) => {
 				const trimmed = line.trim();
-				if (!trimmed) return;
+
+				if (!trimmed) {
+					return;
+				}
+
 				const spaceIdx = trimmed.indexOf(" ");
-				if (spaceIdx === -1) return;
+
+				if (spaceIdx === -1) {
+					return;
+				}
+
 				const name = trimmed.substring(0, spaceIdx).toLowerCase();
 				const key = trimmed.substring(spaceIdx + 1).trim();
-				if (!name || !key) return;
+
+				if (!name || !key) {
+					return;
+				}
+
 				map[name] = key;
 			});
 			this.fishKeys = map;
@@ -585,6 +604,7 @@ class Network {
 		if (newChan && (newChan.type === ChanType.CHANNEL || newChan.type === ChanType.QUERY)) {
 			newChan.blowfishKey = this.resolveBlowKeyFor(newChan.name);
 		}
+
 		let index = this.channels.length; // Default to putting as the last item in the array
 
 		// Don't sort special channels in amongst channels/users.
@@ -649,7 +669,11 @@ class Network {
 			fieldsToReturn.push("rejectUnauthorized");
 		}
 
-		const data = _.pick(this, fieldsToReturn) as {uuid: string} & Partial<Network> & {fishGlobalKey?: string; fishKeysText?: string; hasSTSPolicy?: boolean};
+		const data = _.pick(this, fieldsToReturn) as {uuid: string} & Partial<Network> & {
+				fishGlobalKey?: string;
+				fishKeysText?: string;
+				hasSTSPolicy?: boolean;
+			};
 
 		data.hasSTSPolicy = !!STSPolicies.get(this.host);
 

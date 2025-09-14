@@ -5,24 +5,28 @@ import {MessageType} from "../../../shared/types/msg";
 const commands = ["blow"];
 
 const input: PluginInputHandler = function (network, chan, _cmd, args) {
-	if (!chan) return true;
+	if (!chan) {
+		return true;
+	}
 
 	if (args.length === 0) {
 		chan.pushMessage(
 			this,
 			new Msg({
 				type: MessageType.NOTICE,
-				text:
-					chan.blowfishKey
-						? `FiSH: Key is set for ${chan.name}. Use /blow off to clear.`
-						: `FiSH: No key set for ${chan.name}. Use /blow <key> to set.`,
+				text: chan.blowfishKey
+					? `FiSH: Key is set for ${chan.name}. Use /blow off to clear.`
+					: `FiSH: No key set for ${chan.name}. Use /blow <key> to set.`,
 			})
 		);
 		return true;
 	}
 
 	const sub = args.join(" ").trim();
-	if (!sub) return true;
+
+	if (!sub) {
+		return true;
+	}
 
 	if (sub.toLowerCase() === "off" || sub.toLowerCase() === "clear") {
 		chan.blowfishKey = undefined;

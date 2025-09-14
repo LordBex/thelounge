@@ -130,6 +130,8 @@ describe("Network", function () {
 					{name: "PrivateChat", type: "query", muted: true},
 				],
 				ignoreList: [],
+				fishGlobalKey: "",
+				fishKeys: {},
 			});
 		});
 	});
