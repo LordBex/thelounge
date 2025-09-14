@@ -36,13 +36,13 @@ jobs:
 
       - name: Publish latest
         if: "!contains(github.ref, '-')"
-        run: npm publish --tag latest --provenance
+        run: npm publish --access public --tag latest --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
       - name: Publish next
         if: contains(github.ref, '-')
-        run: npm publish --tag next --provenance
+        run: npm publish --access public --tag next --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 

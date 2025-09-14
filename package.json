@@ -1,14 +1,14 @@
 {
-  "name": "thelounge",
+  "name": "@lordbex/thelounge",
   "description": "The self-hosted Web IRC client",
-  "version": "4.4.3",
+  "version": "4.4.3-blowfish",
   "preferGlobal": true,
   "bin": {
     "thelounge": "index.js"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/thelounge/thelounge.git"
+    "url": "https://github.com/LordBex/thelounge.git"
   },
   "homepage": "https://thelounge.chat/",
   "scripts": {
@@ -39,7 +39,8 @@
     "client",
     "irc",
     "server",
-    "thelounge"
+    "thelounge",
+    "blowfish"
   ],
   "license": "MIT",
   "engines": {
