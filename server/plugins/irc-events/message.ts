@@ -8,6 +8,7 @@ import User from "../../models/user";
 import {MessageType} from "../../../shared/types/msg";
 import {ChanType} from "../../../shared/types/chan";
 import {MessageEventArgs} from "irc-framework";
+import {tryDecryptFishLine} from "../../utils/fish";
 
 const nickRegExp = /(?:\x03[0-9]{1,2}(?:,[0-9]{1,2})?)?([\w[\]\\`^{|}-]+)/g;
 
@@ -113,18 +114,27 @@ export default <IrcEventHandler>function (irc, network) {
 				}
 			}
 
-			from = chan.getUser(data.nick);
+ 		from = chan.getUser(data.nick);
 
-			// Query messages (unless self or muted) always highlight
-			if (chan.type === ChanType.QUERY) {
-				highlight = !self;
-			} else if (chan.type === ChanType.CHANNEL) {
-				from.lastMessage = data.time || Date.now();
-			}
-		}
+ 		// Attempt mIRC FiSH Blowfish decryption if applicable
+ 		if (chan.blowfishKey) {
+ 			const decrypted = tryDecryptFishLine(data.message, chan.blowfishKey);
 
-		// msg is constructed down here because `from` is being copied in the constructor
-		const msg = new Msg({
+ 			if (decrypted !== null) {
+ 				data.message = decrypted;
+ 			}
+ 		}
+
+ 		// Query messages (unless self or muted) always highlight
+ 		if (chan.type === ChanType.QUERY) {
+ 			highlight = !self;
+ 		} else if (chan.type === ChanType.CHANNEL) {
+ 			from.lastMessage = data.time || Date.now();
+ 		}
+ 	}
+
+ 		// msg is constructed down here because `from` is being copied in the constructor
+ 		const msg = new Msg({
 			type: data.type,
 			time: data.time ? new Date(data.time) : undefined,
 			text: data.message,

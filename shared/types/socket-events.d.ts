@@ -56,7 +56,7 @@ interface ServerToClientEvents {
 	network: EventHandler<{network: SharedNetwork}>;
 	"network:options": EventHandler<{network: string; serverOptions: SharedServerOptions}>;
 	"network:status": EventHandler<{network: string; connected: boolean; secure: boolean}>;
-	"network:info": EventHandler<{uuid: string}>;
+	"network:info": EventHandler<{uuid: string} & Record<string, any>>;
 	"network:name": EventHandler<{uuid: string; name: string}>;
 
 	nick: EventHandler<{network: string; nick: string}>;

@@ -2,6 +2,7 @@ import {PluginInputHandler} from "./index";
 import Msg from "../../models/msg";
 import {MessageType} from "../../../shared/types/msg";
 import {ChanType} from "../../../shared/types/chan";
+import {fishEncryptPayload} from "../../utils/fish";
 
 const commands = ["slap", "me"];
 
@@ -31,7 +32,14 @@ const input: PluginInputHandler = function ({irc}, chan, cmd, args) {
 
 			text = text || args.join(" ");
 
-			irc.action(chan.name, text);
+			// If FiSH key is set, encrypt CTCP ACTION and send as normal PRIVMSG with +OK
+			if (chan.blowfishKey) {
+				const ctcp = "\x01ACTION " + text + "\x01";
+				const toSend = "+OK " + fishEncryptPayload(ctcp, chan.blowfishKey);
+				irc.say(chan.name, toSend);
+			} else {
+				irc.action(chan.name, text);
+			}
 
 			// If the IRCd does not support echo-message, simulate the message
 			// being sent back to us.

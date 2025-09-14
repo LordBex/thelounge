@@ -332,6 +332,9 @@ class Client {
 			proxyPort: parseInt(args.proxyPort, 10),
 			proxyUsername: String(args.proxyUsername || ""),
 			proxyPassword: String(args.proxyPassword || ""),
+
+			fishGlobalKey: String(args.fishGlobalKey || ""),
+			fishKeys: (args.fishKeys as Record<string, string>) || {},
 		});
 	}
 

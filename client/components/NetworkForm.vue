@@ -290,6 +290,37 @@ the server tab on new connection"
 				</div>
 			</template>
 
+			<h2>FiSH (Blowfish)</h2>
+			<div class="connect-row">
+				<label for="connect:fishGlobalKey">Global key</label>
+				<input
+					id="connect:fishGlobalKey"
+					v-model.trim="defaults.fishGlobalKey"
+					class="input"
+					name="fishGlobalKey"
+					placeholder="Optional global key for this network"
+				/>
+			</div>
+			<div class="connect-row">
+				<label for="connect:fishKeysText">
+					Per-channel/user keys
+					<span
+						class="tooltipped tooltipped-ne tooltipped-no-delay"
+						aria-label="#channel key or nick key, one per line"
+					>
+						<button class="extra-help" />
+					</span>
+				</label>
+				<textarea
+					id="connect:fishKeysText"
+					autocomplete="off"
+					:value="defaults.fishKeysText || ''"
+					class="input"
+					name="fishKeysText"
+					placeholder="#chat secret123\nuser otherkey"
+				/>
+			</div>
+
 			<template v-if="store.state.serverConfiguration?.public">
 				<template v-if="config?.lockNetwork">
 					<div class="connect-row">
@@ -446,6 +477,8 @@ import {ClientNetwork} from "../js/types";
 
 export type NetworkFormDefaults = Partial<ClientNetwork> & {
 	join?: string;
+	fishGlobalKey?: string;
+	fishKeysText?: string;
 };
 
 export default defineComponent({

@@ -33,6 +33,9 @@ class Chan {
 	type!: ChanType;
 	state!: ChanState;
 
+	// mIRC FiSH Blowfish key, stored server-side only
+	blowfishKey?: string;
+
 	userAway?: boolean;
 	special?: SpecialChanType;
 	data?: any;

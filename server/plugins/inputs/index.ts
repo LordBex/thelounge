@@ -70,6 +70,7 @@ const builtInInputs = [
 	"topic",
 	"whois",
 	"mute",
+	"blow",
 ];
 
 for (const input of builtInInputs) {

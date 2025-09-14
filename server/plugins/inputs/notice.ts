@@ -1,4 +1,5 @@
 import {PluginInputHandler} from "./index";
+import {fishEncryptPayload} from "../../utils/fish";
 
 const commands = ["notice"];
 
@@ -10,7 +11,12 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 	let targetName = args[0];
 	let message = args.slice(1).join(" ");
 
-	network.irc.notice(targetName, message);
+	// Encrypt if a FiSH key is set for the target channel/query
+	const targetChan = network.getChannel(targetName) || (chan.name === targetName ? chan : undefined);
+	const key = targetChan?.blowfishKey;
+	const toSend = key ? "+OK " + fishEncryptPayload(message, key) : message;
+
+	network.irc.notice(targetName, toSend);
 
 	// If the IRCd does not support echo-message, simulate the message
 	// being sent back to us.
@@ -23,17 +29,18 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 			targetGroup = parsedTarget.target_group;
 		}
 
-		const targetChan = network.getChannel(targetName);
+		const targetChan2 = network.getChannel(targetName);
 
-		if (typeof targetChan === "undefined") {
-			message = "{to " + args[0] + "} " + message;
+		let displayMessage = toSend;
+		if (typeof targetChan2 === "undefined") {
+			displayMessage = "{to " + args[0] + "} " + message;
 		}
 
 		network.irc.emit("notice", {
 			nick: network.irc.user.nick,
 			target: targetName,
 			group: targetGroup,
-			message: message,
+			message: displayMessage,
 		});
 	}
 

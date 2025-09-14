@@ -3,6 +3,7 @@ import Msg from "../../models/msg";
 import Chan from "../../models/chan";
 import {MessageType} from "../../../shared/types/msg";
 import {ChanType} from "../../../shared/types/chan";
+import {fishEncryptPayload} from "../../utils/fish";
 
 const commands = ["query", "msg", "say"];
 
@@ -87,38 +88,44 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 		return true;
 	}
 
-	const msg = args.join(" ");
+ const msg = args.join(" ");
 
-	if (msg.length === 0) {
-		return true;
-	}
+ if (msg.length === 0) {
+ 	return true;
+ }
 
-	network.irc.say(targetName, msg);
+ // Determine if we should encrypt using FiSH for this target
+ const targetChan = network.getChannel(targetName) || (chan.name === targetName ? chan : undefined);
+ const key = targetChan?.blowfishKey;
+ const toSend = key ? "+OK " + fishEncryptPayload(msg, key) : msg;
 
-	// If the IRCd does not support echo-message, simulate the message
-	// being sent back to us.
-	if (!network.irc.network.cap.isEnabled("echo-message")) {
-		const parsedTarget = network.irc.network.extractTargetGroup(targetName);
-		let targetGroup: string | undefined = undefined;
+ network.irc.say(targetName, toSend);
 
-		if (parsedTarget) {
-			targetName = parsedTarget.target;
-			targetGroup = parsedTarget.target_group;
-		}
+ // If the IRCd does not support echo-message, simulate the message
+ // being sent back to us. Emit the same text we sent (encrypted or plain)
+ // so that inbound pipeline can decrypt and store plaintext.
+ if (!network.irc.network.cap.isEnabled("echo-message")) {
+ 	const parsedTarget = network.irc.network.extractTargetGroup(targetName);
+ 	let targetGroup: string | undefined = undefined;
 
-		const channel = network.getChannel(targetName);
+ 	if (parsedTarget) {
+ 		targetName = parsedTarget.target;
+ 		targetGroup = parsedTarget.target_group;
+ 	}
 
-		if (typeof channel !== "undefined") {
-			network.irc.emit("privmsg", {
-				nick: network.irc.user.nick,
-				ident: network.irc.user.username,
-				hostname: network.irc.user.host,
-				target: targetName,
-				group: targetGroup,
-				message: msg,
-			});
-		}
-	}
+ 	const channel = network.getChannel(targetName);
+
+ 	if (typeof channel !== "undefined") {
+ 		network.irc.emit("privmsg", {
+ 			nick: network.irc.user.nick,
+ 			ident: network.irc.user.username,
+ 			hostname: network.irc.user.host,
+ 			target: targetName,
+ 			group: targetGroup,
+ 			message: toSend,
+ 		});
+ 	}
+ }
 
 	return true;
 };

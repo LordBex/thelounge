@@ -114,6 +114,10 @@ class Network {
 	proxyEnabled!: boolean;
 	highlightRegex?: RegExp;
 
+	// FiSH Blowfish settings persisted per-network
+	fishGlobalKey?: string;
+	fishKeys?: Record<string, string>;
+
 	irc?: IrcFramework.Client & {
 		options?: NetworkIrcOptions;
 	};
@@ -170,6 +174,10 @@ class Network {
 			proxyPassword: "",
 			proxyEnabled: false,
 
+			// FiSH defaults
+			fishGlobalKey: "",
+			fishKeys: {},
+
 			chanCache: [],
 			ignoreList: [],
 			keepNick: null,
@@ -194,6 +202,9 @@ class Network {
 					this.channels.every((chan) => chan.muted || chan.type === ChanType.SPECIAL),
 			})
 		);
+
+		// Ensure FiSH keys are applied to any pre-existing channels loaded from disk
+		this.applyBlowKeysToChannels();
 	}
 
 	validate(this: Network, client: Client) {
@@ -354,6 +365,20 @@ class Network {
 		}
 	}
 
+	private resolveBlowKeyFor(name: string): string | undefined {
+		if (!name) return this.fishGlobalKey || undefined;
+		const keyMap = this.fishKeys || {};
+		const lower = name.toLowerCase();
+		return keyMap[lower] || this.fishGlobalKey || undefined;
+	}
+
+	private applyBlowKeysToChannels() {
+		for (const c of this.channels) {
+			if (c.type !== ChanType.CHANNEL && c.type !== ChanType.QUERY) continue;
+			c.blowfishKey = this.resolveBlowKeyFor(c.name);
+		}
+	}
+
 	createWebIrc(client: Client) {
 		if (
 			!Config.values.webirc ||
@@ -418,6 +443,26 @@ class Network {
 			.split("\n")
 			.filter((command) => command.length > 0);
 
+		// FiSH: read global key and per-target keys (only update when provided)
+		if (Object.prototype.hasOwnProperty.call(args, "fishGlobalKey")) {
+			this.fishGlobalKey = String(args.fishGlobalKey || "").trim();
+		}
+		if (Object.prototype.hasOwnProperty.call(args, "fishKeysText")) {
+			const fishKeysText = String(args.fishKeysText || "").replace(/\r\n|\r|\n/g, "\n");
+			const map: Record<string, string> = {};
+			fishKeysText.split("\n").forEach((line) => {
+				const trimmed = line.trim();
+				if (!trimmed) return;
+				const spaceIdx = trimmed.indexOf(" ");
+				if (spaceIdx === -1) return;
+				const name = trimmed.substring(0, spaceIdx).toLowerCase();
+				const key = trimmed.substring(spaceIdx + 1).trim();
+				if (!name || !key) return;
+				map[name] = key;
+			});
+			this.fishKeys = map;
+		}
+
 		// Sync lobby channel name
 		this.getLobby().name = this.name;
 
@@ -432,6 +477,9 @@ class Network {
 		if (!this.validate(client)) {
 			return;
 		}
+
+		// Apply FiSH keys to existing channels after edit
+		this.applyBlowKeysToChannels();
 
 		if (this.irc) {
 			if (this.nick !== oldNick) {
@@ -533,6 +581,10 @@ class Network {
 	}
 
 	addChannel(newChan: Chan) {
+		// Assign FiSH key based on network configuration when adding
+		if (newChan && (newChan.type === ChanType.CHANNEL || newChan.type === ChanType.QUERY)) {
+			newChan.blowfishKey = this.resolveBlowKeyFor(newChan.name);
+		}
 		let index = this.channels.length; // Default to putting as the last item in the array
 
 		// Don't sort special channels in amongst channels/users.
@@ -597,9 +649,14 @@ class Network {
 			fieldsToReturn.push("rejectUnauthorized");
 		}
 
-		const data = _.pick(this, fieldsToReturn) as Network;
+		const data = _.pick(this, fieldsToReturn) as {uuid: string} & Partial<Network> & {fishGlobalKey?: string; fishKeysText?: string; hasSTSPolicy?: boolean};
 
 		data.hasSTSPolicy = !!STSPolicies.get(this.host);
+
+		// Include FiSH fields for editing UI
+		data.fishGlobalKey = this.fishGlobalKey || "";
+		const lines = Object.entries(this.fishKeys || {}).map(([name, key]) => `${name} ${key}`);
+		data.fishKeysText = lines.join("\n");
 
 		return data;
 	}
@@ -630,6 +687,10 @@ class Network {
 			"proxyUsername",
 			"proxyEnabled",
 			"proxyPassword",
+
+			// FiSH persistence
+			"fishGlobalKey",
+			"fishKeys",
 		]) as Network;
 
 		network.channels = this.channels
