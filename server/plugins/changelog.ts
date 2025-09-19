@@ -34,7 +34,7 @@ async function fetch() {
 	}
 
 	try {
-		const response = await got("https://api.github.com/repos/thelounge/thelounge/releases", {
+		const response = await got("https://api.github.com/repos/lordbex/thelounge/releases", {
 			headers: {
 				Accept: "application/vnd.github.v3.html", // Request rendered markdown
 				"User-Agent": pkg.name + "; +" + pkg.repository.url, // Identify the client
