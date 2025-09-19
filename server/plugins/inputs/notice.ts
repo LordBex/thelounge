@@ -1,5 +1,5 @@
 import {PluginInputHandler} from "./index";
-import {fishEncryptPayload} from "../../utils/fish";
+import {createFishMessage} from "../../utils/fish";
 
 const commands = ["notice"];
 
@@ -15,7 +15,7 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 	const targetChan =
 		network.getChannel(targetName) || (chan.name === targetName ? chan : undefined);
 	const key = targetChan?.blowfishKey;
-	const toSend = key ? "+OK " + fishEncryptPayload(message, key) : message;
+	const toSend = key ? createFishMessage(message, key) : message;
 
 	network.irc.notice(targetName, toSend);
 
