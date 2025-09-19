@@ -454,31 +454,22 @@ class Network {
 			this.fishGlobalKey = String(args.fishGlobalKey || "").trim();
 		}
 
-		if (Object.prototype.hasOwnProperty.call(args, "fishKeysText")) {
-			const fishKeysText = String(args.fishKeysText || "").replace(/\r\n|\r|\n/g, "\n");
+		// FiSH: read per-target keys (only update when provided)
+		if (Object.prototype.hasOwnProperty.call(args, "fishKeys")) {
+			const value = args.fishKeys as unknown;
 			const map: Record<string, string> = {};
-			fishKeysText.split("\n").forEach((line) => {
-				const trimmed = line.trim();
 
-				if (!trimmed) {
-					return;
+			if (value && typeof value === "object") {
+				for (const [rawName, rawKey] of Object.entries(value as Record<string, unknown>)) {
+					const name = String(rawName).trim().toLowerCase();
+					const key = String(rawKey ?? "").trim();
+
+					if (name && key) {
+						map[name] = key;
+					}
 				}
+			}
 
-				const spaceIdx = trimmed.indexOf(" ");
-
-				if (spaceIdx === -1) {
-					return;
-				}
-
-				const name = trimmed.substring(0, spaceIdx).toLowerCase();
-				const key = trimmed.substring(spaceIdx + 1).trim();
-
-				if (!name || !key) {
-					return;
-				}
-
-				map[name] = key;
-			});
 			this.fishKeys = map;
 		}
 
@@ -671,7 +662,7 @@ class Network {
 
 		const data = _.pick(this, fieldsToReturn) as {uuid: string} & Partial<Network> & {
 				fishGlobalKey?: string;
-				fishKeysText?: string;
+				fishKeys?: Record<string, string>;
 				hasSTSPolicy?: boolean;
 			};
 
@@ -679,8 +670,7 @@ class Network {
 
 		// Include FiSH fields for editing UI
 		data.fishGlobalKey = this.fishGlobalKey || "";
-		const lines = Object.entries(this.fishKeys || {}).map(([name, key]) => `${name} ${key}`);
-		data.fishKeysText = lines.join("\n");
+		data.fishKeys = {...(this.fishKeys || {})};
 
 		return data;
 	}

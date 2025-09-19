@@ -301,24 +301,58 @@ the server tab on new connection"
 					placeholder="Optional global key for this network"
 				/>
 			</div>
-			<div class="connect-row">
-				<label for="connect:fishKeysText">
-					Per-channel/user keys
+			<div class="connect-row" style="display: block">
+				<label for="connect:fishKeys" style="margin-bottom: 5px">
+					Per-channel or User-Channels
 					<span
 						class="tooltipped tooltipped-ne tooltipped-no-delay"
-						aria-label="#channel key or nick key, one per line"
+						aria-label="#channel key or nick key"
 					>
 						<button class="extra-help" />
 					</span>
 				</label>
-				<textarea
-					id="connect:fishKeysText"
-					autocomplete="off"
-					:value="defaults.fishKeysText || ''"
-					class="input"
-					name="fishKeysText"
-					placeholder="#chat secret123\nuser otherkey"
-				/>
+				<div class="fish-keys-section">
+					<div
+						v-for="(entry, index) in fishKeysEntries"
+						:key="index"
+						class="connect-row fish-key-row"
+					>
+						<div class="input-wrap fish-key-inputs">
+							<input
+								v-model="entry.target"
+								class="input fish-target-input"
+								placeholder="#channel or nick"
+								maxlength="100"
+								aria-label="Channel or user name"
+								style="margin: 0"
+							/>
+							<input
+								v-model="entry.key"
+								type="password"
+								class="input fish-key-input"
+								placeholder="encryption key"
+								maxlength="300"
+								aria-label="Encryption key"
+								style="margin: 0"
+							/>
+							<button
+								type="button"
+								class="btn fish-remove-btn"
+								:disabled="fishKeysEntries.length <= 1"
+								title="Remove entry"
+								style="width: auto; margin: 0"
+								@click="removeFishKeyEntry(index)"
+							>
+								Remove
+							</button>
+						</div>
+					</div>
+					<div class="connect-row">
+						<button type="button" class="btn" @click="addFishKeyEntry">
+							Add Entry
+						</button>
+					</div>
+				</div>
 			</div>
 
 			<template v-if="store.state.serverConfiguration?.public">
@@ -466,19 +500,82 @@ the server tab on new connection"
 	margin: 0;
 	user-select: text;
 }
+
+/* FiSH Keys section styles */
+.fish-keys-section {
+	width: 100%;
+	padding-top: 10px;
+}
+
+.fish-key-row {
+	margin-bottom: 5px;
+}
+
+.fish-key-label {
+	width: 25%;
+	display: flex;
+	align-items: center;
+}
+
+.fish-key-inputs {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+
+.fish-target-input {
+	flex: 1;
+	min-width: 120px;
+}
+
+.fish-key-input {
+	flex: 2;
+	min-width: 150px;
+}
+
+.fish-remove-btn {
+	flex-shrink: 0;
+	min-width: 70px;
+	margin-left: 10px;
+}
+
+.fish-remove-btn:disabled {
+	opacity: 0.5;
+}
+
+.fish-remove-btn:disabled {
+	opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+	.fish-key-inputs {
+		flex-direction: column;
+		gap: 5px;
+	}
+
+	.fish-target-input,
+	.fish-key-input {
+		min-width: auto;
+	}
+
+	.fish-remove-btn {
+		margin-left: 0;
+		align-self: stretch;
+	}
+}
 </style>
 
 <script lang="ts">
 import RevealPassword from "./RevealPassword.vue";
 import SidebarToggle from "./SidebarToggle.vue";
-import {defineComponent, nextTick, PropType, ref, watch} from "vue";
+import {defineComponent, nextTick, PropType, ref, watch, computed, reactive} from "vue";
 import {useStore} from "../js/store";
 import {ClientNetwork} from "../js/types";
 
 export type NetworkFormDefaults = Partial<ClientNetwork> & {
 	join?: string;
 	fishGlobalKey?: string;
-	fishKeysText?: string;
+	fishKeys?: Record<string, string>;
 };
 
 export default defineComponent({
@@ -577,6 +674,64 @@ export default defineComponent({
 			previousUsername.value = (event.target as HTMLInputElement)?.value;
 		};
 
+		// FiSH Keys table management
+		interface FishKeyEntry {
+			target: string;
+			key: string;
+		}
+
+		const fishKeysEntries = ref<FishKeyEntry[]>([]);
+
+		// Parse fishKeys object into table entries
+		const parseFishKeys = (input: Record<string, string> | undefined): FishKeyEntry[] => {
+			if (!input || Object.keys(input).length === 0) {
+				return [{target: "", key: ""}];
+			}
+
+			const entries: FishKeyEntry[] = [];
+
+			for (const [target, key] of Object.entries(input)) {
+				entries.push({target, key: String(key ?? "")});
+			}
+
+			return entries.length > 0 ? entries : [{target: "", key: ""}];
+		};
+
+		// Convert table entries into mapping object
+		const fishKeysValue = computed(() => {
+			const map: Record<string, string> = {};
+
+			for (const entry of fishKeysEntries.value) {
+				const target = entry.target.trim();
+				const key = entry.key.trim();
+
+				if (target && key) {
+					map[target] = key;
+				}
+			}
+
+			return map;
+		});
+
+		// Initialize entries from defaults
+		watch(
+			() => props.defaults.fishKeys,
+			(newValue) => {
+				fishKeysEntries.value = parseFishKeys(newValue);
+			},
+			{immediate: true}
+		);
+
+		const addFishKeyEntry = () => {
+			fishKeysEntries.value.push({target: "", key: ""});
+		};
+
+		const removeFishKeyEntry = (index: number) => {
+			if (fishKeysEntries.value.length > 1) {
+				fishKeysEntries.value.splice(index, 1);
+			}
+		};
+
 		const onSubmit = (event: Event) => {
 			const formData = new FormData(event.target as HTMLFormElement);
 			const data: Partial<ClientNetwork> = {};
@@ -584,6 +739,9 @@ export default defineComponent({
 			formData.forEach((value, key) => {
 				data[key] = value;
 			});
+
+			// Attach FiSH keys mapping directly as an object
+			(data as any).fishKeys = fishKeysValue.value;
 
 			props.handleSubmit(data as ClientNetwork);
 		};
@@ -599,6 +757,10 @@ export default defineComponent({
 			usernameInput,
 			onNickChanged,
 			onSubmit,
+			fishKeysEntries,
+			fishKeysValue,
+			addFishKeyEntry,
+			removeFishKeyEntry,
 		};
 	},
 });
