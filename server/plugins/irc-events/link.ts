@@ -58,7 +58,10 @@ export default function (client: Client, chan: Chan, msg: Msg, cleanText: string
 
 		const urlObj = new URL(url);
 
-		if ((urlObj.hostname.endsWith("youtube.com") && urlObj.pathname.includes('watch')) || urlObj.hostname.endsWith("youtu.be")) {
+		if (
+			(urlObj.hostname.endsWith("youtube.com") && urlObj.pathname.includes("watch")) ||
+			urlObj.hostname.endsWith("youtu.be")
+		) {
 			fetchYoutube(url, msg, chan, preview, client);
 		} else {
 			fetchUrl(url, msg, chan, preview, client);
