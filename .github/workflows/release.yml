@@ -35,19 +35,19 @@ jobs:
         run: yarn test
 
       - name: Publish latest
-        if: "!contains(github.ref, '-')"
+        if: "!contains(github.ref, '-pre')"
         run: npm publish --access public --tag latest --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
       - name: Publish next
-        if: contains(github.ref, '-')
+        if: contains(github.ref, '-pre')
         run: npm publish --access public --tag next --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
       - name: Remove next tag
-        if: "!contains(github.ref, '-')"
+        if: "!contains(github.ref, '-pre')"
         run: npm dist-tag rm thelounge next || true
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
