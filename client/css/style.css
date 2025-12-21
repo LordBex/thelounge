@@ -943,6 +943,20 @@ background on hover (unless active) */
 	touch-action: pan-y;
 }
 
+@media (any-hover: hover) {
+	#sidebar.compact .network {
+		margin-bottom: 10px;
+	}
+
+	#sidebar.compact .channel-list-item {
+		padding: 5px 14px;
+
+		&[data-type="lobby"] {
+			padding-left: 0;
+		}
+	}
+}
+
 #sidebar .empty {
 	flex-grow: 1;
 	line-height: 1.6;

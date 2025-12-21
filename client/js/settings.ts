@@ -160,6 +160,9 @@ const defaultConfig = {
 	disableMutedUnread: {
 		default: false
 	},
+	compactSidebar: {
+		default: false
+	},
 };
 
 export const config = normalizeConfig(defaultConfig);

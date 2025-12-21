@@ -1,5 +1,5 @@
 <template>
-	<aside id="sidebar" ref="sidebar">
+	<aside id="sidebar" ref="sidebar" :class="store.state.settings.compactSidebar ? 'compact' : ''">
 		<div class="scrollable-area">
 			<div class="logo-container">
 				<img

@@ -122,6 +122,14 @@
 				/>
 				Don't show unread on muted
 			</label>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.compactSidebar"
+					type="checkbox"
+					name="compactSidebar"
+				/>
+				Use compact sidebar on Desktop
+			</label>
 		</div>
 		<h2>Visual Aids</h2>
 		<div>
