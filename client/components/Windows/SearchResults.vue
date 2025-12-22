@@ -63,7 +63,6 @@
 								v-for="(message, id) in messages"
 								:key="message.id"
 								class="result"
-								@click="jump(message)"
 							>
 								<DateMarker
 									v-if="shouldDisplayDateMarker(message, id)"
@@ -76,6 +75,7 @@
 									:network="network"
 									:message="message"
 									:data-id="message.id"
+									@click="jump(message)"
 								/>
 							</div>
 						</div>
@@ -91,12 +91,12 @@
 	font-weight: 700;
 }
 
-.result {
+.result > .msg {
 	cursor: pointer;
-}
 
-.result:hover {
-	background-color: var(--highlight-bg-color);
+	&:hover {
+		background-color: var(--highlight-bg-color) !important;
+	}
 }
 </style>
 
