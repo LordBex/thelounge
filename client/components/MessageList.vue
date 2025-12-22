@@ -411,6 +411,10 @@ export default defineComponent({
 					isScrolling.value = true;
 					el.scrollIntoView({ behavior: "instant", block: "center" });
 
+					// BUGBUG: prevent the chat window offset bugging when scrolling to items near the bottom of the chat
+					const container = chat.value.closest('#chat-container')
+					if (container) container.scrollTop = 0;
+
 					setTimeout(() => {
 						isScrolling.value = false;
 						isAdjustingWindow.value = false;
