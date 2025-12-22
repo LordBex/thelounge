@@ -1887,6 +1887,11 @@ textarea.input {
 	border-left: 5px solid var(--highlight-border-color);
 }
 
+#chat .chat-view[data-type="channel"] .msg.is-focused {
+	background-color: var(--highlight-bg-color);
+	border-left: 5px solid var(--highlight-border-color);
+}
+
 #chat .chat-view[data-type="channel"] .msg.highlight .time {
 	padding-left: 5px;
 	color: #696969;

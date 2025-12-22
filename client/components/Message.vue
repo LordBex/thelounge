@@ -5,7 +5,8 @@
 			'msg',
 			{
 				self: message.self,
-				highlight: message.highlight || focused,
+				highlight: message.highlight,
+				'is-focused': isFocused,
 				'previous-source': isPreviousSource,
 			},
 		]"
@@ -124,7 +125,7 @@ export default defineComponent({
 		network: {type: Object as PropType<ClientNetwork>, required: true},
 		keepScrollPosition: Function as PropType<() => void>,
 		isPreviousSource: Boolean,
-		focused: Boolean,
+		isFocused: Boolean,
 	},
 	setup(props) {
 		const store = useStore();

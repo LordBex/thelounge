@@ -22,7 +22,7 @@ export default defineComponent({
 			type: Object as PropType<ClientMessage>,
 			required: true,
 		},
-		focused: Boolean,
+		isFocused: Boolean,
 	},
 	setup(props) {
 		const localeDate = computed(() => dayjs(props.message.time).format("D MMMM YYYY"));

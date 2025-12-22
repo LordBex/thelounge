@@ -1,5 +1,5 @@
 <template>
-	<div :class="['msg', {closed: isCollapsed, highlight: focused}]" data-type="condensed">
+	<div :class="['msg', { closed: isCollapsed, 'is-focused': isFocused }]" data-type="condensed">
 		<div class="condensed-summary">
 			<span class="time" />
 			<span class="from" />
@@ -39,7 +39,7 @@ export default defineComponent({
 			type: Function as PropType<() => void>,
 			required: true,
 		},
-		focused: Boolean,
+		isFocused: Boolean,
 	},
 	setup(props) {
 		const isCollapsed = ref(true);

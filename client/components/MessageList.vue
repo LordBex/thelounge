@@ -22,7 +22,7 @@
 				<DateMarker
 					v-if="shouldDisplayDateMarker(message, idx)"
 					:message="message as any"
-					:focused="isMessageFocused(message)"
+					:is-focused="isMessageFocused(message)"
 				/>
 				<div
 					v-if="shouldDisplayUnreadMarker(Number(message.id))"
@@ -36,7 +36,7 @@
 					:network="network"
 					:keep-scroll-position="keepScrollPosition"
 					:messages="message.messages"
-					:focused="isMessageFocused(message)"
+					:is-focused="isMessageFocused(message)"
 				/>
 				<Message
 					v-else
@@ -45,7 +45,7 @@
 					:message="message"
 					:keep-scroll-position="keepScrollPosition"
 					:is-previous-source="isPreviousSource(message, idx)"
-					:focused="isMessageFocused(message)"
+					:is-focused="isMessageFocused(message)"
 					@toggle-link-preview="onLinkPreviewToggle"
 				/>
 			</template>
@@ -101,7 +101,7 @@ export default defineComponent({
 	props: {
 		network: {type: Object as PropType<ClientNetwork>, required: true},
 		channel: {type: Object as PropType<ClientChan>, required: true},
-		focused: Number,
+		isFocused: Number,
 		focusedTime: Number,
 	},
 	setup(props) {
@@ -174,6 +174,7 @@ export default defineComponent({
 				if (message.type === "condensed" && message.messages.length === 1) {
 					return message.messages[0];
 				}
+
 				return message;
 			});
 		});
@@ -216,6 +217,7 @@ export default defineComponent({
 			if (message.type === "condensed") {
 				return `condensed-${message.messages[0]?.id}-${new Date(message.time).getTime()}`;
 			}
+
 			// Use time as part of key since IDs can be inconsistent
 			return `${message.id}-${new Date(message.time).getTime()}`;
 		};
@@ -227,6 +229,7 @@ export default defineComponent({
 				if (message.type === "condensed") {
 					return message.messages.some(inner => inner.id === focusedMsgId.value);
 				}
+
 				return message.id === focusedMsgId.value;
 			}
 
@@ -234,6 +237,7 @@ export default defineComponent({
 			if (!focusedMsgTime.value) return false;
 
 			const msgTime = new Date(message.time).getTime();
+
 			// Allow 1 second tolerance
 			if (Math.abs(msgTime - focusedMsgTime.value) < 1000) {
 				return true;
@@ -243,6 +247,7 @@ export default defineComponent({
 			if (message.type === "condensed") {
 				for (const inner of message.messages) {
 					const innerTime = new Date(inner.time).getTime();
+
 					if (Math.abs(innerTime - focusedMsgTime.value) < 1000) {
 						return true;
 					}
@@ -257,6 +262,7 @@ export default defineComponent({
 			if (chat.value) {
 				isScrolling.value = true;
 				chat.value.scrollTop = chat.value.scrollHeight;
+
 				// Reset after a short delay to allow the scroll event to fire
 				setTimeout(() => {
 					isScrolling.value = false;
@@ -289,6 +295,7 @@ export default defineComponent({
 			// Shift window up
 			const newStart = Math.max(0, windowStartIndex.value - amount);
 			const actualShift = windowStartIndex.value - newStart;
+
 			if (actualShift === 0) {
 				isAdjustingWindow.value = false;
 				return;
@@ -354,6 +361,7 @@ export default defineComponent({
 
 			for (let i = 0; i < all.length; i++) {
 				const msg = all[i];
+
 				if (msg.type === "condensed") {
 					if (msg.messages.some(inner => inner.id === msgId)) {
 						targetIndex = i;
@@ -370,19 +378,23 @@ export default defineComponent({
 				for (let i = 0; i < all.length; i++) {
 					const msg = all[i];
 					const msgTime = new Date(msg.time).getTime();
+
 					if (Math.abs(msgTime - fallbackTime) < 1000) {
 						targetIndex = i;
 						break;
 					}
+
 					if (msg.type === "condensed") {
 						for (const inner of msg.messages) {
 							const innerTime = new Date(inner.time).getTime();
+
 							if (Math.abs(innerTime - fallbackTime) < 1000) {
 								targetIndex = i;
 								break;
 							}
 						}
 					}
+
 					if (targetIndex !== -1) break;
 				}
 			}
@@ -407,6 +419,7 @@ export default defineComponent({
 			// Find and scroll to the element
 			if (chat.value) {
 				const el = chat.value.querySelector(`#msg-${msgId}`) as HTMLElement;
+
 				if (el) {
 					isScrolling.value = true;
 					el.scrollIntoView({ behavior: "instant", block: "center" });
@@ -447,18 +460,22 @@ export default defineComponent({
 			for (let i = 0; i < all.length; i++) {
 				const msg = all[i];
 				const msgTime = new Date(msg.time).getTime();
+
 				if (Math.abs(msgTime - timestamp) < 1000) {
 					targetIndex = i;
 					break;
 				}
+
 				if (msg.type === "condensed") {
 					for (const inner of msg.messages) {
 						const innerTime = new Date(inner.time).getTime();
+
 						if (Math.abs(innerTime - timestamp) < 1000) {
 							targetIndex = i;
 							break;
 						}
 					}
+
 					if (targetIndex !== -1) break;
 				}
 			}
@@ -482,17 +499,20 @@ export default defineComponent({
 			// Find and scroll to the element
 			if (chat.value) {
 				const messages = chat.value.querySelectorAll(".msg[id^='msg-']");
+
 				for (const el of messages) {
 					const msgId = el.id.replace("msg-", "");
 					const msg = displayedMessages.value.find(m => {
 						if (m.type === "condensed") {
 							return m.messages.some(inner => String(inner.id) === msgId);
 						}
+
 						return String(m.id) === msgId;
 					});
 
 					if (msg) {
 						const msgTime = new Date(msg.time).getTime();
+
 						if (Math.abs(msgTime - timestamp) < 1000) {
 							isScrolling.value = true;
 							el.scrollIntoView({ behavior: "instant", block: "center" });
@@ -535,6 +555,7 @@ export default defineComponent({
 
 			// Update scrolledToBottom state - only when actually at the DOM bottom AND at end of messages
 			const atDOMBottom = distanceFromBottom <= 30;
+
 			if (atDOMBottom && isAtEnd.value) {
 				if (!props.channel.scrolledToBottom) {
 					props.channel.scrolledToBottom = true;
@@ -560,6 +581,7 @@ export default defineComponent({
 			if (!store.state.isConnected) return;
 
 			let lastMessage = -1;
+
 			for (const message of props.channel.messages) {
 				if (!message.showInActive) {
 					lastMessage = message.id;
@@ -598,6 +620,7 @@ export default defineComponent({
 				unreadMarkerShown = true;
 				return true;
 			}
+
 			return false;
 		};
 
@@ -662,9 +685,9 @@ export default defineComponent({
 			eventbus.on("resize", handleResize);
 
 			// Handle initial focus from search - try ID first, then time fallback
-			if (props.focused && !isNaN(props.focused)) {
+			if (props.isFocused && !isNaN(props.isFocused)) {
 				await nextTick();
-				await jumpToMessage(props.focused, props.focusedTime);
+				await jumpToMessage(props.isFocused, props.focusedTime);
 			} else if (props.focusedTime && !isNaN(props.focusedTime)) {
 				await nextTick();
 				await jumpToMessageByTime(props.focusedTime);
@@ -678,6 +701,7 @@ export default defineComponent({
 
 			// Set up intersection observer for auto-loading history
 			await nextTick();
+
 			if (window.IntersectionObserver && loadMoreButton.value) {
 				historyObserver.value = new IntersectionObserver(
 					(entries) => {
@@ -781,7 +805,7 @@ export default defineComponent({
 
 		// Handle focused message ID (from search results - primary)
 		watch(
-			() => props.focused,
+			() => props.isFocused,
 			async (focused) => {
 				if (!focused || isNaN(focused)) return;
 				await nextTick();
@@ -794,7 +818,7 @@ export default defineComponent({
 			() => props.focusedTime,
 			async (focusedTime) => {
 				// Only use time if no ID was provided
-				if (props.focused && !isNaN(props.focused)) return;
+				if (props.isFocused && !isNaN(props.isFocused)) return;
 				if (!focusedTime || isNaN(focusedTime)) return;
 				await nextTick();
 				await jumpToMessageByTime(focusedTime);
