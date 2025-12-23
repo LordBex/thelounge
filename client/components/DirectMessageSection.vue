@@ -1,13 +1,13 @@
 <template>
-	<div v-if="queries.length > 0" class="dm-section" :class="{ collapsed: isCollapsed }">
+	<div v-if="(queries.length > 0 && !network.isCollapsed) || (network.isCollapsed && (hasUnread || hasActiveQuery))" class="dm-section" :class="{ collapsed: isCollapsed }">
 		<div class="channel-list-item dm-section-header" :class="hasUnread ? 'has-unread has-highlight': ''" :title="'Total Queries: ' + queries.length + ' - Total Unread: ' + totalUnreadCount" @click.stop="toggleCollapsed">
 			<span class="dm-collapse-icon" :class="{ 'is-collapsed': isCollapsed }"></span>
 			<span class="dm-section-title">Direct Messages</span>
 			<span v-if="hasUnread" class="dm-unread-badge highlight badge">{{ totalUnreadCount }}</span>
 		</div>
 
-		<template v-if="!isCollapsed">
-			<div v-if="queries.length > 2 && store.state.settings.filterdmsEnabled" class="dm-filter">
+		<template v-if="!isCollapsed || hasActiveQuery || hasUnread">
+			<div v-if="queries.length > 2 && store.state.settings.filterdmsEnabled && !isCollapsed" class="dm-filter">
 				<input
 					ref="filterInput"
 					v-model="filterText"
@@ -25,7 +25,7 @@
 				draggable=".dm-channel-wrapper"
 				ghost-class="ui-sortable-ghost"
 				drag-class="ui-sortable-dragging"
-				:group="network.uuid + '-dms'"
+				:group="uuid"
 				class="dm-list"
 				item-key="id"
 				@change="onDMSort"
@@ -152,7 +152,7 @@
 	position: relative;
 }
 
-.dm-channel-wrapper.is-pinned :deep(.channel-list-item) {
+.dm-channel-wrapper.is-pinned :deep(.channel-list-item:not(.has-draft:not(.active))) {
 	padding: 8px 14px;
 
 	/* Pinned indicator, replace message icon */
@@ -165,6 +165,7 @@
 </style>
 
 <script lang="ts">
+import storage from "../js/localStorage";
 import {computed, defineComponent, PropType, ref} from "vue";
 import {filter as fuzzyFilter} from "fuzzy";
 import Draggable from "./Draggable.vue";
@@ -191,11 +192,25 @@ export default defineComponent({
 		},
 	},
 	setup(props) {
+		const uuid = props.network.uuid + '-dms'
+		const PERSISTENT_STORAGE = "thelounge.directMessages.collapsed"
+
+		const getIsCollapsed = () => {
+			const stored = storage.get(PERSISTENT_STORAGE);
+			const directMessages = stored ? new Set(JSON.parse(stored)) : new Set();
+
+			return directMessages.has(uuid)
+		};
+
 		const store = useStore();
-		const isCollapsed = ref(false);
+		const isCollapsed = ref(getIsCollapsed());
 		const filterText = ref("");
 		const showAll = ref(false);
 		const maxVisible = computed(() => store.state.settings.showAllDMs ? Number.MAX_SAFE_INTEGER : 5);
+
+		const hasActiveQuery = computed(() => {
+			return props.queries.find(q => q.id === store.state.activeChannel?.channel.id) !== undefined
+		});
 
 		// Count of unique conversations with unread messages (not total lines)
 		// Skip muted channels - they shouldn't contribute to the unread badge
@@ -204,7 +219,7 @@ export default defineComponent({
 		});
 		const totalUnreadCount = computed(() => {
 			return roundBadgeNumber(props.queries.filter((q) => q.unread > 0 && !q.muted).length)
-		})
+		});
 
 		const filteredQueries = computed(() => {
 			if (!filterText.value) {
@@ -264,11 +279,25 @@ export default defineComponent({
 		});
 
 		const shouldShowChannel = (channel: ClientChan) => {
+			if (isCollapsed.value && channel.highlight) return true
+			if (isCollapsed.value && !channel.highlight) return false
+
 			return visibleQueries.value.includes(channel);
 		};
 
 		const toggleCollapsed = () => {
 			isCollapsed.value = !isCollapsed.value;
+
+			const stored = storage.get(PERSISTENT_STORAGE);
+			const directMessages = stored ? new Set(JSON.parse(stored)) : new Set();
+
+			if (isCollapsed.value) {
+				directMessages.add(uuid);
+			} else {
+				directMessages.delete(uuid);
+			}
+
+			storage.set(PERSISTENT_STORAGE, JSON.stringify([...directMessages]));
 		};
 
 		const onDMSort = (e: {oldIndex?: number; newIndex?: number}) => {
@@ -286,6 +315,7 @@ export default defineComponent({
 		};
 
 		return {
+			uuid,
 			store,
 			isCollapsed,
 			filterText,
@@ -294,6 +324,7 @@ export default defineComponent({
 			totalUnreadCount,
 			sortedQueries,
 			hiddenCount,
+			hasActiveQuery,
 			hasHiddenChannels,
 			shouldShowChannel,
 			toggleCollapsed,
