@@ -315,7 +315,7 @@ export function generateUserContextMenu(
 			action () {},
 		}
 
-		if ((network.channels.at(1)?.groups?.length ?? 0) > 0) {
+		if (Boolean(network.channels.find(c => (c.groups?.length ?? 0) > 0))) {
 			const customInspect = {
 				label: user.nick,
 				type: "item",
