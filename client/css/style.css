@@ -421,9 +421,20 @@ p {
 	/* https://fontawesome.com/icons/link?style=solid */
 }
 
+.context-menu-action-open::before {
+	content: "\f08e";
+	/* https://fontawesome.com/icons/arrow-up-right-from-square?style=solid  */
+}
+
 .context-menu-action-whois::before {
 	content: "\f05a";
 	/* http://fontawesome.io/icon/info-circle/  */
+}
+
+.context-menu-action-slap::before {
+	content: "\f256";
+	/* https://fontawesome.com/icons/hand?style=solid  */
+	transform: rotate(45deg) translate(0%, 10%);
 }
 
 .context-menu-action-ignore::before {
