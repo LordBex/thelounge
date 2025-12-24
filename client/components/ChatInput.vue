@@ -73,6 +73,7 @@ const formattingHotkeys = {
 	"mod+o": "\x0F",
 	"mod+s": "\x1e",
 	"mod+m": "\x11",
+	"mod+r": "/rainbow",
 };
 
 // Autocomplete bracket and quote characters like in a modern IDE
@@ -252,6 +253,16 @@ export default defineComponent({
 
 				if (!e.target) {
 					return;
+				}
+
+				// eslint-disable-next-line eqeqeq
+				if (modifier === '/rainbow' && input.value != null) {
+					if (input.value.value.startsWith(modifier)) return false
+
+					input.value.value = `${modifier} ${input.value.value}`;
+					setPendingMessage(e)
+
+					return false
 				}
 
 				wrapCursor(

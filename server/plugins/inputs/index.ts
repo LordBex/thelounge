@@ -65,6 +65,7 @@ const builtInInputs = [
 	"notice",
 	"part",
 	"quit",
+	"rainbow",
 	"raw",
 	"rejoin",
 	"topic",
