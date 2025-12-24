@@ -1,5 +1,5 @@
 <template>
-	<span v-if="store.state.settings.statusMessages !== 'hidden'" class="content mass-event-summary">
+	<span class="content mass-event-summary">
 		<strong>Mass event:</strong>
 		<span v-for="(item, index) in summaryParts" :key="index">
 			{{ index > 0 ? ", " : " " }}{{ item }}

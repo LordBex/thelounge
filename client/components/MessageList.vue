@@ -147,7 +147,7 @@ export default defineComponent({
 			const condensed: (ClientMessage | CondensedMessageContainer)[] = [];
 
 			for (const message of props.channel.messages) {
-				if (message.self || message.highlight || !condensedTypes.has(message.type || "")) {
+				if (message.self || message.highlight || (!condensedTypes.has(message.type || "") || message.type === MessageType.MASS_EVENT)) {
 					lastCondensedContainer = null;
 					condensed.push(message);
 					continue;
