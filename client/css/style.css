@@ -516,6 +516,314 @@ p {
 	/* https://fontawesome.com/icons/pen?style=solid */
 }
 
+.context-menu-item.context-menu-group-bot,
+.custom-group-header.group-header-bot {
+	&, &:hover {
+		color: rgb(255, 215, 0);
+	}
+
+	&::before {
+		content: "\e4e2";
+	}
+}
+
+.context-menu-item.context-menu-group-sysop,
+.custom-group-header.group-header-sysop {
+	&, &:hover {
+		color: rgb(255, 0, 0);
+	}
+
+	&::before {
+		content: "\f43f";
+	}
+}
+
+.context-menu-item.context-menu-group-administrator,
+.custom-group-header.group-header-administrator {
+	&, &:hover {
+		color: rgb(242, 59, 22);
+	}
+
+	&::before {
+		content: "\f445";
+	}
+}
+
+.context-menu-item.context-menu-group-moderator,
+.custom-group-header.group-header-moderator {
+	&, &:hover {
+		color: rgb(201, 26, 26);
+	}
+
+	&::before {
+		content: "\f447";
+	}
+}
+
+.context-menu-item.context-menu-group-fls,
+.custom-group-header.group-header-fls {
+	&, &:hover {
+		color: rgb(255, 211, 156);
+	}
+
+	&::before {
+		content: "\f132";
+	}
+}
+
+.context-menu-item.context-menu-group-editor,
+.custom-group-header.group-header-editor {
+	&, &:hover {
+		color: rgb(21, 176, 151);
+	}
+
+	&::before {
+		content: "\f336";
+	}
+}
+
+.context-menu-item.context-menu-group-internal,
+.custom-group-header.group-header-internal {
+	&, &:hover {
+		color: rgb(255, 77, 77);
+	}
+
+	&::before {
+		content: "\e4e2";
+	}
+}
+
+.context-menu-item.context-menu-group-uploader,
+.custom-group-header.group-header-uploader {
+	&, &:hover {
+		color: rgb(46, 204, 113);
+	}
+
+	&::before {
+		content: "\f093";
+	}
+}
+
+.context-menu-item.context-menu-group-external,
+.custom-group-header.group-header-external {
+	&, &:hover {
+		color: rgb(0, 153, 255);
+	}
+
+	&::before {
+		content: "\f54c";
+	}
+}
+
+.context-menu-item.context-menu-group-specialpool,
+.custom-group-header.group-header-specialpool {
+	&, &:hover {
+		color: rgb(255, 215, 0);
+	}
+
+	&::before {
+		content: "\e4e2";
+	}
+}
+
+.context-menu-item.context-menu-group-foundingpool,
+.custom-group-header.group-header-foundingpool {
+	&, &:hover {
+		color: rgb(255, 132, 9);
+	}
+
+	&::before {
+		content: "\f43a";
+	}
+}
+
+.context-menu-item.context-menu-group-godpool,
+.custom-group-header.group-header-godpool {
+	&, &:hover {
+		color: rgb(212, 172, 13);
+	}
+
+	&::before {
+		content: "\e4e2";
+	}
+}
+
+.context-menu-item.context-menu-group-megapool,
+.custom-group-header.group-header-megapool {
+	&, &:hover {
+		color: rgb(224, 138, 78);
+	}
+
+	&::before {
+		content: "\e4e2";
+	}
+}
+
+.context-menu-item.context-menu-group-propool,
+.custom-group-header.group-header-propool {
+	&, &:hover {
+		color: rgb(255, 215, 0);
+	}
+
+	&::before {
+		content: "\f51e";
+	}
+}
+
+.context-menu-item.context-menu-group-uberpool,
+.custom-group-header.group-header-uberpool {
+	&, &:hover {
+		color: rgb(255, 255, 128);
+	}
+
+	&::before {
+		content: "\f447";
+	}
+}
+
+.context-menu-item.context-menu-group-superpool,
+.custom-group-header.group-header-superpool {
+	&, &:hover {
+		color: rgb(255, 132, 9);
+	}
+
+	&::before {
+		content: "\f441";
+	}
+}
+
+.context-menu-item.context-menu-group-powerpool,
+.custom-group-header.group-header-powerpool {
+	&, &:hover {
+		color: rgb(17, 85, 204);
+	}
+
+	&::before {
+		content: "\f441";
+	}
+}
+
+.context-menu-item.context-menu-group-pool,
+.custom-group-header.group-header-pool {
+	&, &:hover {
+		color: rgb(99, 230, 190);
+	}
+
+	&::before {
+		content: "\f439";
+	}
+}
+
+.context-menu-item.context-menu-group-user,
+.custom-group-header.group-header-user {
+	&, &:hover {
+		color: rgb(114, 137, 218);
+	}
+
+	&::before {
+		content: "\f443";
+	}
+}
+
+.context-menu-item.context-menu-group-kiddiepool,
+.custom-group-header.group-header-kiddiepool {
+	&, &:hover {
+		color: rgb(48, 47, 145);
+	}
+
+	&::before {
+		content: "\f77c";
+	}
+}
+
+.context-menu-item.context-menu-group-validating,
+.custom-group-header.group-header-validating {
+	&, &:hover {
+		color: rgb(149, 165, 166);
+	}
+
+	&::before {
+		content: "\f059";
+	}
+}
+
+.context-menu-item.context-menu-group-cesspool,
+.custom-group-header.group-header-cesspool {
+	&, &:hover {
+		color: rgb(150, 75, 0);
+	}
+
+	&::before {
+		content: "\f619";
+	}
+}
+
+.context-menu-item.context-menu-group-idlepool,
+.custom-group-header.group-header-idlepool {
+	&, &:hover {
+		color: rgb(87, 87, 87);
+	}
+
+	&::before {
+		content: "\f1da";
+	}
+}
+
+.context-menu-item.context-menu-group-guest,
+.custom-group-header.group-header-guest {
+	&, &:hover {
+		color: rgb(87, 87, 87);
+	}
+
+	&::before {
+		content: "\f059";
+	}
+}
+
+.context-menu-item.context-menu-group-leech,
+.custom-group-header.group-header-leech {
+	&, &:hover {
+		color: rgb(150, 40, 27);
+	}
+
+	&::before {
+		content: "\f00d";
+	}
+}
+
+.context-menu-item.context-menu-group-banned,
+.custom-group-header.group-header-banned {
+	&, &:hover {
+		color: rgb(255, 0, 0);
+	}
+
+	&::before {
+		content: "\f05e";
+	}
+}
+
+.context-menu-item.context-menu-group-disabled,
+.custom-group-header.group-header-disabled {
+	&, &:hover {
+		color: rgb(141, 98, 98);
+	}
+
+	&::before {
+		content: "\f28b";
+	}
+}
+
+.context-menu-item.context-menu-group-pruned,
+.custom-group-header.group-header-pruned {
+	&, &:hover {
+		color: rgb(141, 98, 98);
+	}
+
+	&::before {
+		content: "\f057";
+	}
+}
+
 #footer .connect::before {
 	content: "\f067";
 	/* http://fontawesome.io/icon/plus/ */

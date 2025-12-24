@@ -43,6 +43,16 @@
 	</div>
 </template>
 
+<style lang="css">
+.context-menu-item[class*="context-menu-group-"] {
+	&, &:hover {
+		text-align: center;
+		background-color: initial;
+		cursor: default;
+	}
+}
+</style>
+
 <script lang="ts">
 import {
 	generateUserContextMenu,
@@ -122,7 +132,7 @@ export default defineComponent({
 				};
 			}
 
-			const offset = {left: event.pageX, top: event.pageY};
+			const offset = {left: event.pageX, top: event.pageY - (contextMenu.value.querySelector('[class*="context-menu-group-"]') ? 45 : 0)};
 
 			if (window.innerWidth - offset.left < menuWidth) {
 				offset.left = window.innerWidth - menuWidth;

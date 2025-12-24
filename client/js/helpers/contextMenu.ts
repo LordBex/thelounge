@@ -315,7 +315,7 @@ export function generateUserContextMenu(
 			action () {},
 		}
 
-		if ((network.channels.at(1)?.groups?.length ?? 0) > 0) {
+		if (Boolean(network.channels.find(c => (c.groups?.length ?? 0) > 0))) {
 			const customInspect = {
 				label: user.nick,
 				type: "item",
@@ -337,8 +337,21 @@ export function generateUserContextMenu(
 					openInNewTab(`https://brr.red/${user.nick}`);
 				},
 			};
+			const userGroup = network.channels.find(c => c.users.find(u => u.nick === user.nick))?.groups?.find(g => g.users.includes(user.nick))?.name ?? 'Offline';
 
-			return [ customInspect, customTrackerProfile ]
+			return [
+				{
+					label: userGroup,
+					type: "item",
+					class: `group-${userGroup.toLowerCase()}`,
+					action () {},
+				},
+				{
+					type: "divider",
+				},
+				customInspect,
+				customTrackerProfile
+			] as ContextMenuItem[]
 		}
 
 		return [ defualt ]
