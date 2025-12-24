@@ -5,6 +5,7 @@ import {switchToChannel} from "../router";
 import {TypedStore} from "../store";
 import useCloseChannel from "../hooks/use-close-channel";
 import {ChanType} from "../../../shared/types/chan";
+import { openInNewTab } from "./openInNewTab";
 
 type BaseContextMenuItem = {
 	label: string;
@@ -314,12 +315,14 @@ export function generateUserContextMenu(
 			action () {},
 		}
 
-		if ((channel.groups?.length ?? 0) > 0) {
+		if ((network.channels.at(1)?.groups?.length ?? 0) > 0) {
 			const customInspect = {
 				label: user.nick,
 				type: "item",
 				class: "user",
 				action (){
+					if (channel.type !== ChanType.CHANNEL) return
+
 					socket.emit("input", {
 						target: channel.id,
 						text: `!user ${user.nick}`,
@@ -331,7 +334,7 @@ export function generateUserContextMenu(
 				type: "item",
 				class: "action-open",
 				action (){
-					open(`https://brr.red/${user.nick}`);
+					openInNewTab(`https://brr.red/${user.nick}`);
 				},
 			};
 
