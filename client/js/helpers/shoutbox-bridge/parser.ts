@@ -18,7 +18,7 @@ export function parser (originalMessage: SharedMsg) {
 
 	// BHD + RFX
 	if (sender === "willie" || sender === "wall-e") {
-		const groups = message.text?.match(/^.*?\[(?:SB|Chatbox)\].*?\s(?<username>[^):]+): (?<content>.*)/)?.groups;
+		const groups = message.text?.match(/^.*?\[(?:SB|Chatbox)\][^\w]+(?<username>[^):]+): (?<content>.*)/)?.groups;
 		if (groups === undefined) return originalMessage;
 
 		return editMessage(message, <MessageEdit>groups);
