@@ -41,6 +41,8 @@ export type SharedUser = {
 
 export type UserInMessage = Partial<SharedUser> & {
 	mode: string;
+	shoutbox?: boolean;
+	original_nick?: string;
 };
 
 export type LinkPreview = {

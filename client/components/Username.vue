@@ -6,7 +6,7 @@
 		v-on="onHover ? {mouseenter: hover} : {}"
 		@click.prevent="openContextMenu"
 		@contextmenu.prevent="openContextMenu"
-		><slot>{{ mode }}{{ user.nick }}</slot></span
+		><slot>{{user.shoutbox ? '(' : ''}}{{ mode }}{{ user.nick }}{{user.shoutbox ? ')' : ''}}</slot></span
 	>
 </template>
 
@@ -70,6 +70,17 @@ export default defineComponent({
 		};
 
 		const store = useStore();
+
+		// Add to autocomplete for bridged users (need to switch channel after connect if channel active on connect)
+		if (store.state.settings.beautifyBridgedMessages && props.user.shoutbox && !store.state.activeChannel?.channel.users.find(u => u.nick === props.user.nick)) {
+			store.state.activeChannel?.channel.users.push({
+				nick: props.user.nick!,
+				modes: [],
+				lastMessage: Date.now(),
+				mode: '',
+				away: ''
+			});
+		}
 
 		return {
 			mode,

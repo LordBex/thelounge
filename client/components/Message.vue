@@ -1,18 +1,19 @@
 <template>
 	<div
-		:id="'msg-' + message.id"
+		:id="'msg-' + prettyMessage.id"
 		:class="[
 			'msg',
 			{
-				self: message.self,
-				highlight: message.highlight,
+				self: prettyMessage.self,
+				highlight: prettyMessage.highlight,
 				'is-focused': isFocused,
-				'previous-source': isPreviousSource,
+				'previous-source': isPreviousSource
 			},
 		]"
-		:data-type="message.type"
-		:data-command="message.command"
-		:data-from="message.from && message.from.nick"
+		:data-type="prettyMessage.type"
+		:data-command="prettyMessage.command"
+		:data-from="prettyMessage.from && (prettyMessage.from.shoutbox ? prettyMessage.from.original_nick : prettyMessage.from.nick)"
+		:data-bridged="prettyMessage.from?.shoutbox"
 	>
 		<span
 			aria-hidden="true"
@@ -20,29 +21,29 @@
 			class="time tooltipped tooltipped-e"
 			>{{ `${messageTime}&#32;` }}
 		</span>
-		<template v-if="message.type === 'unhandled'">
-			<span class="from">[{{ message.command }}]</span>
+		<template v-if="prettyMessage.type === 'unhandled'">
+			<span class="from">[{{ prettyMessage.command }}]</span>
 			<span class="content">
-				<span v-for="(param, id) in message.params" :key="id">{{
+				<span v-for="(param, id) in prettyMessage.params" :key="id">{{
 					`&#32;${param}&#32;`
 				}}</span>
 			</span>
 		</template>
 		<template v-else-if="isAction()">
 			<span class="from"><span class="only-copy" aria-hidden="true">***&nbsp;</span></span>
-			<component :is="messageComponent" :network="network" :message="message" />
+			<component :is="messageComponent" :network="network" :message="prettyMessage" />
 		</template>
-		<template v-else-if="message.type === 'action'">
+		<template v-else-if="prettyMessage.type === 'action'">
 			<span class="from"><span class="only-copy">*&nbsp;</span></span>
 			<span class="content" dir="auto">
 				<Username
-					:user="message.from"
+					:user="prettyMessage.from"
 					:network="network"
 					:channel="channel"
 					dir="auto"
-				/>&#32;<ParsedMessage :message="message" />
+				/>&#32;<ParsedMessage :message="prettyMessage" />
 				<LinkPreview
-					v-for="preview in message.previews"
+					v-for="preview in prettyMessage.previews"
 					:key="preview.link"
 					:keep-scroll-position="keepScrollPosition"
 					:link="preview"
@@ -51,43 +52,43 @@
 			</span>
 		</template>
 		<template v-else>
-			<span v-if="message.type === 'message'" class="from">
-				<template v-if="message.from && message.from.nick">
+			<span v-if="prettyMessage.type === 'message'" class="from">
+				<template v-if="prettyMessage.from && prettyMessage.from.nick">
 					<span class="only-copy" aria-hidden="true">&lt;</span>
-					<Username :user="message.from" :network="network" :channel="channel" />
+					<Username :user="prettyMessage.from" :network="network" :channel="channel" />
 					<span class="only-copy" aria-hidden="true">&gt;&nbsp;</span>
 				</template>
 			</span>
-			<span v-else-if="message.type === 'plugin'" class="from">
-				<template v-if="message.from && message.from.nick">
+			<span v-else-if="prettyMessage.type === 'plugin'" class="from">
+				<template v-if="prettyMessage.from && prettyMessage.from.nick">
 					<span class="only-copy" aria-hidden="true">[</span>
-					{{ message.from.nick }}
+					{{ prettyMessage.from.nick }}
 					<span class="only-copy" aria-hidden="true">]&nbsp;</span>
 				</template>
 			</span>
 			<span v-else class="from">
-				<template v-if="message.from && message.from.nick">
+				<template v-if="prettyMessage.from && prettyMessage.from.nick">
 					<span class="only-copy" aria-hidden="true">-</span>
-					<Username :user="message.from" :network="network" :channel="channel" />
+					<Username :user="prettyMessage.from" :network="network" :channel="channel" />
 					<span class="only-copy" aria-hidden="true">-&nbsp;</span>
 				</template>
 			</span>
 			<span class="content" dir="auto">
 				<span
-					v-if="message.showInActive"
+					v-if="prettyMessage.showInActive"
 					aria-label="This message was shown in your active channel"
 					class="msg-shown-in-active tooltipped tooltipped-e"
 					><span></span
 				></span>
 				<span
-					v-if="message.statusmsgGroup"
-					:aria-label="`This message was only shown to users with ${message.statusmsgGroup} mode`"
+					v-if="prettyMessage.statusmsgGroup"
+					:aria-label="`This message was only shown to users with ${prettyMessage.statusmsgGroup} mode`"
 					class="msg-statusmsg tooltipped tooltipped-e"
-					><span>{{ message.statusmsgGroup }}</span></span
+					><span>{{ prettyMessage.statusmsgGroup }}</span></span
 				>
-				<ParsedMessage :network="network" :message="message" />
+				<ParsedMessage :network="network" :message="prettyMessage" />
 				<LinkPreview
-					v-for="preview in message.previews"
+					v-for="preview in prettyMessage.previews"
 					:key="preview.link"
 					:keep-scroll-position="keepScrollPosition"
 					:link="preview"
@@ -111,6 +112,8 @@ import MessageTypes from "./MessageTypes";
 
 import type {ClientChan, ClientMessage, ClientNetwork} from "../js/types";
 import {useStore} from "../js/store";
+import { MessageType } from "../../shared/types/msg";
+import { parser as shoutboxParser } from "../js/helpers/shoutbox-bridge/parser";
 
 MessageTypes.ParsedMessage = ParsedMessage;
 MessageTypes.LinkPreview = LinkPreview;
@@ -162,8 +165,16 @@ export default defineComponent({
 			return typeof MessageTypes["message-" + props.message.type] !== "undefined";
 		};
 
+		// IRC Bridge formatter
+		const prettyMessage = computed(() => {
+			if (!store.state.settings.beautifyBridgedMessages || props.message.type !== MessageType.MESSAGE) return props.message;
+
+			return shoutboxParser(props.message);
+		});
+
 		return {
 			timeFormat,
+			prettyMessage,
 			messageTime,
 			messageTimeLocale,
 			messageComponent,

@@ -163,6 +163,9 @@ const defaultConfig = {
 	compactSidebar: {
 		default: false
 	},
+	beautifyBridgedMessages: {
+		default: true
+	},
 };
 
 export const config = normalizeConfig(defaultConfig);

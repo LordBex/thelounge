@@ -130,6 +130,14 @@
 				/>
 				Use compact sidebar on Desktop
 			</label>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.beautifyBridgedMessages"
+					type="checkbox"
+					name="beautifyBridgedMessages"
+				/>
+				Beautify supported shoutbox bridged messages
+			</label>
 		</div>
 		<h2>Visual Aids</h2>
 		<div>
