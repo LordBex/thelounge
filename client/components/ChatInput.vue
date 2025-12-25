@@ -216,8 +216,9 @@ export default defineComponent({
 		const onBlur = (e: FocusEvent) => {
 			// Don't hide autocomplete if clicking on the autocomplete menu itself
 			// The click event needs to complete before we hide the menu
-			const relatedTarget = e.relatedTarget as HTMLElement | null;
-			if (relatedTarget?.closest(".textcomplete-menu")) {
+			const eventTarget = e.target as HTMLElement;
+
+			if (eventTarget.id === "input" && eventTarget.classList.contains("mousetrap")) {
 				return;
 			}
 
