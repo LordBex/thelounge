@@ -213,7 +213,14 @@ export default defineComponent({
 			input.value?.blur();
 		};
 
-		const onBlur = () => {
+		const onBlur = (e: FocusEvent) => {
+			// Don't hide autocomplete if clicking on the autocomplete menu itself
+			// The click event needs to complete before we hide the menu
+			const relatedTarget = e.relatedTarget as HTMLElement | null;
+			if (relatedTarget?.closest(".textcomplete-menu")) {
+				return;
+			}
+
 			if (autocompletionRef.value) {
 				autocompletionRef.value.hide();
 			}
