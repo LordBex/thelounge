@@ -29,6 +29,8 @@ const versions: SharedChangelogData = {
 };
 
 async function fetch() {
+	return Promise.resolve(versions);
+
 	const time = Date.now();
 
 	// Serving information from cache
@@ -107,6 +109,8 @@ function updateVersions(responseBody: string) {
 }
 
 function checkForUpdates(manager: ClientManager) {
+	return;
+
 	fetch()
 		.then((versionData) => {
 			if (!changelog.isUpdateAvailable) {
