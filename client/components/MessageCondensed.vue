@@ -68,7 +68,24 @@ export default defineComponent({
 						.split("")
 						.filter((char) => char !== "+" && char !== "-").length;
 					obj[message.type] += modeChangesCount;
-				} else {
+				}
+
+				// special case since one MASS_EVENT message can have multiple effects
+				else if (message.type === MessageType.MASS_EVENT) {
+					// Add mass joins/parts/modes/etc to counts
+					const summary = message.massEventSummary!
+					Object.keys(summary).forEach(group => {
+						if (group === "startTime" || group === "endTime" || group === "duration") return;
+
+						if (group === "away" || group === "back") {
+							return obj[group] += summary[group];
+						}
+
+						obj[group.slice(0, -1)] += summary[group]
+					})
+				}
+
+				else {
 					if (!message.type) {
 						/* eslint-disable no-console */
 						console.log(`empty message type, this should not happen: ${message.id}`);
