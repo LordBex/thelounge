@@ -63,6 +63,7 @@
 								v-for="(message, id) in messages"
 								:key="message.id"
 								class="result"
+								:data-jump-to="store.state.settings.enableEnhancedSearch || undefined"
 							>
 								<DateMarker
 									v-if="shouldDisplayDateMarker(message, id)"
@@ -91,7 +92,7 @@
 	font-weight: 700;
 }
 
-.result > .msg {
+.result[data-jump-to] > .msg {
 	cursor: pointer;
 
 	&:hover {
