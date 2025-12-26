@@ -158,17 +158,23 @@ const defaultConfig = {
 		default: true,
 	},
 	disableMutedUnread: {
-		default: false
+		default: false,
 	},
 	compactSidebar: {
-		default: false
+		default: false,
 	},
 	beautifyBridgedMessages: {
-		default: true
+		default: true,
 	},
 	bridgedMessageNicksStyle: {
 		default: "parentheses",
-	}
+	},
+	enhancedUserListEnabled: {
+		default: true,
+	},
+	enhancedContextMenuEnabled: {
+		default: true,
+	},
 };
 
 export const config = normalizeConfig(defaultConfig);

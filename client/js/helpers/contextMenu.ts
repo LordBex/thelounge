@@ -313,9 +313,9 @@ export function generateUserContextMenu(
 			type: "item",
 			class: "user",
 			action () {},
-		}
+		};
 
-		if (Boolean(network.channels.find(c => (c.groups?.length ?? 0) > 0))) {
+		if (store.state.settings.enhancedContextMenuEnabled && Boolean(network.channels.find(c => (c.groups?.length ?? 0) > 0))) {
 			const customInspect = {
 				label: user.nick,
 				type: "item",
@@ -351,11 +351,30 @@ export function generateUserContextMenu(
 				},
 				customInspect,
 				customTrackerProfile
-			] as ContextMenuItem[]
+			] as ContextMenuItem[];
 		}
 
-		return [ defualt ]
+		return [ defualt ];
 	}
+
+	// Extra entries for enhanced context menu
+	const additionalContextMenuEntrys = () => {
+		if (!store.state.settings.enhancedContextMenuEnabled) return [];
+
+		return [
+			{
+				label: `Slap ${user.nick}`,
+				type: "item",
+				class: "action-slap",
+				action() {
+					socket.emit("input", {
+						target: channel.id,
+						text: "/slap " + user.nick,
+					});
+				},
+			},
+		];
+	};
 
 	const items: ContextMenuItem[] = [
 		...userContextMenuEntrys(),
@@ -379,17 +398,7 @@ export function generateUserContextMenu(
 				});
 			},
 		},
-		{
-			label: `Slap ${user.nick}`,
-			type: "item",
-			class: "action-slap",
-			action() {
-				socket.emit("input", {
-					target: channel.id,
-					text: "/slap " + user.nick,
-				});
-			},
-		},
+		...additionalContextMenuEntrys(),
 		{
 			type: "divider",
 		},

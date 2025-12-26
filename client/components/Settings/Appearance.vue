@@ -138,6 +138,22 @@
 		<div>
 			<label class="opt">
 				<input
+					:checked="store.state.settings.enhancedUserListEnabled"
+					type="checkbox"
+					name="enhancedUserListEnabled"
+				/>
+				Use enhanced user list when available
+			</label>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.enhancedContextMenuEnabled"
+					type="checkbox"
+					name="enhancedContextMenuEnabled"
+				/>
+				Use enhanced context menu
+			</label>
+			<label class="opt">
+				<input
 					:checked="store.state.settings.showInputNick"
 					type="checkbox"
 					name="showInputNick"

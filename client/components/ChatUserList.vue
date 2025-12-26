@@ -134,6 +134,7 @@ import {computed, defineComponent, nextTick, PropType, ref} from "vue";
 import type {UserInMessage} from "../../shared/types/msg";
 import type {ClientChan, ClientUser} from "../js/types";
 import Username from "./Username.vue";
+import { useStore } from "../js/store";
 
 const modes = {
 	"~": "owner",
@@ -154,13 +155,14 @@ export default defineComponent({
 		channel: {type: Object as PropType<ClientChan>, required: true},
 	},
 	setup(props) {
+		const store = useStore();
 		const userSearchInput = ref("");
 		const activeUser = ref<UserInMessage | null>();
 		const userlist = ref<HTMLDivElement>();
 
 		// Check if we have custom groups from SPGROUPS
 		const hasCustomGroups = computed(() => {
-			return props.channel.groups && props.channel.groups.length > 0;
+			return store.state.settings.enhancedUserListEnabled && props.channel.groups && props.channel.groups.length > 0;
 		});
 
 		// Sort groups by position (highest first)

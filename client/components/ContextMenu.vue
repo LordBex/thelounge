@@ -132,7 +132,11 @@ export default defineComponent({
 				};
 			}
 
-			const offset = {left: event.pageX, top: event.pageY - (contextMenu.value.querySelector('[class*="context-menu-group-"]') ? 45 : 0)};
+			const offset = {left: event.pageX, top: event.pageY};
+
+			if (store.state.settings.enhancedContextMenuEnabled && contextMenu.value.querySelector('[class*="context-menu-group-"]')) {
+				offset.top -= 45
+			}
 
 			if (window.innerWidth - offset.left < menuWidth) {
 				offset.left = window.innerWidth - menuWidth;
