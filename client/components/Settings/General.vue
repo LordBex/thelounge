@@ -39,6 +39,17 @@
 				</label>
 			</div>
 		</div>
+		<div v-if="store.state.settings.searchEnabled">
+			<h2>Enhanced search</h2>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.enableEnhancedSearch"
+					type="checkbox"
+					name="enableEnhancedSearch"
+				/>
+				Enable enhanced search with 'Jump to message'
+			</label>
+		</div>
 		<div v-if="!store.state.serverConfiguration?.public">
 			<h2>Settings synchronisation</h2>
 			<label class="opt">

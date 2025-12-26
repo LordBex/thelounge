@@ -25,7 +25,7 @@
 					<div class="mentions-info">
 						<div>
 							<span class="from">
-								<Username :user="message.from as any" />
+								<Username :user="message.from" />
 								<template v-if="message.channel">
 									in {{ message.channel.channel.name }} on
 									{{ message.channel.network.name }}
@@ -52,9 +52,10 @@
 					<div
 						class="content"
 						dir="auto"
+						:data-jump-to="(store.state.settings.searchEnabled && store.state.settings.enableEnhancedSearch) || undefined"
 						@click="jumpToMention(message)"
 					>
-						<ParsedMessage :message="message as any" />
+						<ParsedMessage :message="(message as any)" />
 					</div>
 				</div>
 			</template>
@@ -108,10 +109,11 @@
 	word-wrap: break-word;
 	word-break: break-word; /* Webkit-specific */
 	cursor: pointer;
-}
 
-.mentions-popup .msg .content:hover {
-	background-color: var(--highlight-border-color);
+	&[data-jump-to]:hover { /** WIP */
+		color: var(--highlight-bg-color);
+		background-color: var(--highlight-border-color);
+	}
 }
 
 .mentions-popup .msg-dismiss::before {
@@ -215,7 +217,7 @@ export default defineComponent({
 		};
 
 		const jumpToMention = (message: ClientMention) => {
-			if (!message.channel) {
+			if (!store.state.settings.enableEnhancedSearch || !message.channel) {
 				return;
 			}
 
@@ -256,6 +258,7 @@ export default defineComponent({
 		});
 
 		return {
+			store,
 			isOpen,
 			isLoading,
 			resolvedMessages,

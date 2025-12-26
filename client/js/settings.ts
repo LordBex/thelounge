@@ -175,6 +175,9 @@ const defaultConfig = {
 	enhancedContextMenuEnabled: {
 		default: true,
 	},
+	enableEnhancedSearch: {
+		default: true,
+	},
 };
 
 export const config = normalizeConfig(defaultConfig);

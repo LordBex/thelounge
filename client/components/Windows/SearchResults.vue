@@ -251,7 +251,7 @@ export default defineComponent({
 		// Jump to a search result - navigate to channel with message ID and time
 		// If message isn't in memory, MessageList will scroll to closest match by time
 		const jump = (message: ClientMessage) => {
-			if (!channel.value) {
+			if (!store.state.settings.enableEnhancedSearch || !channel.value) {
 				return;
 			}
 
