@@ -6,7 +6,7 @@
 		v-on="onHover ? {mouseenter: hover} : {}"
 		@click.prevent="openContextMenu"
 		@contextmenu.prevent="openContextMenu"
-		><slot>{{user.shoutbox ? '(' : ''}}{{ mode }}{{ user.nick }}{{user.shoutbox ? ')' : ''}}</slot></span
+		><slot>{{displayNick}}</slot></span
 	>
 </template>
 
@@ -77,12 +77,25 @@ export default defineComponent({
 				nick: props.user.nick!,
 				modes: [],
 				lastMessage: Date.now(),
-				mode: '',
-				away: ''
+				mode: "",
+				away: ""
 			});
 		}
 
+		// Allow adjusting nick display via setting
+		const displayNick = computed(() => {
+			const umode = mode.value ?? "";
+			const nick = props.user.nick!;
+
+			if (store.state.settings.beautifyBridgedMessages && props.user.shoutbox && store.state.settings.bridgedMessageNicksStyle === "parentheses") {
+				return `(${umode}${nick})`
+			}
+
+			return `${umode}${nick}`
+		})
+
 		return {
+			displayNick,
 			mode,
 			nickColor,
 			hover,

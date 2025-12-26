@@ -166,6 +166,9 @@ const defaultConfig = {
 	beautifyBridgedMessages: {
 		default: true
 	},
+	bridgedMessageNicksStyle: {
+		default: "parentheses",
+	}
 };
 
 export const config = normalizeConfig(defaultConfig);
