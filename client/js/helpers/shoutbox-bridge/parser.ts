@@ -18,7 +18,7 @@ export function parser (originalMessage: SharedMsg) {
 
 	// BHD + RFX
 	if (sender === "willie" || sender === "wall-e") {
-		const groups = message.text?.match(/^.*?\[(?:SB|Chatbox)\][^\w]+(?<username>[^):]+): (?<content>.*)/)?.groups;
+		const groups = message.text?.match(/^.*?\[(?:SB|Chatbox)\][^\w]+(?<username>[^:]+): (?<content>.*)/)?.groups;
 		if (groups === undefined) return originalMessage;
 
 		return editMessage(message, <MessageEdit>groups);
@@ -26,7 +26,7 @@ export function parser (originalMessage: SharedMsg) {
 
 	// ULCX + LST + OE+ + HHD + ATH + DP
 	if (sender === "ulcx"  || sender === "bot" || sender === "bridgebot" || sender === "bbot" || sender === "chatbot" || sender === "darkpeers") {
-		const groups = message.text?.match(/^\[?(?<username>[^):]+)\]:? (?<content>.*)/)?.groups;
+		const groups = message.text?.match(/^\[?(?<username>[^:\]]+)\]:? (?<content>.*)/)?.groups;
 		if (groups === undefined) return originalMessage;
 
 		return editMessage(message, <MessageEdit>groups);
