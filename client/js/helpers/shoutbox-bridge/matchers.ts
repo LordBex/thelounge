@@ -27,9 +27,9 @@ export const matchers: Matcher[] = [
 	{
 		type: "basic",
 		name: "UploadCX + LST + OnlyEncodes+ + HomiesHelpDesk + Aither + DarkPeers",
-		description: "[<nick>] <message> | <nick>: <message>",
-		matches: [ "ulcx", "bot", "bridgebot", "bbot", "chatbot", "darkpeers"],
-		regex: /^\[?(?<nick>[^:\]]+)\]:? (?<content>.*)/,
+		description: "[nick] message | [nick]: message | nick: message | nick message",
+		matches: [ "ulcx", "bot", "bridgebot", "bbot", "chatbot", "darkpeers" ],
+		regex: /^\[?(?<nick>[^:\]]+)\]?:? (?<content>.*)/,
 		transform (message) {
 			return typedGroups(message.text!.match(this.regex));
 		}
@@ -38,8 +38,8 @@ export const matchers: Matcher[] = [
 		type: "basic",
 		name: "RocketHD",
 		description: "🛰️<nick>: <message>",
-		matches: [ "rocketnouncer"],
-		regex: /^🛰️?(?<username>[^:]+?): (?<content>.*)/v,
+		matches: [ "rocketnouncer" ],
+		regex: /^🛰️(?<username>[^:]+?): (?<content>.*)/,
 		transform (message) {
 			return typedGroups(message.text!.match(this.regex));
 		}
@@ -49,7 +49,7 @@ export const matchers: Matcher[] = [
 		name: "HUNO (Discord)",
 		description: "»<nick> (<rank>)« <message> | »<nick>« <message>",
 		matches: [ "mellos" ],
-		regex: /^»?(?<nick>[^«]+?)(?: \p{RGI_Emoji}+| \(.+?\))?« (?<content>.*)/v,
+		regex: /^»(?<nick>[^«]+?)(?: (?:\p{RGI_Emoji}+|\(.+?\)))?« (?<content>.*)/v,
 		transform (message) {
 			return typedGroups(message.text!.match(this.regex));
 		}
