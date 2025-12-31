@@ -14,7 +14,7 @@ export function parser (originalMessage: SharedMsg) {
 	const matcher = matchers.find(m => {
 		if (m.type === "basic") return m.matches.includes(sender);
 		if (m.type === "advanced") return m.matches(sender);
-	})
+	});
 	if (!matcher) return originalMessage;
 
 	const edit = matcher.transform(message);
