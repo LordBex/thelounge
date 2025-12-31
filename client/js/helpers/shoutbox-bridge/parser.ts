@@ -45,6 +45,14 @@ export function parser (originalMessage: SharedMsg) {
 		return editMessage(message, { username: sender.replace('-web', ''), content: message.text ?? '' });
 	}
 
+	// RocketHD
+	if (sender === "rocketnouncer") {
+		const groups = message.text?.match(/^🛰️?(?<username>[^:]+?): (?<content>.*)/v)?.groups;
+		if (groups === undefined) return originalMessage;
+
+		return editMessage(message, <MessageEdit>groups);
+	}
+
 	return originalMessage;
 }
 
