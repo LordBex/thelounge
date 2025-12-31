@@ -90,7 +90,7 @@ class MassEventAggregator {
 			state.preBuffer = state.preBuffer.filter((m) => m.timestamp > windowStart);
 
 			if (state.recentTimestamps.length >= config.threshold) {
-				log.info(`MassEvent: ACTIVATING for ${chan.name} (${state.recentTimestamps.length} msgs, ${state.preBuffer.length} in preBuffer)`);
+				log.debug(`MassEvent: ACTIVATING for ${chan.name} (${state.recentTimestamps.length} msgs, ${state.preBuffer.length} in preBuffer)`);
 
 				// Move preBuffer to main buffer when activating
 				state.buffer = [...state.preBuffer];
@@ -108,6 +108,8 @@ class MassEventAggregator {
 
 				return true; // Message was captured in preBuffer, now in main buffer
 			}
+
+			return false; // Not in mass event mode, process normally
 		}
 
 		// We're in mass event mode - buffer the message
@@ -166,7 +168,7 @@ class MassEventAggregator {
 			return;
 		}
 
-		log.info(`MassEvent: ENDING for ${chan.name} (${state.buffer.length} buffered msgs)`);
+		log.debug(`MassEvent: ENDING for ${chan.name} (${state.buffer.length} buffered msgs)`);
 
 		// Clear timers
 		if (state.cooldownTimer) {
@@ -181,7 +183,7 @@ class MassEventAggregator {
 
 		// Generate summary
 		const summary = this.generateSummary(state);
-		log.info(`MassEvent: Summary - joins=${summary.joins} parts=${summary.parts} quits=${summary.quits}`);
+		log.debug(`MassEvent: Summary - joins=${summary.joins} parts=${summary.parts} quits=${summary.quits}`);
 
 		// Create summary message
 		const summaryMsg = new Msg({
