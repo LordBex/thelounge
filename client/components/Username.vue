@@ -17,6 +17,7 @@ import eventbus from "../js/eventbus";
 import colorClass from "../js/helpers/colorClass";
 import type {ClientChan, ClientNetwork} from "../js/types";
 import {useStore} from "../js/store";
+import { ChanState } from "../../shared/types/chan";
 
 type UsernameUser = Partial<UserInMessage> & {
 	mode?: string;
@@ -72,7 +73,11 @@ export default defineComponent({
 		const store = useStore();
 
 		// Add to autocomplete for bridged users (need to switch channel after connect if channel active on connect)
-		if (store.state.settings.beautifyBridgedMessages && props.user.shoutbox && !store.state.activeChannel?.channel.users.find(u => u.nick === props.user.nick)) {
+		if (store.state.settings.beautifyBridgedMessages
+			&& props.user.shoutbox
+			&& store.state.activeChannel?.channel.state === ChanState.JOINED
+			&& !store.state.activeChannel?.channel.users.find(u => u.nick === props.user.nick)
+		) {
 			store.state.activeChannel?.channel.users.push({
 				nick: props.user.nick!,
 				modes: [],
