@@ -24,7 +24,7 @@ export function parser (originalMessage: SharedMsg) {
 	message.from = {
 		...message.from!,
 		nick: edit.nick.replaceAll("​", ""),
-		mode: '',
+		mode: "",
 		shoutbox: true,
 		original_nick: message.from!.nick
 	};
