@@ -107,8 +107,6 @@ class MassEventAggregator {
 				this.resetCooldownTimer(state, chan, network);
 
 				return true; // Message was captured in preBuffer, now in main buffer
-			} else {
-				return false; // Not in mass event mode, process normally
 			}
 		}
 
