@@ -59,7 +59,7 @@ export const matchers: Matcher[] = [
 		name: "HUNO (Web)",
 		description: "Nicks in the format '<nick>-web'",
 		matches (nick) {
-			return nick.endsWith("-web");
+			return nick.endsWith("-web") || nick.endsWith("-web", nick.length - 2);
 		},
 		transform (message) {
 			return {
