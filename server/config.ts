@@ -71,6 +71,7 @@ type Ldap = {
 };
 
 type Debug = {
+	logs: boolean;
 	ircFramework: boolean;
 	raw: boolean;
 };

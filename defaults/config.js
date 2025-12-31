@@ -524,6 +524,10 @@ export default {
 	//
 	// All values in the `debug` object are set to `false`.
 	debug: {
+		// ### `debug.logs`
+		//
+		// When set to true, this enables extra debugging output
+		logs: false,
 		// ### `debug.ircFramework`
 		//
 		// When set to true, this enables extra debugging output provided by

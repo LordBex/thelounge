@@ -1,5 +1,6 @@
 import colors from "chalk";
 import {read} from "read";
+import Config from "./config.js";
 
 function timestamp() {
 	const datetime = new Date().toISOString().split(".")[0].replace("T", " ");
@@ -19,6 +20,7 @@ const log = {
 		console.log(timestamp(), colors.blue("[INFO]"), ...args);
 	},
 	debug(...args: string[]) {
+		if (!Config.values.debug.logs) return;
 		console.log(timestamp(), colors.green("[DEBUG]"), ...args);
 	},
 	raw(...args: string[]) {
