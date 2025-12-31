@@ -79,9 +79,3 @@ interface BeforeInstallPromptEvent extends Event {
 	 */
 	prompt(): Promise<void>;
 }
-
-export type MessageEdit = {
-	username: string;
-	content: string;
-};
-
