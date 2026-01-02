@@ -13,6 +13,7 @@ import Client from "../../client.js";
 import PublicClient from "./publicClient.js";
 import Network from "../../models/network.js";
 import Chan from "../../models/chan.js";
+import { pathToFileURL } from "url";
 
 type PackageAPI = {
 	Stylesheets: {addFile: (filename: string) => void};
@@ -192,23 +193,25 @@ async function loadPackage(packageName: string) {
 			entryPoint = packageInfo.exports;
 		} else if (packageInfo.exports && typeof packageInfo.exports === "object") {
 			// Handle exports map like { ".": "./index.js" } or { "import": "...", "require": "..." }
-			const exportsObj = packageInfo.exports as Record<string, unknown>;
+			const exportsObj = packageInfo.exports;
+
 			if (typeof exportsObj["."] === "string") {
 				entryPoint = exportsObj["."];
-			} else if (typeof exportsObj["import"] === "string") {
-				entryPoint = exportsObj["import"];
-			} else if (typeof exportsObj["require"] === "string") {
-				entryPoint = exportsObj["require"];
+			} else if (typeof exportsObj.import === "string") {
+				entryPoint = exportsObj.import;
+			} else if (typeof exportsObj.require === "string") {
+				entryPoint = exportsObj.require;
 			} else if (exportsObj["."] && typeof exportsObj["."] === "object") {
 				const dotExports = exportsObj["."] as Record<string, string>;
-				entryPoint = dotExports["import"] || dotExports["require"] || dotExports["default"] || "index.js";
+				entryPoint = dotExports.import || dotExports.require || dotExports.default || "index.js";
 			}
 		} else if (packageInfo.main) {
 			entryPoint = packageInfo.main;
 		}
 
-		const fullEntryPath = path.join(packagePath, entryPoint);
-		const imported = await import(fullEntryPath);
+		const isJSONImport = entryPoint.endsWith(".json");
+		const fullEntryPath = pathToFileURL(path.join(packagePath, entryPoint)).href;
+		const imported = isJSONImport ? await import(fullEntryPath, { with: { type: "json" } }) : await import(fullEntryPath);
 		// Handle both ESM (direct exports) and CommonJS (wrapped in .default) modules
 		packageFile = imported.default || imported;
 	} catch (e: unknown) {
