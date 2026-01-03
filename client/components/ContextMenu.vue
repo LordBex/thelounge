@@ -24,7 +24,7 @@
 			@keydown.enter.prevent="clickActiveItem"
 		>
 			<!-- TODO: type -->
-			<template v-for="(item, id) of items as any" :key="item.name">
+			<template v-for="(item, id) of (items as any)" :key="item.name">
 				<li
 					:id="`context-menu-item-${id}`"
 					:class="[
@@ -33,7 +33,7 @@
 						{active: id === activeItem},
 					]"
 					role="menuitem"
-					@mouseenter="hoverItem(id)"
+					@mouseenter="hoverItem((id as number))"
 					@click="clickItem(item)"
 				>
 					{{ item.label }}
@@ -216,7 +216,7 @@ export default defineComponent({
 		};
 
 		const openInlineChannelContextMenu = (data: {channel: string; event: MouseEvent}) => {
-			const {network} = store.state.activeChannel;
+			const {network} = store.state.activeChannel!;
 			const newItems = generateInlineChannelContextMenu(store, data.channel, network);
 
 			open(data.event, newItems);
@@ -226,7 +226,7 @@ export default defineComponent({
 			user: Pick<ClientUser, "nick" | "modes">;
 			event: MouseEvent;
 		}) => {
-			const {network, channel} = store.state.activeChannel;
+			const {network, channel} = store.state.activeChannel!;
 
 			const newItems = generateUserContextMenu(
 				store,
@@ -266,17 +266,17 @@ export default defineComponent({
 		onMounted(() => {
 			eventbus.on("escapekey", close);
 			eventbus.on("contextmenu:cancel", close);
-			eventbus.on("contextmenu:user", openUserContextMenu);
-			eventbus.on("contextmenu:channel", openChannelContextMenu);
-			eventbus.on("contextmenu:inline-channel", openInlineChannelContextMenu);
+			eventbus.on("contextmenu:user", <(...evt: unknown[]) => void>openUserContextMenu);
+			eventbus.on("contextmenu:channel", <(...evt: unknown[]) => void>openChannelContextMenu);
+			eventbus.on("contextmenu:inline-channel", <(...evt: unknown[]) => void>openInlineChannelContextMenu);
 		});
 
 		onUnmounted(() => {
 			eventbus.off("escapekey", close);
 			eventbus.off("contextmenu:cancel", close);
-			eventbus.off("contextmenu:user", openUserContextMenu);
-			eventbus.off("contextmenu:channel", openChannelContextMenu);
-			eventbus.off("contextmenu:inline-channel", openInlineChannelContextMenu);
+			eventbus.off("contextmenu:user", <(...evt: unknown[]) => void>openUserContextMenu);
+			eventbus.off("contextmenu:channel", <(...evt: unknown[]) => void>openChannelContextMenu);
+			eventbus.off("contextmenu:inline-channel", <(...evt: unknown[]) => void>openInlineChannelContextMenu);
 
 			close();
 		});

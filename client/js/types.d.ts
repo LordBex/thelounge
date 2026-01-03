@@ -79,3 +79,8 @@ interface BeforeInstallPromptEvent extends Event {
 	 */
 	prompt(): Promise<void>;
 }
+
+interface SortableEvent {
+	originalEvent: Event;
+	item: HTMLElement;
+}

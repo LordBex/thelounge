@@ -224,7 +224,7 @@ import collapseNetworkHelper from "../js/helpers/collapseNetwork";
 import isIgnoredKeybind from "../js/helpers/isIgnoredKeybind";
 import distance from "../js/helpers/distance";
 import eventbus from "../js/eventbus";
-import {ClientChan, NetChan} from "../js/types";
+import {ClientChan, NetChan, type SortableEvent} from "../js/types";
 import {useStore} from "../js/store";
 import {switchToChannel} from "../js/router";
 import Sortable from "sortablejs";
@@ -250,11 +250,6 @@ export default defineComponent({
 		const networklist = ref<HTMLDivElement | null>(null);
 
 		const sidebarWasClosed = ref(false);
-
-		interface SortableEvent {
-			originalEvent: Event;
-			item: HTMLElement;
-		}
 
 		const moveItemInArray = <T,>(array: T[], from: number, to: number) => {
 			const item = array.splice(from, 1)[0];

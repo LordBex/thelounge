@@ -1,6 +1,6 @@
 <template>
 	<span class="content">
-		<Username :user="message.from" />
+		<Username :user="message.from!" />
 		<i class="hostmask"> (<ParsedMessage :network="network" :text="message.hostmask" />)</i> has
 		left the channel
 		<i v-if="message.text" class="part-reason"

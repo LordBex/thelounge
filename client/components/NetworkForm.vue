@@ -446,6 +446,24 @@ import {ClientNetwork} from "../js/types";
 
 export type NetworkFormDefaults = Partial<ClientNetwork> & {
 	join?: string;
+	username?: string;
+	host?: string;
+	commands?: string[];
+	tls?: boolean;
+	port?: number;
+	sasl?: string;
+	password?: string;
+	hasSTSPolicy?: boolean
+	saslAccount?: string;
+	saslPassword?: string;
+	leaveMessage?: string;
+	realname?: string;
+	proxyEnabled?: boolean;
+	proxyHost?: string;
+	proxyPort?: number;
+	proxyUsername?: string;
+	proxyPassword?: string;
+	rejectUnauthorized?: boolean;
 };
 
 export default defineComponent({
@@ -498,7 +516,7 @@ export default defineComponent({
 		};
 
 		watch(
-			// eslint-disable-next-line
+
 			() => props.defaults?.commands,
 			() => {
 				void nextTick(() => {
@@ -508,7 +526,7 @@ export default defineComponent({
 		);
 
 		watch(
-			// eslint-disable-next-line
+
 			() => props.defaults?.tls,
 			(isSecureChecked) => {
 				const ports = [6667, 6697];

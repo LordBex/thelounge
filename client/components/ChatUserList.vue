@@ -42,10 +42,10 @@
 						<!-- eslint-disable vue/no-v-text-v-html-on-component -->
 						<Username
 							v-for="user in getGroupUsers(group.name)"
-							:key="user.original.nick + '-search'"
+							:key="user.original!.nick + '-search'"
 							:on-hover="hoverUser"
 							:active="user.original === activeUser"
-							:user="user.original"
+							:user="user.original!"
 							v-html="user.string"
 						/>
 						<!-- eslint-enable -->
@@ -53,10 +53,10 @@
 					<template v-else>
 						<Username
 							v-for="user in getGroupUsers(group.name)"
-							:key="user.nick"
+							:key="(user as any).nick"
 							:on-hover="hoverUser"
 							:active="user === activeUser"
-							:user="user"
+							:user="(user as UserInMessage)"
 						/>
 					</template>
 				</div>

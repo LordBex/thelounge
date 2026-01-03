@@ -177,7 +177,7 @@ export default defineComponent({
 			return MessageListBasic;
 		})
 
-		const messageList = ref<typeof MessageListType>();
+		const messageList = ref<typeof MessageListType.value>();
 		const topicInput = ref<HTMLInputElement | null>(null);
 
 		const specialComponent = computed(() => {

@@ -2,12 +2,12 @@
 	<div id="version-checker" :class="[store.state.versionStatus]">
 		<p v-if="store.state.versionStatus === 'loading'">Checking for updates…</p>
 		<p v-if="store.state.versionStatus === 'new-version'">
-			The Lounge <b>{{ store.state.versionData?.latest.version }}</b>
-			<template v-if="store.state.versionData?.latest.prerelease"> (pre-release) </template>
+			The Lounge <b>{{ store.state.versionData?.latest?.version }}</b>
+			<template v-if="store.state.versionData?.latest?.prerelease"> (pre-release) </template>
 			is now available.
 			<br />
 
-			<a :href="store.state.versionData?.latest.url" target="_blank" rel="noopener">
+			<a :href="store.state.versionData?.latest?.url" target="_blank" rel="noopener">
 				Read more on GitHub
 			</a>
 		</p>

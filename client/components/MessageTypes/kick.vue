@@ -1,8 +1,8 @@
 <template>
 	<span class="content">
-		<Username :user="message.from" />
+		<Username :user="message.from!" />
 		has kicked
-		<Username :user="message.target" />
+		<Username :user="message.target!" />
 		<i v-if="message.text" class="part-reason"
 			>&#32;(<ParsedMessage :network="network" :message="message" />)</i
 		>
