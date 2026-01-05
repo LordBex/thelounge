@@ -95,7 +95,7 @@
 							{'scroll-down-shown': !channel.scrolledToBottom},
 						]"
 						aria-label="Jump to recent messages"
-						@click="messageList?.jumpToBottom()"
+						@click="messageList.jumpToBottom"
 					>
 						<div class="scroll-down-arrow" />
 					</div>
@@ -177,7 +177,7 @@ export default defineComponent({
 			return MessageListBasic;
 		})
 
-		const messageList = ref<typeof MessageListType.value>();
+		const messageList = ref<typeof MessageListType.value>(MessageListType.value);
 		const topicInput = ref<HTMLInputElement | null>(null);
 
 		const specialComponent = computed(() => {

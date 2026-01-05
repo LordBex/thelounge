@@ -6,28 +6,35 @@ import { matchers } from "./matchers";
  * Parse message aganst `Matchers` and edit the Nick and Content based on `transform` results
  */
 export function parser (originalMessage: SharedMsg) {
-	const message = structuredClone(toRaw(originalMessage));
-	const sender = message.from?.nick?.toLowerCase();
+	const originalSender = originalMessage.from?.nick?.toLowerCase();
 
-	if (!message.text || !sender) return originalMessage;
+	if (!originalMessage.text || !originalSender) return originalMessage;
 
 	const matcher = matchers.find(m => {
-		if (m.type === "basic") return m.matches.includes(sender);
-		if (m.type === "advanced") return m.matches(sender);
+		if (m.type === "basic") return m.matches.includes(originalSender);
+		if (m.type === "advanced") return m.matches(originalSender);
 	});
 	if (!matcher) return originalMessage;
 
-	const edit = matcher.transform(message);
+	const edit = matcher.transform(originalMessage);
 	if (!edit || !edit.nick) return originalMessage;
 
+	const message = structuredClone(toRaw(originalMessage));
 	message.text = edit.content ?? message.text;
 	message.from = {
 		...message.from!,
-		nick: edit.nick.replaceAll("​", ""),
+		nick: sanitizeNick(edit.nick),
 		mode: "",
 		shoutbox: true,
-		original_nick: message.from!.nick
+		original_nick: originalSender
 	};
 
 	return message;
+}
+
+/**
+ * Helper to remove invalid chars from nick string
+ */
+function sanitizeNick (nick: string) {
+	return nick.replaceAll(/[^0-9a-z_-|]/gi, "");
 }

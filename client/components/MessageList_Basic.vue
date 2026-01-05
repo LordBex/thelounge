@@ -22,7 +22,7 @@
 				<DateMarker
 					v-if="shouldDisplayDateMarker(message, id)"
 					:key="message.id + '-date'"
-					:message="message as any"
+					:message="(message as any)"
 					:focused="message.id === focused"
 				/>
 				<div
