@@ -28,20 +28,20 @@
 			<!-- Custom groups from SPGROUPS -->
 			<template v-if="hasCustomGroups">
 				<div
-					v-for="group in sortedGroups"
-					:key="'group-' + group.name"
-					:class="['user-mode', 'custom-group', 'group-' + slugify(group.name)]"
+					v-for="(users, group) in groupedUsers"
+					:key="'group-' + group"
+					:class="['user-mode', 'custom-group', 'group-' + getGroupSlug(group)]"
 				>
 					<div
-						v-if="getGroupUsers(group.name).length > 0"
-						:class="['custom-group-header', 'group-header-' + slugify(group.name)]"
+						v-if="users.length > 0"
+						:class="['custom-group-header', 'group-header-' + getGroupSlug(group)]"
 					>
-						{{ group.name }}
+						{{ group }}
 					</div>
 					<template v-if="userSearchInput.length > 0">
 						<!-- eslint-disable vue/no-v-text-v-html-on-component -->
 						<Username
-							v-for="user in getGroupUsers(group.name)"
+							v-for="user in users"
 							:key="user.original!.nick + '-search'"
 							:on-hover="hoverUser"
 							:active="user.original === activeUser"
@@ -52,11 +52,11 @@
 					</template>
 					<template v-else>
 						<Username
-							v-for="user in getGroupUsers(group.name)"
-							:key="(user as any).nick"
+							v-for="user in users"
+							:key="user.nick"
 							:on-hover="hoverUser"
 							:active="user === activeUser"
-							:user="(user as UserInMessage)"
+							:user="user"
 						/>
 					</template>
 				</div>
@@ -165,25 +165,6 @@ export default defineComponent({
 			return store.state.settings.enhancedUserListEnabled && props.channel.groups && props.channel.groups.length > 0;
 		});
 
-		// Sort groups by position (highest first)
-		const sortedGroups = computed(() => {
-			if (!props.channel.groups) return [];
-			return [...props.channel.groups].sort((a, b) => b.position - a.position);
-		});
-
-		// Create a set of users in each group for quick lookup
-		const groupUsersMap = computed(() => {
-			const map: Record<string, Set<string>> = {};
-
-			if (props.channel.groups) {
-				for (const group of props.channel.groups) {
-					map[group.name] = new Set(group.users.map(u => u.toLowerCase()));
-				}
-			}
-
-			return map;
-		});
-
 		const filteredUsers = computed(() => {
 			if (!userSearchInput.value) {
 				return;
@@ -196,55 +177,89 @@ export default defineComponent({
 			});
 		});
 
-		// Get users for a specific group
-		const getGroupUsers = (groupName: string) => {
-			const groupUserSet = groupUsersMap.value[groupName];
+		// CSS safe group name cache
+		const groupNameSlugs = new Map<string, string>();
 
-			if (!groupUserSet) {
-				return [];
-			}
+		// Convert group to CSS-safe name
+		const slugify = (group: string) => {
+			if (groupNameSlugs.has(group)) return;
 
-			if (userSearchInput.value && filteredUsers.value) {
-				return filteredUsers.value.filter(user =>
-					groupUserSet.has(user.original.nick.toLowerCase())
-				);
-			}
+			const groupNormalized = group.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+			const groupCSSSafe = groupNormalized.replace(/^-|-$/g, "");
 
-			return props.channel.users.filter(user =>
-				groupUserSet.has(user.nick.toLowerCase())
-			);
+			return groupNameSlugs.set(group, groupCSSSafe);
 		};
 
-		// Convert group name to CSS-safe class name
-		const slugify = (name: string) => {
-			return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-		};
+		// Get CSS-safe group name
+		const getGroupSlug = (group: string) => {
+			return groupNameSlugs.get(group) ?? slugify(group);
+		}
 
-		const groupedUsers = computed(() => {
+		const customGroupedUsers = computed(() => {
 			const groups = {};
 
-			if (userSearchInput.value && filteredUsers.value) {
-				const result = filteredUsers.value;
+			if (hasCustomGroups.value) {
+				if (userSearchInput.value && filteredUsers.value) {
+					const filtered = filteredUsers.value.filter(user =>
+						user.original.nick
+					);
 
-				for (const user of result) {
-					const mode: string = user.original.modes[0] || "";
+					for (const { name, users } of props.channel.groups ?? []) {
+						groups[name] ??= [];
+						slugify(name);
 
-					if (!groups[mode]) {
-						groups[mode] = [];
+						for (const user of filtered) {
+							if (!users.includes(user.original.nick)) {
+								continue;
+							}
+
+							groups[name].push(user);
+						}
 					}
+				} else {
+					for (const { name, users } of props.channel.groups ?? []) {
+						groups[name] ??= [];
+						slugify(name);
 
-					// Prepend user mode to search result
-					user.string = mode + user.string;
+						for (const user of props.channel.users) {
+							if (!users.includes(user.nick)) {
+								continue;
+							}
 
-					groups[mode].push(user);
+							groups[name].push(user);
+						}
+					}
 				}
-			} else {
-				for (const user of props.channel.users) {
-					const mode = user.modes[0] || "";
+			}
 
-					if (!groups[mode]) {
-						groups[mode] = [user];
-					} else {
+			return groups as {
+				[group: string]: (ClientUser & {
+					original: UserInMessage;
+					string: string;
+				})[];
+			};
+		});
+
+		const standardGroupedUsers = computed(() => {
+			const groups = {};
+
+			if (!hasCustomGroups.value) {
+				if (userSearchInput.value && filteredUsers.value) {
+					const result = filteredUsers.value;
+
+					for (const user of result) {
+						const mode: string = user.original.modes[0] || "";
+						groups[mode] ??= [];
+
+						// Prepend user mode to search result
+						user.string = mode + user.string;
+						groups[mode].push(user);
+					}
+				} else {
+					for (const user of props.channel.users) {
+						const mode = user.modes[0] || "";
+
+						groups[mode] ??= [];
 						groups[mode].push(user);
 					}
 				}
@@ -256,6 +271,10 @@ export default defineComponent({
 					string: string;
 				})[];
 			};
+		});
+
+		const groupedUsers = computed(() => {
+			return hasCustomGroups.value ? customGroupedUsers.value : standardGroupedUsers.value;
 		});
 
 		const setUserSearchInput = (e: Event) => {
@@ -363,13 +382,10 @@ export default defineComponent({
 			filteredUsers,
 			groupedUsers,
 			hasCustomGroups,
-			sortedGroups,
 			userSearchInput,
 			activeUser,
 			userlist,
-
-			getGroupUsers,
-			slugify,
+			getGroupSlug,
 			setUserSearchInput,
 			getModeClass,
 			selectUser,
