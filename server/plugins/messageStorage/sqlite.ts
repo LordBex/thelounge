@@ -570,8 +570,41 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 		// Flush any pending batched writes before searching
 		await this.flushBatch();
 
+		const searchTermParts = query.searchTerm.split(" ");
+
+		let userFilter: string | null = null;
+		let dateEndFilter: number | null = null;
+		let dateStartFilter: number | null = null;
+
+		for (const part of [...searchTermParts]) {
+			if (part.startsWith("from:") && userFilter === null) {
+				userFilter = part.slice(5);
+				searchTermParts.splice(searchTermParts.indexOf(part), 1);
+			}
+
+			if (part.startsWith("datebefore:") && dateEndFilter === null) {
+				const dateStr = part.slice(11);
+				const date = new Date(dateStr);
+
+				if (!Number.isNaN(date.getTime())) {
+					dateEndFilter = date.getTime();
+					searchTermParts.splice(searchTermParts.indexOf(part), 1);
+				}
+			}
+
+			if (part.startsWith("dateafter:") && dateStartFilter === null) {
+				const dateStr = part.slice(10);
+				const date = new Date(dateStr);
+
+				if (!Number.isNaN(date.getTime())) {
+					dateStartFilter = date.getTime();
+					searchTermParts.splice(searchTermParts.indexOf(part), 1);
+				}
+			}
+		}
+
 		// Using the '@' character to escape '%' and '_' in patterns.
-		const escapedSearchTerm = query.searchTerm.replace(/([%_@])/g, "@$1");
+		const escapedSearchTerm = searchTermParts.join(" ").replace(/([%_@])/g, "@$1");
 
 		let select =
 			"SELECT id, msg, type, time, network, channel FROM messages WHERE type = 'message' AND json_extract(msg, '$.text') LIKE ? ESCAPE '@'";
@@ -585,6 +618,21 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 		if (query.channelName) {
 			select += " AND channel = ? ";
 			params.push(query.channelName.toLowerCase());
+		}
+
+		if (userFilter !== null) {
+			select += " AND LOWER(json_extract(msg, '$.from.nick')) = ? ";
+			params.push(userFilter.toLowerCase());
+		}
+
+		if (dateEndFilter !== null) {
+			select += " AND time <= ? ";
+			params.push(dateEndFilter);
+		}
+
+		if (dateStartFilter !== null) {
+			select += " AND time >= ? ";
+			params.push(dateStartFilter);
 		}
 
 		const maxResults = 100;
