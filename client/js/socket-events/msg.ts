@@ -76,7 +76,7 @@ socket.on("msg", function (data) {
 
 	let messageLimit = 0;
 
-	if (store.state.settings.enableEnhancedSearch) {
+	if (store.state.settings.searchEnabled && store.state.settings.enableEnhancedSearch) {
 		// Keep messages in memory for search/navigation - windowing (kind of) handles render performance
 		// Only trim if we have an excessive amount (>10000) to prevent memory issues
 		messageLimit = 10000;
