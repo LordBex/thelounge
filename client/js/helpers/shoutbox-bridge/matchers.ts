@@ -46,6 +46,16 @@ export const matchers: Matcher[] = [
 	},
 	{
 		type: "basic",
+		name: "DigitalCore",
+		description: "<<nick>> <message>",
+		matches: [ "endor" ],
+		regex: /^<(?<nick>[^>]+?)> (?<content>.*)/,
+		transform (message) {
+			return typedGroups(message.text!.match(this.regex));
+		}
+	},
+	{
+		type: "basic",
 		name: "HUNO (Discord)",
 		description: "»<nick> (<rank>)« <message> | »<nick>« <message>",
 		matches: [ "mellos" ],
