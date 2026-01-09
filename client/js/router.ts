@@ -148,8 +148,15 @@ router.afterEach((to) => {
 			channel.firstUnread = channel.messages[channel.messages.length - 1].id;
 		}
 
-		// Note: We no longer truncate messages here - messages are kept in memory
-		// for search/navigation purposes and windowed for rendering performance
+		if (store.state.settings.searchEnabled && store.state.settings.enableEnhancedSearch) {
+			// If  Enhanced Search is enabled dont truncate messages
+			// keep messages in memory for search/navigation purposes
+		} else {
+			if (channel.messages?.length > 100) {
+				channel.messages.splice(0, channel.messages.length - 100);
+				channel.moreHistoryAvailable = true;
+			}
+		}
 	}
 });
 

@@ -176,7 +176,8 @@ const defaultConfig = {
 		default: true,
 	},
 	enableEnhancedSearch: {
-		default: true,
+		// disable by default for performance reasons
+		default: false,
 	},
 };
 
