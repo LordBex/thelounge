@@ -578,7 +578,7 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 
 		for (const part of [...searchTermParts]) {
 			if (part.startsWith("from:") && userFilter === null) {
-				userFilter = part.slice(5).toLowerCase();
+				userFilter = part.slice(5);
 				searchTermParts.splice(searchTermParts.indexOf(part), 1);
 			}
 
