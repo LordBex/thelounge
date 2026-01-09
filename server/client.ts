@@ -586,8 +586,12 @@ class Client {
 		let messages: Msg[] = [];
 		let index = 0;
 
-		// Use larger batch size for "more" requests - send up to 1000 messages at a time
-		const batchSize = 1000;
+		const enhancedSearch = Boolean(this.config.clientSettings.searchEnabled && this.config.clientSettings.enableEnhancedSearch)
+
+		// Use batch sizes for "more" requests, batch sizes are based on enableEnhancedSearch setting
+		// When enableEnhancedSearch = true send upto 10000 messages at a time
+		const batchSize = enhancedSearch ? 1000 : 100;
+		const maxBatchSize =  enhancedSearch ? 10000 : 1000;
 
 		// If client requests -1, send last batch of messages
 		if (data.lastId < 0) {
@@ -601,8 +605,8 @@ class Client {
 			let startIndex = index;
 
 			if (data.condensed) {
-				// Limit to 10000 messages when condensed
-				const indexToStop = Math.max(0, index - 10000);
+				// Limit to maxBatchSize messages when condensed
+				const indexToStop = Math.max(0, index - maxBatchSize);
 				let realMessagesLeft = batchSize;
 
 				for (let i = index - 1; i >= indexToStop; i--) {
