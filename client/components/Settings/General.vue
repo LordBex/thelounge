@@ -50,6 +50,23 @@
 				Enable enhanced search with 'Jump to message'
 			</label>
 		</div>
+		<div v-if="store.state.settings.searchEnabled">
+			<h2>Input</h2>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.enableRainbowHotkey"
+					type="checkbox"
+					name="enableRainbowHotkey"
+				/>
+				Enable rainbow messages with 'Ctrl+R' hotkey
+				<span
+					class="tooltipped tooltipped-n tooltipped-no-delay"
+					aria-label="You can still use rainbow text with '/rainbow' or '/rgb'"
+				>
+					<button class="extra-help" />
+				</span>
+			</label>
+		</div>
 		<div v-if="!store.state.serverConfiguration?.public">
 			<h2>Settings synchronisation</h2>
 			<label class="opt">

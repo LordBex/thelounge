@@ -88,7 +88,7 @@ const bracketWraps = {
 	"*": "*",
 	"`": "`",
 	"~": "~",
-	_: "_",
+	"_": "_",
 };
 
 export default defineComponent({
@@ -256,7 +256,14 @@ export default defineComponent({
 
 			const inputTrap = Mousetrap(input.value);
 
-			inputTrap.bind(Object.keys(formattingHotkeys), function (e, key) {
+			let enabledHotkeys = Object.keys(formattingHotkeys);
+
+			// Allow disable /rainbow hotkey
+			if (store.state.settings.enableRainbowHotkey === false) {
+				enabledHotkeys = enabledHotkeys.filter(k => k !== "mod+r");
+			}
+
+			inputTrap.bind(enabledHotkeys, function (e, key) {
 				const modifier = formattingHotkeys[key];
 
 				if (!e.target) {
@@ -265,12 +272,14 @@ export default defineComponent({
 
 				// eslint-disable-next-line eqeqeq
 				if (modifier === '/rainbow' && input.value != null) {
-					if (input.value.value.startsWith(modifier)) return false
+					if (input.value.value.startsWith(modifier)) {
+						return false;
+					}
 
 					input.value.value = `${modifier} ${input.value.value}`;
-					setPendingMessage(e)
+					setPendingMessage(e);
 
-					return false
+					return false;
 				}
 
 				wrapCursor(

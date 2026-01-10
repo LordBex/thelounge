@@ -179,6 +179,9 @@ const defaultConfig = {
 		// disable by default for performance reasons
 		default: false,
 	},
+	enableRainbowHotkey: {
+		default: true,
+	}
 };
 
 export const config = normalizeConfig(defaultConfig);
