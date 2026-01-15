@@ -114,6 +114,7 @@ import type {ClientChan, ClientMessage, ClientNetwork} from "../js/types";
 import {useStore} from "../js/store";
 import { MessageType } from "../../shared/types/msg";
 import { parser as shoutboxParser } from "../js/helpers/shoutbox-bridge/parser";
+import { ChanType } from "../../shared/types/chan";
 
 MessageTypes.ParsedMessage = ParsedMessage;
 MessageTypes.LinkPreview = LinkPreview;
@@ -167,7 +168,9 @@ export default defineComponent({
 
 		// IRC Bridge formatter
 		const prettyMessage = computed(() => {
-			if (!store.state.settings.beautifyBridgedMessages || props.message.type !== MessageType.MESSAGE) return props.message;
+			if (props.channel?.type !== ChanType.CHANNEL || !store.state.settings.beautifyBridgedMessages || props.message.type !== MessageType.MESSAGE) {
+				return props.message;
+			}
 
 			return shoutboxParser(props.message);
 		});
