@@ -307,7 +307,7 @@ class Chan {
 					return;
 				}
 
-				this.messages.unshift(...messages);
+				this.messages = messages.concat(this.messages);
 
 				if (!this.firstUnread) {
 					this.firstUnread = messages[messages.length - 1].id;
