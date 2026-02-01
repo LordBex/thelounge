@@ -756,10 +756,7 @@ export default defineComponent({
 				data[key] = value;
 			});
 
-			// Attach FiSH keys mapping directly as an object
-			(data as any).fishKeys = fishKeysValue.value;
-
-			props.handleSubmit(data as ClientNetwork);
+			props.handleSubmit({...data, fishKeys: fishKeysValue.value} as ClientNetwork);
 		};
 
 		return {
