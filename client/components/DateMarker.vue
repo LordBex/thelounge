@@ -1,6 +1,7 @@
 <template>
 	<div :aria-label="localeDate" class="date-marker-container tooltipped tooltipped-s">
 		<div class="date-marker">
+			;
 			<span :aria-label="friendlyDate()" class="date-marker-text" />
 		</div>
 	</div>
@@ -22,7 +23,7 @@ export default defineComponent({
 			type: Object as PropType<ClientMessage>,
 			required: true,
 		},
-		focused: Boolean,
+		isFocused: Boolean,
 	},
 	setup(props) {
 		const localeDate = computed(() => dayjs(props.message.time).format("D MMMM YYYY"));

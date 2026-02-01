@@ -11,6 +11,7 @@ export const condensedTypes = new Set([
 	"chghost",
 	"join",
 	"kick",
+	"mass_event",
 	"mode",
 	"nick",
 	"part",

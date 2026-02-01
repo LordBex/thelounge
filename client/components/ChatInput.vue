@@ -1,7 +1,7 @@
 <template>
 	<form id="form" method="post" action="" @submit.prevent="onSubmit">
 		<span id="upload-progressbar" />
-		<span id="nick">{{ network.nick }}</span>
+		<span v-if="store.state.settings.showInputNick" id="nick">{{ network.nick }}</span>
 		<textarea
 			id="input"
 			ref="input"
@@ -73,6 +73,7 @@ const formattingHotkeys = {
 	"mod+o": "\x0F",
 	"mod+s": "\x1e",
 	"mod+m": "\x11",
+	"mod+r": "/rainbow",
 };
 
 // Autocomplete bracket and quote characters like in a modern IDE
@@ -212,7 +213,15 @@ export default defineComponent({
 			input.value?.blur();
 		};
 
-		const onBlur = () => {
+		const onBlur = (e: FocusEvent) => {
+			// Don't hide autocomplete if clicking on the autocomplete menu itself
+			// The click event needs to complete before we hide the menu
+			const eventTarget = e.target as HTMLElement;
+
+			if (eventTarget.id === "input" && eventTarget.classList.contains("mousetrap")) {
+				return;
+			}
+
 			if (autocompletionRef.value) {
 				autocompletionRef.value.hide();
 			}
@@ -247,11 +256,30 @@ export default defineComponent({
 
 			const inputTrap = Mousetrap(input.value);
 
-			inputTrap.bind(Object.keys(formattingHotkeys), function (e, key) {
+			let enabledHotkeys = Object.keys(formattingHotkeys);
+
+			// Allow disable /rainbow hotkey
+			if (store.state.settings.enableRainbowHotkey === false) {
+				enabledHotkeys = enabledHotkeys.filter((k) => k !== "mod+r");
+			}
+
+			inputTrap.bind(enabledHotkeys, function (e, key) {
 				const modifier = formattingHotkeys[key];
 
 				if (!e.target) {
 					return;
+				}
+
+				// eslint-disable-next-line eqeqeq
+				if (modifier === "/rainbow" && input.value != null) {
+					if (input.value.value.startsWith(modifier)) {
+						return false;
+					}
+
+					input.value.value = `${modifier} ${input.value.value}`;
+					setPendingMessage(e);
+
+					return false;
 				}
 
 				wrapCursor(

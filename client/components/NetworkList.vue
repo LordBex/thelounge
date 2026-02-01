@@ -8,7 +8,7 @@
 		You are not connected to any networks yet.
 	</div>
 	<div v-else ref="networklist" role="navigation" aria-label="Network and Channel list">
-		<div class="jump-to-input">
+		<div v-if="store.state.settings.jumptoEabled" class="jump-to-input">
 			<input
 				ref="searchInput"
 				:value="searchText"
@@ -124,7 +124,7 @@
 					>
 						<template v-slot:item="{element: channel, index}">
 							<Channel
-								v-if="index > 0"
+								v-if="index > 0 && channel.type !== 'query'"
 								:key="channel.id"
 								:data-item="channel.id"
 								:channel="channel"
@@ -136,6 +136,11 @@
 							/>
 						</template>
 					</Draggable>
+
+					<DirectMessageSection
+						:network="network"
+						:queries="network.channels.filter((c) => c.type === 'query')"
+					/>
 				</div>
 			</template>
 		</Draggable>
@@ -153,18 +158,18 @@
 	width: 100%;
 	border: 0;
 	color: #fff;
-	background-color: rgba(255, 255, 255, 0.1);
+	background-color: rgb(255 255 255 / 10%);
 	padding-right: 35px;
 	appearance: none;
 }
 
 .jump-to-input .input::placeholder {
-	color: rgba(255, 255, 255, 0.35);
+	color: rgb(255 255 255 / 35%);
 }
 
 .jump-to-input::before {
 	content: "\f002"; /* http://fontawesome.io/icon/search/ */
-	color: rgba(255, 255, 255, 0.35);
+	color: rgb(255 255 255 / 35%);
 	position: absolute;
 	right: 8px;
 	top: 0;
@@ -212,13 +217,14 @@ import {filter as fuzzyFilter} from "fuzzy";
 import NetworkLobby from "./NetworkLobby.vue";
 import Channel from "./Channel.vue";
 import JoinChannel from "./JoinChannel.vue";
+import DirectMessageSection from "./DirectMessageSection.vue";
 
 import socket from "../js/socket";
 import collapseNetworkHelper from "../js/helpers/collapseNetwork";
 import isIgnoredKeybind from "../js/helpers/isIgnoredKeybind";
 import distance from "../js/helpers/distance";
 import eventbus from "../js/eventbus";
-import {ClientChan, NetChan} from "../js/types";
+import {ClientChan, NetChan, type SortableEvent} from "../js/types";
 import {useStore} from "../js/store";
 import {switchToChannel} from "../js/router";
 import Sortable from "sortablejs";
@@ -230,6 +236,7 @@ export default defineComponent({
 		NetworkLobby,
 		Channel,
 		Draggable,
+		DirectMessageSection,
 	},
 	setup() {
 		const store = useStore();
@@ -244,7 +251,7 @@ export default defineComponent({
 
 		const sidebarWasClosed = ref(false);
 
-		const moveItemInArray = <T>(array: T[], from: number, to: number) => {
+		const moveItemInArray = <T,>(array: T[], from: number, to: number) => {
 			const item = array.splice(from, 1)[0];
 			array.splice(to, 0, item);
 		};
@@ -346,17 +353,18 @@ export default defineComponent({
 			});
 		};
 
-		const isTouchEvent = (event: any): boolean => {
+		const isTouchEvent = (event: Event): boolean => {
 			// This is the same way Sortable.js detects a touch event. See
 			// SortableJS/Sortable@daaefeda:/src/Sortable.js#L465
 
 			return !!(
-				(event.touches && event.touches[0]) ||
-				(event.pointerType && event.pointerType === "touch")
+				((event as TouchEvent).touches && (event as TouchEvent).touches[0]) ||
+				((event as PointerEvent).pointerType &&
+					(event as PointerEvent).pointerType === "touch")
 			);
 		};
 
-		const onDraggableChoose = (event: any) => {
+		const onDraggableChoose = (event: SortableEvent) => {
 			const original = event.originalEvent;
 
 			if (isTouchEvent(original)) {
@@ -374,7 +382,7 @@ export default defineComponent({
 			}
 		};
 
-		const onDraggableUnchoose = (event: any) => {
+		const onDraggableUnchoose = (event: SortableEvent) => {
 			event.item.classList.remove("ui-sortable-dragging-touch-cue");
 			startDrag.value = null;
 		};
@@ -542,9 +550,6 @@ export default defineComponent({
 			Mousetrap.unbind("alt+shift+left");
 			Mousetrap.unbind("alt+j");
 		});
-
-		const networkContainerRef = ref<HTMLDivElement>();
-		const channelRefs = ref<{[key: string]: HTMLDivElement}>({});
 
 		return {
 			store,

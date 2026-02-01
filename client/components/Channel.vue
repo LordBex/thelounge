@@ -3,11 +3,14 @@
 	<ChannelWrapper ref="wrapper" v-bind="$props">
 		<span class="name">{{ channel.name }}</span>
 		<span
-			v-if="channel.unread"
+			v-if="
+				channel.unread &&
+				(store.state.settings.disableMutedUnread !== true || !channel.muted)
+			"
 			:class="{highlight: channel.highlight && !channel.muted}"
 			class="badge"
-			>{{ unreadCount }}</span
-		>
+			>{{ unreadCount }}
+		</span>
 		<template v-if="channel.type === 'channel'">
 			<span
 				v-if="channel.state === 0"
@@ -34,6 +37,7 @@ import roundBadgeNumber from "../js/helpers/roundBadgeNumber";
 import useCloseChannel from "../js/hooks/use-close-channel";
 import {ClientChan, ClientNetwork} from "../js/types";
 import ChannelWrapper from "./ChannelWrapper.vue";
+import {useStore} from "../js/store";
 
 export default defineComponent({
 	name: "Channel",
@@ -53,10 +57,12 @@ export default defineComponent({
 		isFiltering: Boolean,
 	},
 	setup(props) {
+		const store = useStore();
 		const unreadCount = computed(() => roundBadgeNumber(props.channel.unread));
 		const close = useCloseChannel(props.channel);
 
 		return {
+			store,
 			unreadCount,
 			close,
 		};

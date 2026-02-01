@@ -50,7 +50,7 @@
 								target="_blank"
 								rel="noopener"
 								>between
-								<code>{{ store.state.serverConfiguration?.version }}</code> and
+								<code>{{ store.state.serverConfiguration?.version }} </code> and
 								<code>{{ store.state.serverConfiguration?.gitCommit }}</code></a
 							>
 							to see your local changes
@@ -853,7 +853,7 @@
 </template>
 
 <script lang="ts">
-import {defineComponent, ref} from "vue";
+import {defineComponent} from "vue";
 import {useStore} from "../../js/store";
 import SidebarToggle from "../SidebarToggle.vue";
 import VersionChecker from "../VersionChecker.vue";

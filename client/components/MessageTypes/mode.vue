@@ -1,6 +1,6 @@
 <template>
 	<span class="content">
-		<Username :user="message.from" />
+		<Username :user="message.from!" />
 		sets mode
 		<ParsedMessage :message="message" />
 	</span>

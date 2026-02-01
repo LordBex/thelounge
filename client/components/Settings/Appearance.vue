@@ -27,6 +27,60 @@
 				Use 12-hour timestamps
 			</label>
 		</div>
+		<div>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.beautifyBridgedMessages"
+					type="checkbox"
+					name="beautifyBridgedMessages"
+				/>
+				Beautify supported bridged shoutbox messages
+			</label>
+			<div role="group" style="padding-left: 1.5rem">
+				<label class="opt">
+					<input
+						:disabled="!store.state.settings.beautifyBridgedMessages || undefined"
+						:checked="store.state.settings.bridgedMessageNicksStyle === 'parentheses'"
+						type="radio"
+						name="bridgedMessageNicksStyle"
+						value="parentheses"
+					/>
+					Show bridged nicknames in parentheses
+					<span
+						class="tooltipped tooltipped-n tooltipped-no-delay"
+						aria-label="example: (nick)"
+					>
+						<button class="extra-help" />
+					</span>
+				</label>
+				<label class="opt">
+					<input
+						:disabled="!store.state.settings.beautifyBridgedMessages || undefined"
+						:checked="store.state.settings.bridgedMessageNicksStyle === 'normal'"
+						type="radio"
+						name="bridgedMessageNicksStyle"
+						value="normal"
+					/>
+					Show bridged nicknames like a normal user
+					<span
+						class="tooltipped tooltipped-n tooltipped-no-delay"
+						aria-label="example: nick"
+					>
+						<button class="extra-help" />
+					</span>
+				</label>
+			</div>
+		</div>
+		<div>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.disableMutedUnread"
+					type="checkbox"
+					name="disableMutedUnread"
+				/>
+				Don't show unread badges on muted channels
+			</label>
+		</div>
 		<template v-if="store.state.serverConfiguration?.prefetch">
 			<h2>Link previews</h2>
 			<div>
@@ -78,6 +132,65 @@
 					value="hidden"
 				/>
 				Hide all status messages
+			</label>
+		</div>
+		<h2>Layout</h2>
+		<div>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.enhancedUserListEnabled"
+					type="checkbox"
+					name="enhancedUserListEnabled"
+				/>
+				Use enhanced user list when available
+			</label>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.enhancedContextMenuEnabled"
+					type="checkbox"
+					name="enhancedContextMenuEnabled"
+				/>
+				Use enhanced context menu
+			</label>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.showInputNick"
+					type="checkbox"
+					name="showInputNick"
+				/>
+				Show current nick in the input box
+			</label>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.jumptoEabled"
+					type="checkbox"
+					name="jumptoEabled"
+				/>
+				Enable "Jump to" in sidebar
+			</label>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.filterdmsEnabled"
+					type="checkbox"
+					name="filterdmsEnabled"
+				/>
+				Enable "Filter DMs" in DM section
+			</label>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.showAllDMs"
+					type="checkbox"
+					name="showAllDMs"
+				/>
+				Always show all DM channels in sidebar
+			</label>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.compactSidebar"
+					type="checkbox"
+					name="compactSidebar"
+				/>
+				Use compact sidebar on Desktop
 			</label>
 		</div>
 		<h2>Visual Aids</h2>
@@ -170,7 +283,6 @@ export default defineComponent({
 	name: "AppearanceSettings",
 	setup() {
 		const store = useStore();
-
 		return {
 			store,
 		};

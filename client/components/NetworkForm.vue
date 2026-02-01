@@ -547,7 +547,7 @@ the server tab on new connection"
 	opacity: 0.5;
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
 	.fish-key-inputs {
 		flex-direction: column;
 		gap: 5px;
@@ -568,12 +568,30 @@ the server tab on new connection"
 <script lang="ts">
 import RevealPassword from "./RevealPassword.vue";
 import SidebarToggle from "./SidebarToggle.vue";
-import {defineComponent, nextTick, PropType, ref, watch, computed, reactive} from "vue";
+import {defineComponent, nextTick, PropType, ref, watch, computed} from "vue";
 import {useStore} from "../js/store";
 import {ClientNetwork} from "../js/types";
 
 export type NetworkFormDefaults = Partial<ClientNetwork> & {
 	join?: string;
+	username?: string;
+	host?: string;
+	commands?: string[];
+	tls?: boolean;
+	port?: number;
+	sasl?: string;
+	password?: string;
+	hasSTSPolicy?: boolean;
+	saslAccount?: string;
+	saslPassword?: string;
+	leaveMessage?: string;
+	realname?: string;
+	proxyEnabled?: boolean;
+	proxyHost?: string;
+	proxyPort?: number;
+	proxyUsername?: string;
+	proxyPassword?: string;
+	rejectUnauthorized?: boolean;
 	fishGlobalKey?: string;
 	fishKeys?: Record<string, string>;
 };
@@ -628,7 +646,6 @@ export default defineComponent({
 		};
 
 		watch(
-			// eslint-disable-next-line
 			() => props.defaults?.commands,
 			() => {
 				void nextTick(() => {
@@ -638,7 +655,6 @@ export default defineComponent({
 		);
 
 		watch(
-			// eslint-disable-next-line
 			() => props.defaults?.tls,
 			(isSecureChecked) => {
 				const ports = [6667, 6697];

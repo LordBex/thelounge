@@ -1,28 +1,15 @@
-import type {Database} from "sqlite3";
+import Database from "better-sqlite3";
 
-import log from "../../log";
+import log from "../../log.js";
 import path from "path";
 import fs from "fs/promises";
-import Config from "../../config";
-import Msg, {Message} from "../../models/msg";
-import Chan, {Channel} from "../../models/chan";
-import Helper from "../../helper";
-import type {SearchableMessageStorage, DeletionRequest} from "./types";
-import Network from "../../models/network";
-import {SearchQuery, SearchResponse} from "../../../shared/types/storage";
-
-// TODO; type
-let sqlite3: any;
-
-try {
-	sqlite3 = require("sqlite3");
-} catch (e: any) {
-	Config.values.messageStorage = Config.values.messageStorage.filter((item) => item !== "sqlite");
-
-	log.error(
-		"Unable to load sqlite3 module. See https://github.com/mapbox/node-sqlite3/wiki/Binaries"
-	);
-}
+import Config from "../../config.js";
+import Msg, {Message} from "../../models/msg.js";
+import Chan, {Channel} from "../../models/chan.js";
+import Helper from "../../helper.js";
+import type {SearchableMessageStorage, DeletionRequest} from "./types.js";
+import Network from "../../models/network.js";
+import {SearchQuery, SearchResponse} from "../../../shared/types/storage.js";
 
 type Migration = {version: number; stmts: string[]};
 type Rollback = {version: number; rollback_forbidden?: boolean; stmts: string[]};
@@ -34,16 +21,16 @@ const schema = [
 	"CREATE TABLE options (name TEXT, value TEXT, CONSTRAINT name_unique UNIQUE (name))",
 	"CREATE TABLE messages (id INTEGER PRIMARY KEY AUTOINCREMENT, network TEXT, channel TEXT, time INTEGER, type TEXT, msg TEXT)",
 	`CREATE TABLE migrations (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		version INTEGER NOT NULL UNIQUE,
-		rollback_forbidden INTEGER DEFAULT 0 NOT NULL
-	)`,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        version INTEGER NOT NULL UNIQUE,
+        rollback_forbidden INTEGER DEFAULT 0 NOT NULL
+    )`,
 	`CREATE TABLE rollback_steps (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		migration_id INTEGER NOT NULL REFERENCES migrations ON DELETE CASCADE,
-		step INTEGER NOT NULL,
-		statement TEXT NOT NULL
-	)`,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        migration_id INTEGER NOT NULL REFERENCES migrations ON DELETE CASCADE,
+        step INTEGER NOT NULL,
+        statement TEXT NOT NULL
+    )`,
 	"CREATE INDEX network_channel ON messages (network, channel)",
 	"CREATE INDEX time ON messages (time)",
 	"CREATE INDEX msg_type_idx on messages (type)", // needed for efficient storageCleaner queries
@@ -68,16 +55,16 @@ export const migrations: Migration[] = [
 		version: 1679743888000,
 		stmts: [
 			`CREATE TABLE IF NOT EXISTS migrations (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				version INTEGER NOT NULL UNIQUE,
-				rollback_forbidden INTEGER DEFAULT 0 NOT NULL
-			)`,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                version INTEGER NOT NULL UNIQUE,
+                rollback_forbidden INTEGER DEFAULT 0 NOT NULL
+            )`,
 			`CREATE TABLE IF NOT EXISTS rollback_steps (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				migration_id INTEGER NOT NULL REFERENCES migrations ON DELETE CASCADE,
-				step INTEGER NOT NULL,
-				statement TEXT NOT NULL
-			)`,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                migration_id INTEGER NOT NULL REFERENCES migrations ON DELETE CASCADE,
+                step INTEGER NOT NULL,
+                statement TEXT NOT NULL
+            )`,
 		],
 	},
 	{
@@ -114,11 +101,26 @@ class Deferred {
 	}
 }
 
+type BatchedMessage = {
+	network: string;
+	channel: string;
+	time: number;
+	type: string;
+	msg: string;
+};
+
 class SqliteMessageStorage implements SearchableMessageStorage {
 	isEnabled: boolean;
-	database!: Database;
+	database!: Database.Database;
 	initDone: Deferred;
 	userName: string;
+
+	// Message batching for improved write performance
+	private batchQueue: BatchedMessage[] = [];
+	private batchSize = 50; // Flush after 50 messages
+	private batchTimeout = 1000; // Flush after 1 second
+	private batchTimer: NodeJS.Timeout | null = null;
+	private insertStmt: Database.Statement | null = null;
 
 	constructor(userName: string) {
 		this.userName = userName;
@@ -127,11 +129,15 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 	}
 
 	async _enable(connection_string: string) {
-		this.database = new sqlite3.Database(connection_string);
-
 		try {
+			this.database = new Database(connection_string);
 			await this.run_pragmas(); // must be done outside of a transaction
 			await this.run_migrations();
+
+			// Prepare insert statement for batching
+			this.insertStmt = this.database.prepare(
+				"INSERT INTO messages(network, channel, time, type, msg) VALUES(?, ?, ?, ?, ?)"
+			);
 		} catch (e) {
 			this.isEnabled = false;
 			throw Helper.catch_to_error("Migration failed", e);
@@ -187,7 +193,10 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 			return 0;
 		}
 
-		const storedSchemaVersion = parseInt(version.value, 10);
+		const storedSchemaVersion = parseInt(
+			(version as Record<string, unknown>).value as string,
+			10
+		);
 		return storedSchemaVersion;
 	}
 
@@ -220,7 +229,9 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 		const version = await this.current_version();
 
 		if (version > currentSchemaVersion) {
-			throw `sqlite messages schema version is higher than expected (${version} > ${currentSchemaVersion}). Is The Lounge out of date?`;
+			throw new Error(
+				`sqlite messages schema version is higher than expected (${version} > ${currentSchemaVersion}). Is NexusIRC out of date?`
+			);
 		} else if (version === currentSchemaVersion) {
 			return; // nothing to do
 		}
@@ -254,27 +265,81 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 			return;
 		}
 
+		// Flush any pending batched messages
+		await this.flushBatch();
+
+		// Clear batch timer
+		if (this.batchTimer) {
+			clearTimeout(this.batchTimer);
+			this.batchTimer = null;
+		}
+
 		this.isEnabled = false;
 
-		return new Promise<void>((resolve, reject) => {
-			this.database.close((err) => {
-				if (err) {
-					reject(`Failed to close sqlite database: ${err.message}`);
-					return;
-				}
+		try {
+			this.database.close();
+		} catch (err: unknown) {
+			throw new Error(
+				`Failed to close sqlite database: ${err instanceof Error ? err.message : String(err)}`
+			);
+		}
+	}
 
-				resolve();
+	/**
+	 * Flush batched messages to database using a transaction
+	 */
+	private async flushBatch(): Promise<void> {
+		if (this.batchQueue.length === 0) {
+			return Promise.resolve();
+		}
+
+		if (!this.insertStmt) {
+			log.error("Cannot flush batch: insert statement not prepared");
+			return Promise.resolve();
+		}
+
+		const messages = this.batchQueue.splice(0); // Take all messages and clear queue
+
+		try {
+			// Use transaction for batch insert (much faster than individual inserts)
+			const transaction = this.database.transaction((msgs: BatchedMessage[]) => {
+				for (const msg of msgs) {
+					this.insertStmt!.run(msg.network, msg.channel, msg.time, msg.type, msg.msg);
+				}
 			});
-		});
+
+			transaction(messages);
+		} catch (err) {
+			log.error(
+				`Failed to flush message batch: ${err instanceof Error ? err.message : String(err)}`
+			);
+			// Re-add messages to queue on failure
+			this.batchQueue.unshift(...messages);
+			throw err;
+		}
+	}
+
+	/**
+	 * Schedule a batch flush
+	 */
+	private scheduleBatchFlush(): void {
+		if (this.batchTimer) {
+			return; // Timer already scheduled
+		}
+
+		this.batchTimer = setTimeout(() => {
+			this.batchTimer = null;
+			this.flushBatch().catch((err) => log.error(`Batch flush error: ${err}`));
+		}, this.batchTimeout);
 	}
 
 	async fetch_rollbacks(since_version: number) {
 		const res = await this.serialize_fetchall(
 			`select version, rollback_forbidden, statement
-			from rollback_steps
-			join migrations on migrations.id=rollback_steps.migration_id
-			where version > ?
-			order by version desc, step asc`,
+            from rollback_steps
+            join migrations on migrations.id=rollback_steps.migration_id
+            where version > ?
+            order by version desc, step asc`,
 			since_version
 		);
 		const result: Rollback[] = [];
@@ -284,14 +349,16 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 		for (const raw of res) {
 			const last = result.at(-1);
 
-			if (!last || raw.version !== last.version) {
+			const r = raw as Record<string, unknown>;
+
+			if (!last || r.version !== last.version) {
 				result.push({
-					version: raw.version,
-					rollback_forbidden: Boolean(raw.rollback_forbidden),
-					stmts: [raw.statement],
+					version: r.version as number,
+					rollback_forbidden: Boolean(r.rollback_forbidden),
+					stmts: [r.statement as string],
 				});
 			} else {
-				last.stmts.push(raw.statement);
+				last.stmts.push(r.statement as string);
 			}
 		}
 
@@ -358,9 +425,9 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 		for (const rollback of missing) {
 			const migration = await this.serialize_get(
 				`insert into migrations
-				(version, rollback_forbidden)
-				values (?, ?)
-				returning id`,
+                (version, rollback_forbidden)
+                values (?, ?)
+                returning id`,
 				rollback.version,
 				rollback.rollback_forbidden || 0
 			);
@@ -369,9 +436,9 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 				let step = 0;
 				await this.serialize_run(
 					`insert into rollback_steps
-					(migration_id, step, statement)
-					values (?, ?, ?)`,
-					migration.id,
+                    (migration_id, step, statement)
+                    values (?, ?, ?)`,
+					(migration as Record<string, unknown>).id,
 					step,
 					stmt
 				);
@@ -388,25 +455,32 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 		}
 
 		const clonedMsg = Object.keys(msg).reduce((newMsg, prop) => {
-			// id is regenerated when messages are retrieved
 			// previews are not stored because storage is cleared on lounge restart
 			// type and time are stored in a separate column
-			if (prop !== "id" && prop !== "previews" && prop !== "type" && prop !== "time") {
+			// id IS now stored so it can be retrieved consistently
+			if (prop !== "previews" && prop !== "type" && prop !== "time") {
 				newMsg[prop] = msg[prop];
 			}
 
 			return newMsg;
 		}, {});
 
-		await this.serialize_run(
-			"INSERT INTO messages(network, channel, time, type, msg) VALUES(?, ?, ?, ?, ?)",
+		// Add to batch queue instead of immediate insert
+		this.batchQueue.push({
+			network: network.uuid,
+			channel: channel.name.toLowerCase(),
+			time: msg.time.getTime(),
+			type: msg.type,
+			msg: JSON.stringify(clonedMsg),
+		});
 
-			network.uuid,
-			channel.name.toLowerCase(),
-			msg.time.getTime(),
-			msg.type,
-			JSON.stringify(clonedMsg)
-		);
+		// Flush batch if it reaches the size limit
+		if (this.batchQueue.length >= this.batchSize) {
+			await this.flushBatch();
+		} else {
+			// Schedule flush after timeout
+			this.scheduleBatchFlush();
+		}
 	}
 
 	async deleteChannel(network: Network, channel: Channel) {
@@ -434,26 +508,53 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 			return [];
 		}
 
+		// Flush any pending batched writes before reading
+		await this.flushBatch();
+
 		// If unlimited history is specified, load 100k messages
 		const limit = Config.values.maxHistory < 0 ? 100000 : Config.values.maxHistory;
 
+		// Select id from SQLite to use as the canonical message ID
 		const rows = await this.serialize_fetchall(
-			"SELECT msg, type, time FROM messages WHERE network = ? AND channel = ? ORDER BY time DESC LIMIT ?",
+			"SELECT id, msg, type, time FROM messages WHERE network = ? AND channel = ? ORDER BY time DESC LIMIT ?",
 			network.uuid,
 			channel.name.toLowerCase(),
 			limit
 		);
 
-		return rows.reverse().map((row: any): Message => {
-			const msg = JSON.parse(row.msg);
-			msg.time = row.time;
-			msg.type = row.type;
+		// Track max ID so we can update client.idMsg
+		let maxId = 0;
+
+		const messages = rows.reverse().map((row): Message => {
+			const r = row as Record<string, unknown>;
+			const msg = JSON.parse(r.msg as string);
+			msg.time = r.time;
+			msg.type = r.type;
 
 			const newMsg = new Msg(msg);
-			newMsg.id = nextID();
+
+			// Use ID from stored JSON if available (new messages)
+			// Fall back to SQLite row ID for old messages without stored ID
+			if (typeof msg.id === "number") {
+				newMsg.id = msg.id;
+			} else {
+				newMsg.id = r.id as number;
+			}
+
+			if (newMsg.id > maxId) {
+				maxId = newMsg.id;
+			}
 
 			return newMsg;
 		});
+
+		// Ensure client.idMsg is higher than any loaded message ID
+		// by calling nextID until it surpasses maxId
+		while (nextID() <= maxId) {
+			// Keep incrementing until we're past the max
+		}
+
+		return messages;
 	}
 
 	async search(query: SearchQuery): Promise<SearchResponse> {
@@ -466,12 +567,48 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 			);
 		}
 
+		// Flush any pending batched writes before searching
+		await this.flushBatch();
+
+		const searchTermParts = query.searchTerm.split(" ");
+
+		let userFilter: string | null = null;
+		let dateEndFilter: number | null = null;
+		let dateStartFilter: number | null = null;
+
+		for (const part of [...searchTermParts]) {
+			if (part.startsWith("from:") && userFilter === null) {
+				userFilter = part.slice(5);
+				searchTermParts.splice(searchTermParts.indexOf(part), 1);
+			}
+
+			if (part.startsWith("datebefore:") && dateEndFilter === null) {
+				const dateStr = part.slice(11);
+				const date = new Date(dateStr);
+
+				if (!Number.isNaN(date.getTime())) {
+					dateEndFilter = date.getTime();
+					searchTermParts.splice(searchTermParts.indexOf(part), 1);
+				}
+			}
+
+			if (part.startsWith("dateafter:") && dateStartFilter === null) {
+				const dateStr = part.slice(10);
+				const date = new Date(dateStr);
+
+				if (!Number.isNaN(date.getTime())) {
+					dateStartFilter = date.getTime();
+					searchTermParts.splice(searchTermParts.indexOf(part), 1);
+				}
+			}
+		}
+
 		// Using the '@' character to escape '%' and '_' in patterns.
-		const escapedSearchTerm = query.searchTerm.replace(/([%_@])/g, "@$1");
+		const escapedSearchTerm = searchTermParts.join(" ").replace(/([%_@])/g, "@$1");
 
 		let select =
-			'SELECT msg, type, time, network, channel FROM messages WHERE type = "message" AND json_extract(msg, "$.text") LIKE ? ESCAPE \'@\'';
-		const params: any[] = [`%${escapedSearchTerm}%`];
+			"SELECT id, msg, type, time, network, channel FROM messages WHERE type = 'message' AND json_extract(msg, '$.text') LIKE ? ESCAPE '@'";
+		const params: unknown[] = [`%${escapedSearchTerm}%`];
 
 		if (query.networkUuid) {
 			select += " AND network = ? ";
@@ -483,6 +620,21 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 			params.push(query.channelName.toLowerCase());
 		}
 
+		if (userFilter !== null) {
+			select += " AND LOWER(json_extract(msg, '$.from.nick')) = ? ";
+			params.push(userFilter.toLowerCase());
+		}
+
+		if (dateEndFilter !== null) {
+			select += " AND time <= ? ";
+			params.push(dateEndFilter);
+		}
+
+		if (dateStartFilter !== null) {
+			select += " AND time >= ? ";
+			params.push(dateStartFilter);
+		}
+
 		const maxResults = 100;
 
 		select += " ORDER BY time DESC LIMIT ? OFFSET ? ";
@@ -492,12 +644,16 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 		const rows = await this.serialize_fetchall(select, ...params);
 		return {
 			...query,
-			results: parseSearchRowsToMessages(query.offset, rows).reverse(),
+			results: parseSearchRowsToMessages(rows).reverse(),
 		};
 	}
 
 	async deleteMessages(req: DeletionRequest): Promise<number> {
 		await this.initDone.promise;
+
+		// Flush any pending batched writes before deleting
+		await this.flushBatch();
+
 		let sql = "delete from messages where id in (select id from messages where\n";
 
 		// We roughly get a timestamp from N days before.
@@ -523,69 +679,193 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 		return this.serialize_run(sql);
 	}
 
+	/**
+	 * Get last N messages for a channel (for initial load)
+	 */
+	async getLastMessages(
+		networkUuid: string,
+		channelName: string,
+		limit: number
+	): Promise<Message[]> {
+		await this.initDone.promise;
+
+		if (!this.isEnabled) {
+			return [];
+		}
+
+		// Flush any pending batched writes before reading
+		await this.flushBatch();
+
+		const rows = await this.serialize_fetchall(
+			"SELECT msg, type, time FROM messages WHERE network = ? AND channel = ? ORDER BY time DESC LIMIT ?",
+			networkUuid,
+			channelName.toLowerCase(),
+			limit
+		);
+
+		return rows.reverse().map((row): Message => {
+			const r = row as Record<string, unknown>;
+			const msg = JSON.parse(r.msg as string);
+			msg.time = r.time;
+			msg.type = r.type;
+			return new Msg(msg);
+		});
+	}
+
+	/**
+	 * Get messages before a specific timestamp (for lazy loading)
+	 */
+	async getMessagesBefore(
+		networkUuid: string,
+		channelName: string,
+		beforeTime: number,
+		limit: number
+	): Promise<Message[]> {
+		await this.initDone.promise;
+
+		if (!this.isEnabled) {
+			return [];
+		}
+
+		const rows = await this.serialize_fetchall(
+			"SELECT msg, type, time FROM messages WHERE network = ? AND channel = ? AND time < ? ORDER BY time DESC LIMIT ?",
+			networkUuid,
+			channelName.toLowerCase(),
+			beforeTime,
+			limit
+		);
+
+		return rows.reverse().map((row): Message => {
+			const r = row as Record<string, unknown>;
+			const msg = JSON.parse(r.msg as string);
+			msg.time = r.time;
+			msg.type = r.type;
+			return new Msg(msg);
+		});
+	}
+
+	/**
+	 * Get messages around a specific timestamp (for jumping to search results)
+	 * Returns messages before and after the target time
+	 */
+	async getMessagesAround(
+		networkUuid: string,
+		channelName: string,
+		targetTime: number,
+		limit: number = 200
+	): Promise<Message[]> {
+		await this.initDone.promise;
+
+		if (!this.isEnabled) {
+			return [];
+		}
+
+		const halfLimit = Math.floor(limit / 2);
+
+		// Get messages before the target time
+		const beforeRows = await this.serialize_fetchall(
+			"SELECT id, msg, type, time FROM messages WHERE network = ? AND channel = ? AND time <= ? ORDER BY time DESC LIMIT ?",
+			networkUuid,
+			channelName.toLowerCase(),
+			targetTime,
+			halfLimit
+		);
+
+		// Get messages after the target time
+		const afterRows = await this.serialize_fetchall(
+			"SELECT id, msg, type, time FROM messages WHERE network = ? AND channel = ? AND time > ? ORDER BY time ASC LIMIT ?",
+			networkUuid,
+			channelName.toLowerCase(),
+			targetTime,
+			halfLimit
+		);
+
+		// Combine: before (reversed) + after
+		const allRows = [...beforeRows.reverse(), ...afterRows];
+
+		return allRows.map((row): Message => {
+			const r = row as Record<string, unknown>;
+			const msg = JSON.parse(r.msg as string);
+			msg.time = r.time;
+			msg.type = r.type;
+
+			// Use stored ID from JSON if available, fall back to SQLite row ID
+			if (typeof msg.id !== "number") {
+				msg.id = r.id as number;
+			}
+
+			return new Msg(msg);
+		});
+	}
+
+	/**
+	 * Get total message count for a channel
+	 */
+	async getMessageCount(networkUuid: string, channelName: string): Promise<number> {
+		await this.initDone.promise;
+
+		if (!this.isEnabled) {
+			return 0;
+		}
+
+		const row = await this.serialize_get(
+			"SELECT COUNT(*) as count FROM messages WHERE network = ? AND channel = ?",
+			networkUuid,
+			channelName.toLowerCase()
+		);
+
+		return row ? ((row as Record<string, unknown>).count as number) : 0;
+	}
+
 	canProvideMessages() {
 		return this.isEnabled;
 	}
 
-	private serialize_run(stmt: string, ...params: any[]): Promise<number> {
-		return new Promise((resolve, reject) => {
-			this.database.serialize(() => {
-				this.database.run(stmt, params, function (err) {
-					if (err) {
-						reject(err);
-						return;
-					}
-
-					resolve(this.changes); // number of affected rows, `this` is re-bound by sqlite3
-				});
-			});
-		});
+	private serialize_run(stmt: string, ...params: unknown[]): Promise<number> {
+		try {
+			const result = this.database.prepare(stmt).run(...params);
+			return Promise.resolve(result.changes);
+		} catch (err) {
+			return Promise.reject(err instanceof Error ? err : new Error(String(err)));
+		}
 	}
 
-	private serialize_fetchall(stmt: string, ...params: any[]): Promise<any[]> {
-		return new Promise((resolve, reject) => {
-			this.database.serialize(() => {
-				this.database.all(stmt, params, (err, rows) => {
-					if (err) {
-						reject(err);
-						return;
-					}
-
-					resolve(rows);
-				});
-			});
-		});
+	private serialize_fetchall(stmt: string, ...params: unknown[]): Promise<unknown[]> {
+		try {
+			const rows = this.database.prepare(stmt).all(...params);
+			return Promise.resolve(rows);
+		} catch (err) {
+			return Promise.reject(err instanceof Error ? err : new Error(String(err)));
+		}
 	}
 
-	private serialize_get(stmt: string, ...params: any[]): Promise<any> {
-		return new Promise((resolve, reject) => {
-			this.database.serialize(() => {
-				this.database.get(stmt, params, (err, row) => {
-					if (err) {
-						reject(err);
-						return;
-					}
-
-					resolve(row);
-				});
-			});
-		});
+	private serialize_get(stmt: string, ...params: unknown[]): Promise<unknown> {
+		try {
+			const row = this.database.prepare(stmt).get(...params);
+			return Promise.resolve(row);
+		} catch (err) {
+			return Promise.reject(err instanceof Error ? err : new Error(String(err)));
+		}
 	}
 }
 
-// TODO: type any
-function parseSearchRowsToMessages(id: number, rows: any[]) {
+function parseSearchRowsToMessages(rows: unknown[]) {
 	const messages: Msg[] = [];
 
 	for (const row of rows) {
-		const msg = JSON.parse(row.msg);
-		msg.time = row.time;
-		msg.type = row.type;
-		msg.networkUuid = row.network;
-		msg.channelName = row.channel;
-		msg.id = id;
+		const r = row as Record<string, unknown>;
+		const msg = JSON.parse(r.msg as string);
+		msg.time = r.time;
+		msg.type = r.type;
+		msg.networkUuid = r.network;
+		msg.channelName = r.channel;
+
+		// Use stored ID from JSON if available, fall back to SQLite row ID
+		if (typeof msg.id !== "number") {
+			msg.id = r.id as number;
+		}
+
 		messages.push(new Msg(msg));
-		id += 1;
 	}
 
 	return messages;

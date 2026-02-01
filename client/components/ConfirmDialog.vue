@@ -37,7 +37,7 @@
 	display: flex;
 	justify-content: flex-end;
 	padding: 15px;
-	background: rgba(0, 0, 0, 0.3);
+	background: rgb(0 0 0 / 30%);
 }
 
 #confirm-dialog .confirm-buttons .btn {
@@ -84,13 +84,13 @@ export default defineComponent({
 		};
 
 		onMounted(() => {
-			eventbus.on("escapekey", close);
-			eventbus.on("confirm-dialog", open);
+			eventbus.on("escapekey", <(...evt: unknown[]) => void>close);
+			eventbus.on("confirm-dialog", <(...evt: unknown[]) => void>open);
 		});
 
 		onUnmounted(() => {
-			eventbus.off("escapekey", close);
-			eventbus.off("confirm-dialog", open);
+			eventbus.off("escapekey", <(...evt: unknown[]) => void>close);
+			eventbus.off("confirm-dialog", <(...evt: unknown[]) => void>open);
 		});
 
 		return {

@@ -1,5 +1,5 @@
 <template>
-	<span v-if="channel.data.text">{{ channel.data.text }}</span>
+	<span v-if="channelData.text">{{ channelData.text }} </span>
 	<table v-else class="channel-list">
 		<thead>
 			<tr>
@@ -9,7 +9,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			<tr v-for="chan in channel.data" :key="chan.channel">
+			<tr v-for="chan in channelData" :key="chan.channel">
 				<td class="channel"><ParsedMessage :network="network" :text="chan.channel" /></td>
 				<td class="users">{{ chan.num_users }}</td>
 				<td class="topic"><ParsedMessage :network="network" :text="chan.topic" /></td>
@@ -31,6 +31,12 @@ export default defineComponent({
 	props: {
 		network: {type: Object as PropType<ClientNetwork>, required: true},
 		channel: {type: Object as PropType<ClientChan>, required: true},
+	},
+	setup(props) {
+		return {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			channelData: props.channel.data as any,
+		};
 	},
 });
 </script>

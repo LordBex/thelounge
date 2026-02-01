@@ -14,10 +14,8 @@ socket.on("part", async function (data) {
 		return;
 	}
 
-	channel.network.channels.splice(
-		channel.network.channels.findIndex((c) => c.id === data.chan),
-		1
-	);
+	const index = channel.network.channels.findIndex((c) => c.id === data.chan);
+	channel.network.channels.splice(index, 1);
 
 	await store.dispatch("partChannel", channel);
 });

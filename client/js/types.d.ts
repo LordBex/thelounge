@@ -1,10 +1,7 @@
-import {defineComponent} from "vue";
-
 import {SharedChan} from "../../shared/types/chan";
 import {SharedNetwork} from "../../shared/types/network";
 import {SharedUser} from "../../shared/types/user";
 import {SharedMention} from "../../shared/types/mention";
-import {SharedConfiguration, LockedSharedConfiguration} from "../../shared/types/config";
 import {LinkPreview, SharedMsg} from "../../shared/types/msg";
 
 interface LoungeWindow extends Window {
@@ -81,4 +78,9 @@ interface BeforeInstallPromptEvent extends Event {
 	 * This method returns a Promise.
 	 */
 	prompt(): Promise<void>;
+}
+
+interface SortableEvent {
+	originalEvent: Event;
+	item: HTMLElement;
 }

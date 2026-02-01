@@ -1,6 +1,11 @@
 import {SharedMsg} from "./msg";
-import {SharedUser} from "./user";
-import {SharedNetworkChan} from "./network";
+
+// User groups sent by seedpool/enhanced capable servers
+export type UserGroup = {
+	name: string;
+	position: number;
+	users: string[];
+};
 
 export enum ChanType {
 	CHANNEL = "channel",
@@ -34,9 +39,11 @@ export type SharedChan = {
 	muted: boolean;
 	type: ChanType;
 	state: ChanState;
+	pinned: boolean;
 
 	special?: SpecialChanType;
-	data?: any;
+	data?: unknown;
 	closed?: boolean;
 	num_users?: number;
+	groups?: UserGroup[];
 };

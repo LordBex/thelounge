@@ -11,7 +11,7 @@ let pop;
 try {
 	pop = new Audio();
 	pop.src = "audio/pop.wav";
-} catch (e) {
+} catch {
 	pop = {
 		play() {},
 	};
@@ -76,13 +76,21 @@ socket.on("msg", function (data) {
 
 	let messageLimit = 0;
 
-	if (!isActiveChannel) {
-		// If message arrives in non active channel, keep only 100 messages
-		messageLimit = 100;
-	} else if (channel.scrolledToBottom) {
-		// If message arrives in active channel, keep 1500 messages if scroll is currently at the bottom
-		// One history load may load up to 1000 messages at once if condendesed or hidden events are enabled
-		messageLimit = 1500;
+	if (store.state.settings.searchEnabled && store.state.settings.enableEnhancedSearch) {
+		// Keep messages in memory for search/navigation - windowing (kind of) handles render performance
+		// Only trim if we have an excessive amount (>10000) to prevent memory issues
+		messageLimit = 10000;
+	} else {
+		// if enhanced search is disabled we can be more conservitive
+		// with the amount of messages kept in memory
+		if (!isActiveChannel) {
+			// If message arrives in non active channel, keep only 100 messages
+			messageLimit = 100;
+		} else if (channel.scrolledToBottom) {
+			// If message arrives in active channel, keep 1500 messages if scroll is currently at the bottom
+			// One history load may load up to 1000 messages at once if condendesed or hidden events are enabled
+			messageLimit = 1500;
+		}
 	}
 
 	if (messageLimit > 0 && channel.messages.length > messageLimit) {
@@ -121,7 +129,7 @@ function notifyMessage(
 			if (store.state.settings.notification) {
 				try {
 					pop.play();
-				} catch (exception) {
+				} catch {
 					// On mobile, sounds can not be played without user interaction.
 				}
 			}
@@ -190,7 +198,7 @@ function notifyMessage(
 							}
 						});
 					}
-				} catch (exception) {
+				} catch {
 					// `new Notification(...)` is not supported and should be silenced.
 				}
 			}

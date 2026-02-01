@@ -1,18 +1,52 @@
 import _ from "lodash";
-import log from "../../log";
+import log from "../../log.js";
 import colors from "chalk";
 import path from "path";
 import semver from "semver";
-import Helper from "../../helper";
-import Config from "../../config";
-import themes from "./themes";
-import inputs from "../inputs";
+import Helper from "../../helper.js";
+import Config from "../../config.js";
+import themes from "./themes.js";
+import inputs from "../inputs/index.js";
 import fs from "fs";
-import Utils from "../../command-line/utils";
-import Client from "../../client";
+import Utils from "../../command-line/utils.js";
+import Client from "../../client.js";
+import PublicClient from "./publicClient.js";
+import Network from "../../models/network.js";
+import Chan from "../../models/chan.js";
+import {pathToFileURL} from "url";
+
+type PackageAPI = {
+	Stylesheets: {addFile: (filename: string) => void};
+	PublicFiles: {add: (filename: string) => void};
+	Commands: {
+		add: (
+			command: string,
+			callback: {
+				input: (
+					pub: PublicClient,
+					netChan: {network: Network; chan: Chan},
+					cmd: string,
+					args: string[]
+				) => void;
+				allowDisconnected?: boolean;
+			}
+		) => void;
+		runAsUser: (command: string, targetId: number, client: Client) => void;
+	};
+	Config: {
+		getConfig: () => typeof Config.values;
+		getPersistentStorageDir: () => string;
+	};
+	Logger: {
+		error: (...args: string[]) => void;
+		warn: (...args: string[]) => void;
+		info: (...args: string[]) => void;
+		debug: (...args: string[]) => void;
+	};
+};
 
 type Package = {
-	onServerStart: (packageApis: any) => void;
+	onServerStart: (packageApis: PackageAPI) => void;
 };
 
 const packageMap = new Map<string, Package>();
@@ -25,6 +59,9 @@ export type PackageInfo = {
 	files?: string[];
 	// Legacy support
 	name?: string;
+	// Theme-specific fields (present when type === "theme")
+	themeColor?: string;
+	css?: string;
 };
 
 const stylesheets: string[] = [];
@@ -37,6 +74,7 @@ const cache = {
 };
 
 let experimentalWarningPrinted = false;
+let packageWatcher: fs.FSWatcher | null = null;
 
 export default {
 	getFiles,
@@ -44,6 +82,8 @@ export default {
 	getPackage,
 	loadPackages,
 	outdated,
+	stopWatching,
+	clearPackages,
 };
 
 // TODO: verify binds worked. Used to be 'this' instead of 'packageApis'
@@ -96,11 +136,18 @@ function getPackage(name: string) {
 	return packageMap.get(name);
 }
 
+function clearPackages() {
+	packageMap.clear();
+	stylesheets.length = 0;
+	files.length = 0;
+	experimentalWarningPrinted = false;
+}
+
 function getEnabledPackages(packageJson: string) {
 	try {
 		const json = JSON.parse(fs.readFileSync(packageJson, "utf-8"));
 		return Object.keys(json.dependencies);
-	} catch (e: any) {
+	} catch (e: unknown) {
 		log.error(`Failed to read packages/package.json: ${colors.red(e)}`);
 	}
 
@@ -113,8 +160,8 @@ function getPersistentStorageDir(packageName: string) {
 	return dir;
 }
 
-function loadPackage(packageName: string) {
-	let packageInfo: PackageInfo;
+async function loadPackage(packageName: string) {
+	let packageInfo: PackageInfo & {main?: string; exports?: string | Record<string, unknown>};
 	// TODO: type
 	let packageFile: Package;
 
@@ -124,7 +171,7 @@ function loadPackage(packageName: string) {
 		packageInfo = JSON.parse(fs.readFileSync(path.join(packagePath, "package.json"), "utf-8"));
 
 		if (!packageInfo.thelounge) {
-			throw "'thelounge' is not present in package.json";
+			throw new Error("'thelounge' is not present in package.json");
 		}
 
 		if (
@@ -133,11 +180,44 @@ function loadPackage(packageName: string) {
 				includePrerelease: true, // our pre-releases should respect the semver guarantees
 			})
 		) {
-			throw `v${packageInfo.version} does not support this version of The Lounge. Supports: ${packageInfo.thelounge.supports}`;
+			throw new Error(
+				`v${packageInfo.version} does not support this version of The Lounge. Supports: ${packageInfo.thelounge.supports}`
+			);
 		}
 
-		packageFile = require(packagePath);
-	} catch (e: any) {
+		// ESM requires importing a file, not a directory
+		// Determine the entry point from package.json
+		let entryPoint = "index.js";
+
+		if (typeof packageInfo.exports === "string") {
+			entryPoint = packageInfo.exports;
+		} else if (packageInfo.exports && typeof packageInfo.exports === "object") {
+			// Handle exports map like { ".": "./index.js" } or { "import": "...", "require": "..." }
+			const exportsObj = packageInfo.exports;
+
+			if (typeof exportsObj["."] === "string") {
+				entryPoint = exportsObj["."];
+			} else if (typeof exportsObj.import === "string") {
+				entryPoint = exportsObj.import;
+			} else if (typeof exportsObj.require === "string") {
+				entryPoint = exportsObj.require;
+			} else if (exportsObj["."] && typeof exportsObj["."] === "object") {
+				const dotExports = exportsObj["."] as Record<string, string>;
+				entryPoint =
+					dotExports.import || dotExports.require || dotExports.default || "index.js";
+			}
+		} else if (packageInfo.main) {
+			entryPoint = packageInfo.main;
+		}
+
+		const isJSONImport = entryPoint.endsWith(".json");
+		const fullEntryPath = pathToFileURL(path.join(packagePath, entryPoint)).href;
+		const imported = isJSONImport
+			? await import(fullEntryPath, {with: {type: "json"}})
+			: await import(fullEntryPath);
+		// Handle both ESM (direct exports) and CommonJS (wrapped in .default) modules
+		packageFile = imported.default || imported;
+	} catch (e: unknown) {
 		log.error(`Package ${colors.bold(packageName)} could not be loaded: ${colors.red(e)}`);
 
 		if (e instanceof Error) {
@@ -157,8 +237,11 @@ function loadPackage(packageName: string) {
 	packageMap.set(packageName, packageFile);
 
 	if (packageInfo.type === "theme") {
-		// @ts-expect-error Argument of type 'PackageInfo' is not assignable to parameter of type 'ThemeModule'.
-		themes.addTheme(packageName, packageInfo);
+		// PackageInfo includes theme-specific fields when type === "theme"
+		themes.addTheme(
+			packageName,
+			packageInfo as PackageInfo & {type: "theme"; themeColor: string; css: string}
+		);
 
 		if (packageInfo.files) {
 			packageInfo.files.forEach((file) => addFile(packageName, file));
@@ -181,37 +264,46 @@ function loadPackage(packageName: string) {
 	}
 }
 
-function loadPackages() {
+async function loadPackages() {
 	const packageJson = path.join(Config.getPackagesPath(), "package.json");
 	const packages = getEnabledPackages(packageJson);
 
-	packages.forEach(loadPackage);
+	await Promise.all(packages.map((pkg) => loadPackage(pkg)));
 
 	watchPackages(packageJson);
 }
 
 function watchPackages(packageJson: string) {
-	fs.watch(
+	packageWatcher = fs.watch(
 		packageJson,
 		{
 			persistent: false,
 		},
 		_.debounce(
 			() => {
-				const updated = getEnabledPackages(packageJson);
+				void (async () => {
+					const updated = getEnabledPackages(packageJson);
 
-				for (const packageName of updated) {
-					if (packageMap.has(packageName)) {
-						continue;
+					for (const packageName of updated) {
+						if (packageMap.has(packageName)) {
+							continue;
+						}
+
+						await loadPackage(packageName);
 					}
-
-					loadPackage(packageName);
-				}
+				})();
 			},
 			1000,
 			{maxWait: 10000}
 		)
 	);
+}
+
+function stopWatching() {
+	if (packageWatcher) {
+		packageWatcher.close();
+		packageWatcher = null;
+	}
 }
 
 async function outdated(cacheTimeout = TIME_TO_LIVE) {
@@ -223,16 +315,6 @@ async function outdated(cacheTimeout = TIME_TO_LIVE) {
 	const packagesPath = Config.getPackagesPath();
 	const packagesConfig = path.join(packagesPath, "package.json");
 	const packagesList = JSON.parse(fs.readFileSync(packagesConfig, "utf-8")).dependencies;
-	const argsList = [
-		"outdated",
-		"--latest",
-		"--json",
-		"--production",
-		"--ignore-scripts",
-		"--non-interactive",
-		"--cwd",
-		packagesPath,
-	];
 
 	// Check if the configuration file exists
 	if (!Object.entries(packagesList).length) {
@@ -244,18 +326,11 @@ async function outdated(cacheTimeout = TIME_TO_LIVE) {
 		return false;
 	}
 
-	const command = argsList.shift();
-	const params = argsList;
-
-	if (!command) {
-		return;
-	}
-
-	// If we get an error from calling outdated and the code isn't 0, then there are no outdated packages
-	// TODO: was (...argsList), verify this works
-	await Utils.executeYarnCommand(command, ...params)
+	// npm outdated returns exit code 1 when packages are outdated, 0 when all up to date
+	// executeYarnCommand handles this mapping
+	await Utils.executeYarnCommand("outdated")
 		.then(() => updateOutdated(false))
-		.catch((code) => updateOutdated(code !== 0));
+		.catch(() => updateOutdated(true));
 
 	if (cacheTimeout > 0) {
 		setTimeout(() => {

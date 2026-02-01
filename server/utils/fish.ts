@@ -7,7 +7,6 @@ interface DecryptResult {
 	status: "success" | "partial" | "error";
 }
 
-type Uint8Array32 = readonly [number, number, number, number];
 type BlowfishBlock = readonly [number, number, number, number, number, number, number, number];
 
 // Constants

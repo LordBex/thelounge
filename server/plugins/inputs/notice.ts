@@ -1,5 +1,5 @@
 import {PluginInputHandler} from "./index";
-import {createFishMessage} from "../../utils/fish";
+import {createFishMessage} from "../../utils/fish.js";
 
 const commands = ["notice"];
 
@@ -30,11 +30,11 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 			targetGroup = parsedTarget.target_group;
 		}
 
-		const targetChan2 = network.getChannel(targetName);
+		const echoTargetChan = network.getChannel(targetName);
 
 		let displayMessage = toSend;
 
-		if (typeof targetChan2 === "undefined") {
+		if (typeof echoTargetChan === "undefined") {
 			displayMessage = "{to " + args[0] + "} " + message;
 		}
 
