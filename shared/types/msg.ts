@@ -27,6 +27,7 @@ export enum MessageType {
 	RAW = "raw",
 	PLUGIN = "plugin",
 	WALLOPS = "wallops",
+	MASS_EVENT = "mass_event",
 }
 
 export type SharedUser = {
@@ -40,6 +41,8 @@ export type SharedUser = {
 
 export type UserInMessage = Partial<SharedUser> & {
 	mode: string;
+	shoutbox?: boolean;
+	original_nick?: string;
 };
 
 export type LinkPreview = {
@@ -58,6 +61,30 @@ export type LinkPreview = {
 	maxSize?: number;
 	thumbActualUrl?: string;
 };
+
+export interface WhoisData {
+	nick: string;
+	error?: boolean;
+	idle?: number;
+	logon?: number;
+	whowas?: boolean;
+	[key: string]: unknown;
+}
+
+export interface MassEventSummary {
+	joins: number;
+	parts: number;
+	quits: number;
+	modes: number;
+	nicks: number;
+	kicks: number;
+	chghosts: number;
+	away: number;
+	back: number;
+	duration: number;
+	startTime: Date;
+	endTime: Date;
+}
 
 export type SharedMsg = {
 	from?: UserInMessage;
@@ -89,12 +116,13 @@ export type SharedMsg = {
 	channel?: string;
 	reason?: string;
 
-	raw_modes?: any;
+	raw_modes?: string;
 	when?: Date;
-	whois?: any;
+	whois?: WhoisData;
 
 	users: string[];
 
 	statusmsgGroup?: string;
 	params?: string[];
+	massEventSummary?: MassEventSummary;
 };

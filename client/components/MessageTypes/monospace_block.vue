@@ -26,7 +26,7 @@ export default defineComponent({
 	},
 	setup(props) {
 		const cleanText = computed(() => {
-			let lines = props.message.text.split("\n");
+			let lines = props.message.text!.split("\n");
 
 			// If all non-empty lines of the MOTD start with a hyphen (which is common
 			// across MOTDs), remove all the leading hyphens.

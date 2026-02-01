@@ -1,7 +1,7 @@
 <template>
 	<span class="content">
 		Topic set by
-		<Username :user="message.from" />
+		<Username :user="message.from!" />
 		on {{ messageTimeLocale }}
 	</span>
 </template>
@@ -28,7 +28,7 @@ export default defineComponent({
 		},
 	},
 	setup(props) {
-		const messageTimeLocale = computed(() => localetime(props.message.when));
+		const messageTimeLocale = computed(() => localetime(props.message.when!));
 
 		return {
 			messageTimeLocale,

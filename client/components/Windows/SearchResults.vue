@@ -16,9 +16,10 @@
 				<div v-if="network && channel" class="header">
 					<SidebarToggle />
 					<span class="title"
-						>Searching in <span class="channel-name">{{ channel.name }}</span> for</span
+						>Searching in
+						<span class="channel-name">{{ channel.name }} </span> for</span
 					>
-					<span class="topic">{{ route.query.q }}</span>
+					<span class="topic">{{ route.query.q }} </span>
 					<MessageSearchForm :network="network" :channel="channel" />
 					<button
 						class="close"
@@ -63,7 +64,9 @@
 								v-for="(message, id) in messages"
 								:key="message.id"
 								class="result"
-								@click="jump(message, id)"
+								:data-jump-to="
+									store.state.settings.enableEnhancedSearch || undefined
+								"
 							>
 								<DateMarker
 									v-if="shouldDisplayDateMarker(message, id)"
@@ -76,6 +79,7 @@
 									:network="network"
 									:message="message"
 									:data-id="message.id"
+									@click="jump(message)"
 								/>
 							</div>
 						</div>
@@ -89,6 +93,18 @@
 <style>
 .channel-name {
 	font-weight: 700;
+}
+
+.result[data-jump-to] > .msg {
+	cursor: pointer;
+
+	&:hover {
+		background-color: var(--highlight-bg-color) !important;
+	}
+}
+
+.chat-view[data-type="search-results"] .chat-content {
+	margin-top: 45px;
 }
 </style>
 
@@ -104,7 +120,7 @@ import {watch, computed, defineComponent, nextTick, ref, onMounted, onUnmounted}
 import type {ClientMessage} from "../../js/types";
 
 import {useStore} from "../../js/store";
-import {useRoute, useRouter} from "vue-router";
+import {useRoute} from "vue-router";
 import {switchToChannel} from "../../js/router";
 import {SearchQuery} from "../../../shared/types/storage";
 
@@ -119,7 +135,6 @@ export default defineComponent({
 	setup() {
 		const store = useStore();
 		const route = useRoute();
-		const router = useRouter();
 
 		const chat = ref<HTMLDivElement>();
 
@@ -241,10 +256,15 @@ export default defineComponent({
 			el.scrollTop = el.scrollHeight;
 		};
 
-		const jump = (message: ClientMessage, id: number) => {
-			// TODO: Implement jumping to messages!
-			// This is difficult because it means client will need to handle a potentially nonlinear message set
-			// (loading IntersectionObserver both before AND after the messages)
+		// Jump to a search result - navigate to channel with message ID and time
+		// If message isn't in memory, MessageList will scroll to closest match by time
+		const jump = (message: ClientMessage) => {
+			if (!store.state.settings.enableEnhancedSearch || !channel.value) {
+				return;
+			}
+
+			const messageTime = new Date(message.time).getTime();
+			switchToChannel(channel.value, message.id, messageTime);
 		};
 
 		watch(

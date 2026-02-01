@@ -1,11 +1,12 @@
 <template>
-	<div :class="['msg', {closed: isCollapsed}]" data-type="condensed">
+	<div :class="['msg', {closed: isCollapsed, 'is-focused': isFocused}]" data-type="condensed">
 		<div class="condensed-summary">
 			<span class="time" />
 			<span class="from" />
 			<span class="content" @click="onCollapseClick"
-				>{{ condensedText
-				}}<button class="toggle-button" aria-label="Toggle status messages"
+				>{{ condensedText }}
+
+				<button class="toggle-button" aria-label="Toggle status messages"
 			/></span>
 		</div>
 		<Message
@@ -39,7 +40,7 @@ export default defineComponent({
 			type: Function as PropType<() => void>,
 			required: true,
 		},
-		focused: Boolean,
+		isFocused: Boolean,
 	},
 	setup(props) {
 		const isCollapsed = ref(true);
@@ -68,6 +69,22 @@ export default defineComponent({
 						.split("")
 						.filter((char) => char !== "+" && char !== "-").length;
 					obj[message.type] += modeChangesCount;
+				}
+
+				// special case since one MASS_EVENT message can have multiple effects
+				else if (message.type === MessageType.MASS_EVENT) {
+					// Add mass joins/parts/modes/etc to counts
+					const summary = message.massEventSummary!;
+					Object.keys(summary).forEach((group) => {
+						if (group === "startTime" || group === "endTime" || group === "duration")
+							return;
+
+						if (group === "away" || group === "back") {
+							return (obj[group] += summary[group]);
+						}
+
+						obj[group.slice(0, -1)] += summary[group];
+					});
 				} else {
 					if (!message.type) {
 						/* eslint-disable no-console */

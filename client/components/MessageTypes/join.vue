@@ -1,6 +1,6 @@
 <template>
 	<span class="content">
-		<Username :user="message.from" />
+		<Username :user="message.from!" />
 		<i class="hostmask">&#32;(<ParsedMessage :network="network" :text="message.hostmask" />)</i>
 		<template v-if="message.account">
 			<i class="account">&#32;[{{ message.account }}]</i>

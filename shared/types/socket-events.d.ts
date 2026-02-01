@@ -1,5 +1,5 @@
 import {SharedMention} from "./mention";
-import {ChanState, SharedChan} from "./chan";
+import {ChanState, SharedChan, UserGroup} from "./chan";
 import {SharedNetwork, SharedServerOptions} from "./network";
 import {SharedMsg, LinkPreview} from "./msg";
 import {SharedUser} from "./user";
@@ -30,8 +30,9 @@ interface ServerToClientEvents {
 	"changelog:newversion": NoPayloadEventHandler;
 
 	"channel:state": EventHandler<{chan: number; state: ChanState}>;
+	"channel:groups": EventHandler<{chan: number; groups: UserGroup[]}>;
 
-	"change-password": EventHandler<{success: boolean; error?: any}>;
+	"change-password": EventHandler<{success: boolean; error?: unknown}>;
 
 	commands: EventHandler<string[]>;
 
@@ -44,12 +45,13 @@ interface ServerToClientEvents {
 
 	"mentions:list": EventHandler<SharedMention[]>;
 
-	"setting:new": EventHandler<{name: string; value: any}>;
-	"setting:all": EventHandler<{[key: string]: any}>;
+	"setting:new": EventHandler<{name: string; value: unknown}>;
+	"setting:all": EventHandler<{[key: string]: unknown}>;
 
 	"history:clear": EventHandler<{target: number}>;
 
 	"mute:changed": EventHandler<{target: number; status: boolean}>;
+	"pin:changed": EventHandler<{target: number; status: boolean}>;
 
 	names: EventHandler<{id: number; users: SharedUser[]}>;
 
@@ -79,8 +81,10 @@ interface ServerToClientEvents {
 
 	more: EventHandler<{chan: number; messages: SharedMsg[]; totalMessages: number}>;
 
+	"messages:around": EventHandler<{chan: number; messages: SharedMsg[]}>;
+
 	"msg:preview": EventHandler<{id: number; chan: number; preview: LinkPreview}>;
-	"msg:special": EventHandler<{chan: number; data?: Record<string, any>}>;
+	"msg:special": EventHandler<{chan: number; data?: unknown}>;
 	msg: EventHandler<{msg: SharedMsg; chan: number; highlight?: number; unread?: number}>;
 
 	init: EventHandler<{active: number; networks: SharedNetwork[]; token?: string}>;
@@ -89,7 +93,7 @@ interface ServerToClientEvents {
 
 	quit: EventHandler<{network: string}>;
 
-	error: (error: any) => void;
+	error: (error: unknown) => void;
 
 	connecting: NoPayloadEventHandler;
 
@@ -133,12 +137,13 @@ interface ClientToServerEvents {
 	"upload:ping": (token: string) => void;
 
 	"mute:change": EventHandler<{target: number; setMutedTo: boolean}>;
+	"pin:change": EventHandler<{target: number; setPinnedTo: boolean}>;
 
 	"push:register": EventHandler<PushSubscriptionJSON>;
 	"push:unregister": NoPayloadEventHandler;
 
 	"setting:get": NoPayloadEventHandler;
-	"setting:set": EventHandler<{name: string; value: any}>;
+	"setting:set": EventHandler<{name: string; value: unknown}>;
 
 	"sessions:get": NoPayloadEventHandler;
 
@@ -154,6 +159,8 @@ interface ClientToServerEvents {
 
 	more: EventHandler<{target: number; lastId: number; condensed: boolean}>;
 
+	"messages:around": EventHandler<{target: number; time: number}>;
+
 	"msg:preview:toggle": EventHandler<{
 		target: number;
 		messageIds?: number[];
@@ -164,8 +171,8 @@ interface ClientToServerEvents {
 
 	"network:get": (uuid: string) => void;
 	// TODO typing
-	"network:edit": (data: Record<string, any>) => void;
-	"network:new": (data: Record<string, any>) => void;
+	"network:edit": (data: Record<string, unknown>) => void;
+	"network:new": (data: Record<string, unknown>) => void;
 
 	"sign-out": (token?: string) => void;
 
@@ -174,6 +181,8 @@ interface ClientToServerEvents {
 	search: EventHandler<SearchQuery>;
 }
 
-interface InterServerEvents {}
+// Socket.IO requires these interfaces to be defined even if empty
+// Using Record<string, never> to explicitly indicate no events/data are defined
+type InterServerEvents = Record<string, never>;
 
-interface SocketData {}
+type SocketData = Record<string, never>;

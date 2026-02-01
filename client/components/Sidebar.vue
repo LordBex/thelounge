@@ -1,5 +1,5 @@
 <template>
-	<aside id="sidebar" ref="sidebar">
+	<aside id="sidebar" ref="sidebar" :class="store.state.settings.compactSidebar ? 'compact' : ''">
 		<div class="scrollable-area">
 			<div class="logo-container">
 				<img
@@ -43,7 +43,7 @@
 						:class="['icon', 'connect', {active: isActive}]"
 						:aria-selected="isActive"
 						@click="navigate"
-						@keypress.enter="navigate"
+						@keypress.enter="navigate as (e?: KeyboardEvent) => void"
 					/> </router-link
 			></span>
 			<span class="tooltipped tooltipped-n tooltipped-no-touch" aria-label="Settings"
@@ -57,7 +57,7 @@
 						:class="['icon', 'settings', {active: isActive}]"
 						:aria-selected="isActive"
 						@click="navigate"
-						@keypress.enter="navigate"
+						@keypress.enter="navigate as (e?: KeyboardEvent) => void"
 					></button> </router-link
 			></span>
 			<span
@@ -82,7 +82,7 @@
 							{active: isActive},
 						]"
 						@click="navigate"
-						@keypress.enter="navigate"
+						@keypress.enter="navigate as (e?: KeyboardEvent) => void"
 					></button> </router-link
 			></span>
 		</footer>

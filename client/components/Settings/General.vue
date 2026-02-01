@@ -39,6 +39,34 @@
 				</label>
 			</div>
 		</div>
+		<div v-if="store.state.settings.searchEnabled">
+			<h2>Enhanced search</h2>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.enableEnhancedSearch"
+					type="checkbox"
+					name="enableEnhancedSearch"
+				/>
+				Enable enhanced search with 'Jump to message'
+			</label>
+		</div>
+		<div v-if="store.state.settings.searchEnabled">
+			<h2>Input</h2>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.enableRainbowHotkey"
+					type="checkbox"
+					name="enableRainbowHotkey"
+				/>
+				Enable rainbow messages with 'Ctrl+R' hotkey
+				<span
+					class="tooltipped tooltipped-n tooltipped-no-delay"
+					aria-label="You can still use rainbow text with '/rainbow' or '/rgb'"
+				>
+					<button class="extra-help" />
+				</span>
+			</label>
+		</div>
 		<div v-if="!store.state.serverConfiguration?.public">
 			<h2>Settings synchronisation</h2>
 			<label class="opt">
@@ -155,11 +183,9 @@ export default defineComponent({
 
 		const registerProtocol = () => {
 			const uri = document.location.origin + document.location.pathname + "?uri=%s";
-			// @ts-expect-error
-			// the third argument is deprecated but recommended for compatibility: https://developer.mozilla.org/en-US/docs/Web/API/Navigator/registerProtocolHandler
-			window.navigator.registerProtocolHandler("irc", uri, "The Lounge");
-			// @ts-expect-error
-			window.navigator.registerProtocolHandler("ircs", uri, "The Lounge");
+			// The third argument was deprecated and has been removed from the spec
+			window.navigator.registerProtocolHandler("irc", uri);
+			window.navigator.registerProtocolHandler("ircs", uri);
 		};
 
 		return {

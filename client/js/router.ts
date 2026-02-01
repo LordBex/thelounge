@@ -1,6 +1,6 @@
 import constants from "./constants";
 
-import {createRouter, createWebHashHistory} from "vue-router";
+import {createRouter, createWebHashHistory, type RouteParamsRawGeneric} from "vue-router";
 import SignIn from "../components/Windows/SignIn.vue";
 import Connect from "../components/Windows/Connect.vue";
 import Settings from "../components/Windows/Settings.vue";
@@ -110,7 +110,7 @@ router.beforeEach((to, from, next) => {
 	next();
 });
 
-router.beforeEach((to, from) => {
+router.beforeEach((to) => {
 	// Disallow navigating to non-existing routes
 	if (!to.matched.length) {
 		return false;
@@ -148,26 +148,49 @@ router.afterEach((to) => {
 			channel.firstUnread = channel.messages[channel.messages.length - 1].id;
 		}
 
-		if (channel.messages?.length > 100) {
-			channel.messages.splice(0, channel.messages.length - 100);
-			channel.moreHistoryAvailable = true;
+		if (store.state.settings.searchEnabled && store.state.settings.enableEnhancedSearch) {
+			// If  Enhanced Search is enabled dont truncate messages
+			// keep messages in memory for search/navigation purposes
+		} else {
+			if (channel.messages?.length > 100) {
+				channel.messages.splice(0, channel.messages.length - 100);
+				channel.moreHistoryAvailable = true;
+			}
 		}
 	}
 });
 
-async function navigate(routeName: string, params: any = {}) {
+async function navigate(
+	routeName: string,
+	params: RouteParamsRawGeneric = {},
+	query: Record<string, string | number> = {}
+) {
 	if (router.currentRoute.value.name) {
-		await router.push({name: routeName, params});
+		await router.push({name: routeName, params, query});
 	} else {
 		// If current route is null, replace the history entry
 		// This prevents invalid entries from lingering in history,
 		// and then the route guard preventing proper navigation
-		await router.replace({name: routeName, params}).catch(() => {});
+		await router.replace({name: routeName, params, query}).catch(() => {});
 	}
 }
 
-function switchToChannel(channel: ClientChan) {
-	void navigate("RoutedChat", {id: channel.id});
+function switchToChannel(
+	channel: ClientChan,
+	focusedMessageId?: number,
+	focusedMessageTime?: number
+) {
+	const query: Record<string, number> = {};
+
+	if (focusedMessageId) {
+		query.focused = focusedMessageId;
+	}
+
+	if (focusedMessageTime) {
+		query.focusedTime = focusedMessageTime;
+	}
+
+	void navigate("RoutedChat", {id: channel.id}, query);
 }
 
 if ("serviceWorker" in navigator) {

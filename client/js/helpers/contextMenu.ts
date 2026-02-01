@@ -5,6 +5,7 @@ import {switchToChannel} from "../router";
 import {TypedStore} from "../store";
 import useCloseChannel from "../hooks/use-close-channel";
 import {ChanType} from "../../../shared/types/chan";
+import {openInNewTab} from "./openInNewTab";
 
 type BaseContextMenuItem = {
 	label: string;
@@ -107,7 +108,7 @@ export function generateChannelContextMenu(
 								target: channel.id,
 								text: "/disconnect",
 							}),
-				  }
+					}
 				: {
 						label: "Connect",
 						type: "item",
@@ -117,7 +118,7 @@ export function generateChannelContextMenu(
 								target: channel.id,
 								text: "/connect",
 							}),
-				  },
+					},
 		];
 	}
 
@@ -168,6 +169,17 @@ export function generateChannelContextMenu(
 					socket.emit("input", {
 						target: channel.id,
 						text: "/ignore " + channel.name,
+					});
+				},
+			},
+			{
+				label: channel.pinned ? "Unpin conversation" : "Pin conversation",
+				type: "item",
+				class: "pin",
+				action() {
+					socket.emit("pin:change", {
+						target: channel.id,
+						setPinnedTo: !channel.pinned,
 					});
 				},
 			}
@@ -295,45 +307,85 @@ export function generateUserContextMenu(
 		? channel.users.find((u) => u.nick === network.nick) || {}
 		: {};
 
-	const whois = () => {
-		const chan = network.channels.find((c) => c.name === user.nick);
-
-		if (chan) {
-			switchToChannel(chan);
-		}
-
-		socket.emit("input", {
-			target: channel.id,
-			text: "/whois " + user.nick,
-		});
-	};
-
-	const items: ContextMenuItem[] = [
-		{
+	const userContextMenuEntrys = () => {
+		const defualt = {
 			label: user.nick,
 			type: "item",
 			class: "user",
-			action: whois,
-		},
+			action() {},
+		};
+
+		if (
+			store.state.settings.enhancedContextMenuEnabled &&
+			Boolean(network.channels.find((c) => (c.groups?.length ?? 0) > 0))
+		) {
+			const customInspect = {
+				label: user.nick,
+				type: "item",
+				class: "user",
+				action() {
+					if (channel.type !== ChanType.CHANNEL) return;
+
+					socket.emit("input", {
+						target: channel.id,
+						text: `!user ${user.nick}`,
+					});
+				},
+			};
+			const customTrackerProfile = {
+				label: `Tracker Profile`,
+				type: "item",
+				class: "action-open",
+				action() {
+					openInNewTab(`https://brr.red/${user.nick}`);
+				},
+			};
+			const userGroup =
+				network.channels
+					.find((c) => c.users.find((u) => u.nick === user.nick))
+					?.groups?.find((g) => g.users.includes(user.nick))?.name ?? "Offline";
+
+			return [
+				{
+					label: userGroup,
+					type: "item",
+					class: `group-${userGroup.toLowerCase()}`,
+					action() {},
+				},
+				{
+					type: "divider",
+				},
+				customInspect,
+				customTrackerProfile,
+			] as ContextMenuItem[];
+		}
+
+		return [defualt];
+	};
+
+	// Extra entries for enhanced context menu
+	const additionalContextMenuEntrys = () => {
+		if (!store.state.settings.enhancedContextMenuEnabled) return [];
+
+		return [
+			{
+				label: `Slap ${user.nick}`,
+				type: "item",
+				class: "action-slap",
+				action() {
+					socket.emit("input", {
+						target: channel.id,
+						text: "/slap " + user.nick,
+					});
+				},
+			},
+		];
+	};
+
+	const items: ContextMenuItem[] = [
+		...userContextMenuEntrys(),
 		{
 			type: "divider",
-		},
-		{
-			label: "User information",
-			type: "item",
-			class: "action-whois",
-			action: whois,
-		},
-		{
-			label: "Ignore user",
-			type: "item",
-			class: "action-ignore",
-			action() {
-				socket.emit("input", {
-					target: channel.id,
-					text: "/ignore " + user.nick,
-				});
-			},
 		},
 		{
 			label: "Direct messages",
@@ -349,6 +401,38 @@ export function generateUserContextMenu(
 				socket.emit("input", {
 					target: channel.id,
 					text: "/query " + user.nick,
+				});
+			},
+		},
+		...additionalContextMenuEntrys(),
+		{
+			type: "divider",
+		},
+		{
+			label: "User information",
+			type: "item",
+			class: "action-whois",
+			action() {
+				const chan = network.channels.find((c) => c.name === user.nick);
+
+				if (chan) {
+					switchToChannel(chan);
+				}
+
+				socket.emit("input", {
+					target: channel.id,
+					text: "/whois " + user.nick,
+				});
+			},
+		},
+		{
+			label: "Ignore user",
+			type: "item",
+			class: "action-ignore",
+			action() {
+				socket.emit("input", {
+					target: channel.id,
+					text: "/ignore " + user.nick,
 				});
 			},
 		},

@@ -2,7 +2,7 @@
 	<span class="content">
 		<ParsedMessage v-if="message.self" :network="network" :message="message" />
 		<template v-else>
-			<Username :user="message.from" />
+			<Username :user="message.from!" />
 			is away
 			<i class="away-message">(<ParsedMessage :network="network" :message="message" />)</i>
 		</template>

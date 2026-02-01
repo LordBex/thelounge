@@ -1,12 +1,18 @@
-import {IrcEventHandler} from "../../client";
+import {IrcEventHandler} from "../../client.js";
 
-import Msg from "../../models/msg";
-import {MessageType} from "../../../shared/types/msg";
+import Msg from "../../models/msg.js";
+import {MessageType} from "../../../shared/types/msg.js";
+
+// Commands handled by other plugins - don't display as unhandled
+const handledCommands = new Set(["SPGROUPS", "SPJOIN"]);
 
 export default <IrcEventHandler>function (irc, network) {
-	const client = this;
+	irc.on("unknown command", (command) => {
+		// Skip commands that are handled by other plugins
+		if (handledCommands.has(command.command)) {
+			return;
+		}
 
-	irc.on("unknown command", function (command) {
 		let target = network.getLobby();
 
 		// Do not display users own name
@@ -26,7 +32,7 @@ export default <IrcEventHandler>function (irc, network) {
 		}
 
 		target.pushMessage(
-			client,
+			this,
 			new Msg({
 				type: MessageType.UNHANDLED,
 				command: command.command,

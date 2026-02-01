@@ -145,6 +145,43 @@ const defaultConfig = {
 	searchEnabled: {
 		default: false,
 	},
+	jumptoEabled: {
+		default: true,
+	},
+	filterdmsEnabled: {
+		default: true,
+	},
+	showAllDMs: {
+		default: false,
+	},
+	showInputNick: {
+		default: true,
+	},
+	disableMutedUnread: {
+		default: false,
+	},
+	compactSidebar: {
+		default: false,
+	},
+	beautifyBridgedMessages: {
+		default: true,
+	},
+	bridgedMessageNicksStyle: {
+		default: "parentheses",
+	},
+	enhancedUserListEnabled: {
+		default: true,
+	},
+	enhancedContextMenuEnabled: {
+		default: true,
+	},
+	enableEnhancedSearch: {
+		// disable by default for performance reasons
+		default: false,
+	},
+	enableRainbowHotkey: {
+		default: true,
+	},
 };
 
 export const config = normalizeConfig(defaultConfig);
@@ -159,7 +196,7 @@ export function createState() {
 	return state;
 }
 
-function normalizeConfig(obj: any) {
+function normalizeConfig(obj: Record<string, Record<string, unknown>>) {
 	const newConfig: Partial<typeof defaultConfig> = {};
 
 	for (const settingName in obj) {
@@ -171,5 +208,5 @@ function normalizeConfig(obj: any) {
 
 // flatten to type of default
 export type SettingsState = {
-	[key in keyof typeof defaultConfig]: typeof defaultConfig[key]["default"];
+	[key in keyof typeof defaultConfig]: (typeof defaultConfig)[key]["default"];
 };
