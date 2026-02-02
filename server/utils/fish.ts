@@ -2,6 +2,8 @@
 // Functional approach with proper typing and error handling
 
 // Types
+import log from "../log";
+
 interface DecryptResult {
 	text: string;
 	status: "success" | "partial" | "error";
@@ -195,8 +197,25 @@ const padData = (data: number[]): number[] => {
 	return padding > 0 ? [...data, ...(new Array(padding).fill(0) as number[])] : data;
 };
 
-// Blowfish implementation using functional approach
-const createBlowfish = (key: number[]) => {
+interface BlowfishInstance {
+	encryptBlock(block: BlowfishBlock): BlowfishBlock;
+	decryptBlock(block: BlowfishBlock): BlowfishBlock;
+}
+
+const blowfishCache = new Map<string, BlowfishInstance>();
+const CACHE_LIMIT = 200;
+const CACHE_PRUNE_AMOUNT = 80;
+
+// Periodic cleanup every 24 hours to prevent stale data in long-running processes
+setInterval(
+	() => {
+		blowfishCache.clear();
+	},
+	24 * 60 * 60 * 1000
+).unref();
+
+// Blowfish implementation using a functional approach
+const createBlowfish = (key: number[]): BlowfishInstance => {
 	const paddedKey = padKey(key);
 	const P = [...INITIAL_P];
 	const S = INITIAL_S.map((box) => [...box]);
@@ -297,6 +316,35 @@ const createBlowfish = (key: number[]) => {
 	};
 };
 
+const getCachedBlowfish = (key: string): BlowfishInstance => {
+	const cached = blowfishCache.get(key);
+
+	if (cached) {
+		return cached;
+	}
+
+	if (blowfishCache.size >= CACHE_LIMIT) {
+		// Prune the oldest entries to make space
+		const iterator = blowfishCache.keys();
+		log.info("Pruning Blowfish cache to make space");
+
+		for (let i = 0; i < CACHE_PRUNE_AMOUNT; i++) {
+			const next = iterator.next();
+
+			if (next.done) {
+				break;
+			}
+
+			blowfishCache.delete(next.value);
+		}
+	}
+
+	const instance = createBlowfish(stringToBytes(key));
+	blowfishCache.set(key, instance);
+
+	return instance;
+};
+
 // Base64 encoding/decoding functions
 const encodeBase64Block = (left: number, right: number): string => {
 	let result = "";
@@ -351,7 +399,7 @@ const decodeBase64Block = (chunk: string): [number, number] | null => {
 
 // Main encryption function
 export const fishEncrypt = (plaintext: string, key: string): string => {
-	const blowfish = createBlowfish(stringToBytes(key));
+	const blowfish = getCachedBlowfish(key);
 	const data = padData(stringToBytes(plaintext));
 
 	let result = "";
@@ -387,7 +435,7 @@ export const fishDecrypt = (ciphertext: string, key: string): DecryptResult => {
 		return {text: "", status: "error"};
 	}
 
-	const blowfish = createBlowfish(stringToBytes(key));
+	const blowfish = getCachedBlowfish(key);
 	let processText = ciphertext;
 	let isPartial = false;
 

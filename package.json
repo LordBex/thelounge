@@ -1,10 +1,12 @@
 {
   "name": "@lordbex/thelounge",
   "description": "The self-hosted Web IRC client",
-  "version": "4.5.1-blowfish",
+  "version": "4.5.2-blowfish",
   "type": "module",
   "preferGlobal": true,
-  "bin": "index.js",
+  "bin": {
+    "thelounge": "index.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/LordBex/thelounge.git"
