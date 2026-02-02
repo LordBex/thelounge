@@ -6,6 +6,7 @@ import vuePlugin from "eslint-plugin-vue";
 import vueParser from "vue-eslint-parser";
 import prettierConfig from "eslint-config-prettier";
 import globals from "globals";
+import importPlugin from "eslint-plugin-import";
 
 const baseRules = {
 	"block-scoped-var": "error",
@@ -115,6 +116,17 @@ export default [
 			".claude/**",
 			".vscode/**",
 		],
+	},
+
+	// Enforce file extensions (import/extensions)
+	{
+		files: ["**/*.js", "**/*.mjs", "**/*.cjs", "**/*.ts", "**/*.vue"],
+		plugins: {
+			import: importPlugin,
+		},
+		rules: {
+			"import/extensions": ["error", "ignorePackages"],
+		},
 	},
 
 	// Base JavaScript config for all files

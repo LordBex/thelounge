@@ -133,6 +133,7 @@
     "emoji-regex": "10.2.1",
     "eslint": "9.39.1",
     "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-vue": "10.5.1",
     "fork-ts-checker-webpack-plugin": "9.1.0",
     "fuzzy": "0.1.3",
