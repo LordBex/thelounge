@@ -4,12 +4,12 @@ import Chan from "../../server/models/chan.js";
 import {ChanType} from "../../shared/types/chan.js";
 import Msg from "../../server/models/msg.js";
 import User from "../../server/models/user.js";
-import Network, {NetworkWithIrcFramework} from "../../server/models/network.js";
+import Network, {type NetworkWithIrcFramework} from "../../server/models/network.js";
 import Config from "../../server/config.js";
 import STSPolicies from "../../server/plugins/sts";
 import ClientCertificate from "../../server/plugins/clientCertificate.js";
 import Client from "../../server/client.js";
-import {MessageStorage} from "../../server/plugins/messageStorage/types.js";
+import type {MessageStorage} from "../../server/plugins/messageStorage/types.js";
 
 // Minimal interface for test client that satisfies Network.validate() requirements
 interface TestClient {
