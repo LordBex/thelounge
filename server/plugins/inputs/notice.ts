@@ -1,4 +1,4 @@
-import {PluginInputHandler} from "./index";
+import {PluginInputHandler} from "./index.js";
 import {createFishMessage} from "../../utils/fish.js";
 
 const commands = ["notice"];

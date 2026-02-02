@@ -1,11 +1,11 @@
-import {SharedMention} from "./mention";
-import {ChanState, SharedChan, UserGroup} from "./chan";
-import {SharedNetwork, SharedServerOptions} from "./network";
-import {SharedMsg, LinkPreview} from "./msg";
-import {SharedUser} from "./user";
-import {SharedChangelogData} from "./changelog";
-import {SharedConfiguration, LockedSharedConfiguration} from "./config";
-import {SearchResponse, SearchQuery} from "./storage";
+import {SharedMention} from "./mention.js";
+import {ChanState, SharedChan, UserGroup} from "./chan.js";
+import {SharedNetwork, SharedServerOptions} from "./network.js";
+import {SharedMsg, LinkPreview} from "./msg.js";
+import {SharedUser} from "./user.js";
+import {SharedChangelogData} from "./changelog.js";
+import {SharedConfiguration, LockedSharedConfiguration} from "./config.js";
+import {SearchResponse, SearchQuery} from "./storage.js";
 
 type Session = {
 	current: boolean;

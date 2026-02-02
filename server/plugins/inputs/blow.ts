@@ -1,6 +1,6 @@
-import {PluginInputHandler} from "./index";
-import Msg from "../../models/msg";
-import {MessageType} from "../../../shared/types/msg";
+import {PluginInputHandler} from "./index.js";
+import Msg from "../../models/msg.js";
+import {MessageType} from "../../../shared/types/msg.js";
 
 const commands = ["blow"];
 

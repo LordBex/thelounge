@@ -118,9 +118,9 @@ export default [
 		],
 	},
 
-	// Enforce file extensions (import/extensions)
+	// Enforce file extensions (import/extensions) for server/shared only
 	{
-		files: ["**/*.js", "**/*.mjs", "**/*.cjs", "**/*.ts", "**/*.vue"],
+		files: ["server/**/*.ts", "server/**/*.js", "shared/**/*.ts", "shared/**/*.js"],
 		plugins: {
 			import: importPlugin,
 		},

@@ -6,7 +6,7 @@ import Msg from "../../server/models/msg.js";
 import User from "../../server/models/user.js";
 import Network, {type NetworkWithIrcFramework} from "../../server/models/network.js";
 import Config from "../../server/config.js";
-import STSPolicies from "../../server/plugins/sts";
+import STSPolicies from "../../server/plugins/sts.js";
 import ClientCertificate from "../../server/plugins/clientCertificate.js";
 import Client from "../../server/client.js";
 import type {MessageStorage} from "../../server/plugins/messageStorage/types.js";

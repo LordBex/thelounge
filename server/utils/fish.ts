@@ -2,7 +2,7 @@
 // Functional approach with proper typing and error handling
 
 // Types
-import log from "../log";
+import log from "../log.js";
 
 interface DecryptResult {
 	text: string;
