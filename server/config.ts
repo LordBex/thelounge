@@ -25,6 +25,8 @@ type Https = {
 
 type FileUpload = {
 	enable: boolean;
+	type: "local" | "x0";
+	x0_host?: string;
 	maxFileSize: number;
 	baseUrl?: string;
 };

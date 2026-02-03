@@ -2544,6 +2544,7 @@ __metadata:
     "@typescript-eslint/parser": "npm:8.46.4"
     "@vue/runtime-dom": "npm:3.5.24"
     "@vue/test-utils": "npm:2.4.6"
+    "@zip.js/zip.js": "npm:^2.8.16"
     babel-loader: "npm:10.0.0"
     babel-plugin-istanbul: "npm:6.1.1"
     babel-preset-typescript-vue3: "npm:2.0.17"
@@ -3807,6 +3808,13 @@ __metadata:
   version: 4.2.2
   resolution: "@xtuc/long@npm:4.2.2"
   checksum: 10c0/8582cbc69c79ad2d31568c412129bf23d2b1210a1dfb60c82d5a1df93334da4ee51f3057051658569e2c196d8dc33bc05ae6b974a711d0d16e801e1d0647ccd1
+  languageName: node
+  linkType: hard
+
+"@zip.js/zip.js@npm:^2.8.16":
+  version: 2.8.16
+  resolution: "@zip.js/zip.js@npm:2.8.16"
+  checksum: 10c0/12a8d9572aa9deef9d46f974defadc016ab48c25a17aed7e16d2271e544aa735cfbf2d977551c4a490466d2ae77748686aaf6b63153c59d2a5ea920ad33c0378
   languageName: node
   linkType: hard
 

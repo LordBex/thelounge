@@ -16,6 +16,8 @@ type SharedConfigurationBase = {
 	themes: ConfigTheme[];
 	defaultTheme: string;
 	fileUploadMaxFileSize?: number;
+	fileUploadType?: "local" | "x0";
+	fileUploadX0Host?: string;
 };
 
 export type ConfigNetDefaults = {
