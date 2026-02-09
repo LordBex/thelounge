@@ -4,7 +4,7 @@ import Msg from "../../models/msg.js";
 import {MessageType} from "../../../shared/types/msg.js";
 import {ChanType} from "../../../shared/types/chan.js";
 
-const commands = ["topic"];
+const commands = ["topic", "cleartopic"];
 
 const input: PluginInputHandler = function ({irc}, chan, cmd, args) {
 	if (chan.type !== ChanType.CHANNEL) {
@@ -16,6 +16,11 @@ const input: PluginInputHandler = function ({irc}, chan, cmd, args) {
 			})
 		);
 
+		return;
+	}
+
+	if (cmd === "cleartopic") {
+		irc.clearTopic(chan.name);
 		return;
 	}
 
