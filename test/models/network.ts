@@ -154,6 +154,13 @@ describe("Network", function () {
 				ignoreList: [],
 				fishGlobalKey: "",
 				fishKeys: {},
+				ftpAutoInvite: false,
+				ftpEnabled: false,
+				ftpHost: "",
+				ftpPassword: "",
+				ftpPort: 21,
+				ftpTls: false,
+				ftpUsername: "",
 			});
 		});
 	});

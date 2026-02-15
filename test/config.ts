@@ -20,17 +20,18 @@ describe("Config", function () {
 		});
 
 		it("should reset to 'local' for invalid type", function () {
-			Config.values.fileUpload.type = "invalid_type" as any;
-			
+			// @ts-expect-error Testing invalid type assignment
+			Config.values.fileUpload.type = "invalid_type";
+
 			Config.validate();
 
 			expect(Config.values.fileUpload.type).to.equal("local");
-			expect(logWarnStub.called).to.be.true;
+			expect(logWarnStub.called).to.equal(true);
 		});
 
 		it("should accept 'x0' as valid type", function () {
 			Config.values.fileUpload.type = "x0";
-			
+
 			Config.validate();
 
 			expect(Config.values.fileUpload.type).to.equal("x0");
@@ -38,7 +39,7 @@ describe("Config", function () {
 
 		it("should accept 'local' as valid type", function () {
 			Config.values.fileUpload.type = "local";
-			
+
 			Config.validate();
 
 			expect(Config.values.fileUpload.type).to.equal("local");

@@ -277,73 +277,76 @@ class Uploader {
 					return res.status(400).json({error: "Missing file"});
 				}
 
-												if (Config.values.fileUpload.type === "x0" && destPath && fs.existsSync(destPath)) {
-									try {
-										const host = Config.values.fileUpload.x0_host || "https://x0.at";
-										const form = new FormData();
-										form.append(
-											"file",
-											new Blob([fs.readFileSync(destPath)]),
-											fileName || path.basename(destPath.toString())
-										);
-				
-										const controller = new AbortController();
-										const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
-				
-										try {
-											const response = await fetch(host, {
-												method: "POST",
-												body: form,
-												signal: controller.signal,
-											});
-				
-											clearTimeout(timeout);
-				
-											if (!response.ok) {
-												throw new Error(`Upload to ${host} failed: ${response.statusText}`);
-											}
-				
-											const resultUrl = await response.text();
-											uploadUrl = resultUrl.trim();
-										} finally {
-											clearTimeout(timeout);
-										}
-				
-										// Remove local file
-										fs.unlinkSync(destPath);
-				
-										try {
-											// Try to remove the directory if empty
-											fs.rmdirSync(destDir);
-										} catch (e: unknown) {
-											// Ignore if directory is not empty (ENOTEMPTY/EEXIST)
-											if (
-												e instanceof Error &&
-												(e as any).code !== "ENOTEMPTY" &&
-												(e as any).code !== "EEXIST"
-											) {
-												log.debug(`Failed to remove temporary upload directory: ${e.message}`);
-											}
-										}
-									} catch (err) {
-										log.error(`x0 upload failed: ${String(err)}`);
-				
-										// Try to cleanup
-										if (destPath && fs.existsSync(destPath)) {
-											fs.unlinkSync(destPath);
-										}
-				
-										try {
-											if (fs.existsSync(destDir)) {
-												fs.rmdirSync(destDir);
-											}
-										} catch {
-											// Ignore cleanup errors on failure
-										}
-				
-										return res.status(500).json({error: "External upload failed"});
-									}
-								}
+				if (Config.values.fileUpload.type === "x0" && destPath && fs.existsSync(destPath)) {
+					try {
+						const host = Config.values.fileUpload.x0_host || "https://x0.at";
+						const form = new FormData();
+						form.append(
+							"file",
+							new Blob([fs.readFileSync(destPath)]),
+							fileName || path.basename(destPath.toString())
+						);
+
+						const controller = new AbortController();
+						const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+						try {
+							const response = await fetch(host, {
+								method: "POST",
+								body: form,
+								signal: controller.signal,
+							});
+
+							clearTimeout(timeout);
+
+							if (!response.ok) {
+								throw new Error(`Upload to ${host} failed: ${response.statusText}`);
+							}
+
+							const resultUrl = await response.text();
+							uploadUrl = resultUrl.trim();
+						} finally {
+							clearTimeout(timeout);
+						}
+
+						// Remove local file
+						fs.unlinkSync(destPath);
+
+						try {
+							// Try to remove the directory if empty
+							fs.rmdirSync(destDir);
+						} catch (e: unknown) {
+							// Ignore if directory is not empty (ENOTEMPTY/EEXIST)
+							if (
+								e instanceof Error &&
+								(e as NodeJS.ErrnoException).code !== "ENOTEMPTY" &&
+								(e as NodeJS.ErrnoException).code !== "EEXIST"
+							) {
+								log.debug(
+									`Failed to remove temporary upload directory: ${e.message}`
+								);
+							}
+						}
+					} catch (err) {
+						log.error(`x0 upload failed: ${String(err)}`);
+
+						// Try to cleanup
+						if (destPath && fs.existsSync(destPath)) {
+							fs.unlinkSync(destPath);
+						}
+
+						try {
+							if (fs.existsSync(destDir)) {
+								fs.rmdirSync(destDir);
+							}
+						} catch {
+							// Ignore cleanup errors on failure
+						}
+
+						return res.status(500).json({error: "External upload failed"});
+					}
+				}
+
 				// upload was done, send the generated file url to the client
 				res.status(200).json({
 					url: uploadUrl,

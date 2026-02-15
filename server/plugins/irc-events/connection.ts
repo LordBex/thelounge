@@ -76,32 +76,33 @@ export default <IrcEventHandler>function (irc, network) {
 		};
 
 		// FTP auto-invite (must complete before channel joins)
-		if ((network as any).ftpEnabled && (network as any).ftpAutoInvite) {
-			setTimeout(async () => {
-				const {sendFtpInvite} = await import("../ftp-client.js");
-				const result = await sendFtpInvite(network, network.nick);
+		if (network.ftpEnabled && network.ftpAutoInvite) {
+			setTimeout(() => {
+				void import("../ftp-client.js").then(({sendFtpInvite}) =>
+					sendFtpInvite(network, network.nick).then((result) => {
+						if (result.success) {
+							network.getLobby().pushMessage(
+								this,
+								new Msg({
+									text: `[FTP Auto-Invite] ${result.message}`,
+								}),
+								true
+							);
+						} else {
+							network.getLobby().pushMessage(
+								this,
+								new Msg({
+									type: MessageType.ERROR,
+									text: `[FTP Auto-Invite] ${result.message}`,
+								}),
+								true
+							);
+						}
 
-				if (result.success) {
-					network.getLobby().pushMessage(
-						this,
-						new Msg({
-							text: `[FTP Auto-Invite] ${result.message}`,
-						}),
-						true
-					);
-				} else {
-					network.getLobby().pushMessage(
-						this,
-						new Msg({
-							type: MessageType.ERROR,
-							text: `[FTP Auto-Invite] ${result.message}`,
-						}),
-						true
-					);
-				}
-
-				// Join channels after FTP invite completes
-				joinAllChannels(delay);
+						// Join channels after FTP invite completes
+						joinAllChannels(delay);
+					})
+				);
 			}, delay);
 			delay += 1000;
 		} else {

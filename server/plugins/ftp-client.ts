@@ -1,6 +1,4 @@
 import {Client as FtpClient, AccessOptions} from "basic-ftp";
-import Msg from "../models/msg.js";
-import {MessageType} from "../../shared/types/msg.js";
 import Network from "../models/network.js";
 
 export interface FtpInviteConfig {
@@ -46,13 +44,14 @@ export class FtpInviteClient {
 			await this.client.access(accessOptions);
 
 			// Send SITE INVITE command
-			const result = await this.client.send(`SITE INVITE ${targetUsername}`);
+			await this.client.send(`SITE INVITE ${targetUsername}`);
 
-			await this.client.close();
+			this.client.close();
 
 			return {success: true, message: `FTP invite sent for ${targetUsername}`};
 		} catch (error) {
-			await this.client.close();
+			this.client.close();
+
 			return {
 				success: false,
 				message: `FTP invite failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -60,8 +59,8 @@ export class FtpInviteClient {
 		}
 	}
 
-	async close(): Promise<void> {
-		await this.client.close();
+	close(): void {
+		this.client.close();
 	}
 }
 
@@ -70,14 +69,15 @@ export async function sendFtpInvite(
 	targetUsername: string
 ): Promise<{success: boolean; message: string}> {
 	const config: FtpInviteConfig = {
-		enabled: (network as any).ftpEnabled || false,
-		host: (network as any).ftpHost || "",
-		port: (network as any).ftpPort || 21,
-		username: (network as any).ftpUsername || "",
-		password: (network as any).ftpPassword || "",
-		tls: (network as any).ftpTls || false,
+		enabled: network.ftpEnabled || false,
+		host: network.ftpHost || "",
+		port: network.ftpPort || 21,
+		username: network.ftpUsername || "",
+		password: network.ftpPassword || "",
+		tls: network.ftpTls || false,
 	};
 
 	const ftpClient = new FtpInviteClient();
+
 	return await ftpClient.sendInvite(config, targetUsername);
 }

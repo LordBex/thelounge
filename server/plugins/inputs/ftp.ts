@@ -1,11 +1,66 @@
 import {PluginInputHandler} from "./index.js";
+import Client from "../../client.js";
 import Msg from "../../models/msg.js";
 import {MessageType} from "../../../shared/types/msg.js";
+import {Channel} from "../../models/chan.js";
+import {NetworkWithIrcFramework} from "../../models/network.js";
 import {sendFtpInvite} from "../ftp-client.js";
 
 const commands = ["ftp", "ftpinvite"];
 
-const input: PluginInputHandler = async function (network, chan, cmd, args) {
+function handleFtpResult(
+	client: Client,
+	chan: Channel,
+	result: {success: boolean; message: string}
+) {
+	if (result.success) {
+		chan.pushMessage(
+			client,
+			new Msg({
+				text: result.message,
+			})
+		);
+	} else {
+		chan.pushMessage(
+			client,
+			new Msg({
+				type: MessageType.ERROR,
+				text: result.message,
+			})
+		);
+	}
+}
+
+function handleFtpInvite(
+	client: Client,
+	network: NetworkWithIrcFramework,
+	chan: Channel,
+	targetUsername: string
+) {
+	if (!network.ftpEnabled) {
+		chan.pushMessage(
+			client,
+			new Msg({
+				type: MessageType.ERROR,
+				text: "FTP invites are not enabled for this network",
+			})
+		);
+		return;
+	}
+
+	chan.pushMessage(
+		client,
+		new Msg({
+			text: `Sending FTP invite for ${targetUsername}...`,
+		})
+	);
+
+	void sendFtpInvite(network, targetUsername).then((result) => {
+		handleFtpResult(client, chan, result);
+	});
+}
+
+const input: PluginInputHandler = function (network, chan, cmd, args) {
 	if (!network) {
 		chan.pushMessage(
 			this,
@@ -20,43 +75,7 @@ const input: PluginInputHandler = async function (network, chan, cmd, args) {
 	// Handle /ftpinvite command
 	if (cmd === "ftpinvite") {
 		const targetUsername = args[0] || network.nick;
-
-		if (!(network as any).ftpEnabled) {
-			chan.pushMessage(
-				this,
-				new Msg({
-					type: MessageType.ERROR,
-					text: "FTP invites are not enabled for this network",
-				})
-			);
-			return;
-		}
-
-		chan.pushMessage(
-			this,
-			new Msg({
-				text: `Sending FTP invite for ${targetUsername}...`,
-			})
-		);
-
-		const result = await sendFtpInvite(network, targetUsername);
-
-		if (result.success) {
-			chan.pushMessage(
-				this,
-				new Msg({
-					text: result.message,
-				})
-			);
-		} else {
-			chan.pushMessage(
-				this,
-				new Msg({
-					type: MessageType.ERROR,
-					text: result.message,
-				})
-			);
-		}
+		handleFtpInvite(this, network, chan, targetUsername);
 		return;
 	}
 
@@ -75,8 +94,8 @@ const input: PluginInputHandler = async function (network, chan, cmd, args) {
 	const subCommand = args[0].toLowerCase();
 
 	if (subCommand === "status") {
-		const status = (network as any).ftpEnabled
-			? `FTP invites enabled for ${(network as any).ftpHost || "unknown host"} (port ${(network as any).ftpPort || 21}, TLS: ${(network as any).ftpTls ? "yes" : "no"})`
+		const status = network.ftpEnabled
+			? `FTP invites enabled for ${network.ftpHost || "unknown host"} (port ${network.ftpPort || 21}, TLS: ${network.ftpTls ? "yes" : "no"})`
 			: "FTP invites are not enabled for this network";
 
 		chan.pushMessage(
@@ -86,42 +105,7 @@ const input: PluginInputHandler = async function (network, chan, cmd, args) {
 			})
 		);
 	} else if (subCommand === "test") {
-		if (!(network as any).ftpEnabled) {
-			chan.pushMessage(
-				this,
-				new Msg({
-					type: MessageType.ERROR,
-					text: "FTP invites are not enabled for this network",
-				})
-			);
-			return;
-		}
-
-		chan.pushMessage(
-			this,
-			new Msg({
-				text: `Testing FTP invite for ${network.nick}...`,
-			})
-		);
-
-		const result = await sendFtpInvite(network, network.nick);
-
-		if (result.success) {
-			chan.pushMessage(
-				this,
-				new Msg({
-					text: result.message,
-				})
-			);
-		} else {
-			chan.pushMessage(
-				this,
-				new Msg({
-					type: MessageType.ERROR,
-					text: result.message,
-				})
-			);
-		}
+		handleFtpInvite(this, network, chan, network.nick);
 	} else {
 		chan.pushMessage(
 			this,

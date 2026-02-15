@@ -231,10 +231,7 @@ class Config {
 			}
 		}
 
-		if (
-			this.values.fileUpload.type !== "local" &&
-			this.values.fileUpload.type !== "x0"
-		) {
+		if (this.values.fileUpload.type !== "local" && this.values.fileUpload.type !== "x0") {
 			log.warn(
 				`The ${colors.bold(
 					"fileUpload.type"

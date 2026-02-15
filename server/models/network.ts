@@ -561,21 +561,27 @@ class Network {
 		if (Object.prototype.hasOwnProperty.call(args, "ftpEnabled")) {
 			this.ftpEnabled = !!args.ftpEnabled;
 		}
+
 		if (Object.prototype.hasOwnProperty.call(args, "ftpHost")) {
 			this.ftpHost = String(args.ftpHost ?? "");
 		}
+
 		if (Object.prototype.hasOwnProperty.call(args, "ftpPort")) {
 			this.ftpPort = parseInt(String(args.ftpPort ?? 21), 10);
 		}
+
 		if (Object.prototype.hasOwnProperty.call(args, "ftpUsername")) {
 			this.ftpUsername = String(args.ftpUsername ?? "");
 		}
+
 		if (Object.prototype.hasOwnProperty.call(args, "ftpPassword")) {
 			this.ftpPassword = String(args.ftpPassword ?? "");
 		}
+
 		if (Object.prototype.hasOwnProperty.call(args, "ftpTls")) {
 			this.ftpTls = !!args.ftpTls;
 		}
+
 		if (Object.prototype.hasOwnProperty.call(args, "ftpAutoInvite")) {
 			this.ftpAutoInvite = !!args.ftpAutoInvite;
 		}
