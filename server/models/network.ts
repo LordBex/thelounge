@@ -84,6 +84,13 @@ export type NetworkConfig = {
 	proxyEnabled: boolean;
 	highlightRegex?: string;
 	ignoreList: IgnoreListItem[];
+	ftpEnabled: boolean;
+	ftpHost: string;
+	ftpPort: number;
+	ftpUsername: string;
+	ftpPassword: string;
+	ftpTls: boolean;
+	ftpAutoInvite: boolean;
 };
 
 // Form data coming from network create/edit forms
@@ -115,6 +122,13 @@ export type NetworkFormData = {
 	join?: string; // backwards compatibility
 	fishGlobalKey?: string;
 	fishKeys?: Record<string, string>;
+	ftpEnabled?: boolean;
+	ftpHost?: string;
+	ftpPort?: string | number;
+	ftpUsername?: string;
+	ftpPassword?: string;
+	ftpTls?: boolean;
+	ftpAutoInvite?: boolean;
 };
 
 class Network {
@@ -146,6 +160,15 @@ class Network {
 	// FiSH Blowfish settings persisted per-network
 	fishGlobalKey?: string;
 	fishKeys?: Record<string, string>;
+
+	// FTP Invite settings persisted per-network
+	ftpEnabled?: boolean;
+	ftpHost?: string;
+	ftpPort?: number;
+	ftpUsername?: string;
+	ftpPassword?: string;
+	ftpTls?: boolean;
+	ftpAutoInvite?: boolean;
 
 	irc?: IrcFramework.Client & {
 		options?: NetworkIrcOptions;
@@ -207,6 +230,15 @@ class Network {
 			fishGlobalKey: "",
 			fishKeys: {},
 
+			// FTP defaults
+			ftpEnabled: false,
+			ftpHost: "",
+			ftpPort: 21,
+			ftpUsername: "",
+			ftpPassword: "",
+			ftpTls: false,
+			ftpAutoInvite: false,
+
 			chanCache: [],
 			ignoreList: [],
 			keepNick: null,
@@ -264,6 +296,15 @@ class Network {
 		this.proxyUsername = cleanString(this.proxyUsername);
 		this.proxyPassword = cleanString(this.proxyPassword);
 		this.proxyEnabled = !!this.proxyEnabled;
+
+		// FTP settings validation
+		this.ftpHost = cleanString(this.ftpHost || "");
+		this.ftpPort = this.ftpPort || 21;
+		this.ftpUsername = cleanString(this.ftpUsername || "");
+		this.ftpPassword = cleanString(this.ftpPassword || "");
+		this.ftpEnabled = !!this.ftpEnabled;
+		this.ftpTls = !!this.ftpTls;
+		this.ftpAutoInvite = !!this.ftpAutoInvite;
 
 		const error = function (network: Network, text: string) {
 			network.getLobby().pushMessage(
@@ -516,6 +557,29 @@ class Network {
 			this.fishKeys = map;
 		}
 
+		// FTP settings (only update when provided)
+		if (Object.prototype.hasOwnProperty.call(args, "ftpEnabled")) {
+			this.ftpEnabled = !!args.ftpEnabled;
+		}
+		if (Object.prototype.hasOwnProperty.call(args, "ftpHost")) {
+			this.ftpHost = String(args.ftpHost ?? "");
+		}
+		if (Object.prototype.hasOwnProperty.call(args, "ftpPort")) {
+			this.ftpPort = parseInt(String(args.ftpPort ?? 21), 10);
+		}
+		if (Object.prototype.hasOwnProperty.call(args, "ftpUsername")) {
+			this.ftpUsername = String(args.ftpUsername ?? "");
+		}
+		if (Object.prototype.hasOwnProperty.call(args, "ftpPassword")) {
+			this.ftpPassword = String(args.ftpPassword ?? "");
+		}
+		if (Object.prototype.hasOwnProperty.call(args, "ftpTls")) {
+			this.ftpTls = !!args.ftpTls;
+		}
+		if (Object.prototype.hasOwnProperty.call(args, "ftpAutoInvite")) {
+			this.ftpAutoInvite = !!args.ftpAutoInvite;
+		}
+
 		// Sync lobby channel name
 		this.getLobby().name = this.name;
 
@@ -715,6 +779,15 @@ class Network {
 		data.fishGlobalKey = this.fishGlobalKey || "";
 		data.fishKeys = {...(this.fishKeys || {})};
 
+		// Include FTP fields for editing UI
+		data.ftpEnabled = this.ftpEnabled || false;
+		data.ftpHost = this.ftpHost || "";
+		data.ftpPort = this.ftpPort || 21;
+		data.ftpUsername = this.ftpUsername || "";
+		data.ftpTls = this.ftpTls || false;
+		data.ftpAutoInvite = this.ftpAutoInvite || false;
+		// Note: Don't include ftpPassword for security - user must re-enter
+
 		return data;
 	}
 
@@ -748,6 +821,15 @@ class Network {
 			// FiSH persistence
 			"fishGlobalKey",
 			"fishKeys",
+
+			// FTP Invite persistence
+			"ftpEnabled",
+			"ftpHost",
+			"ftpPort",
+			"ftpUsername",
+			"ftpPassword",
+			"ftpTls",
+			"ftpAutoInvite",
 		]) as Network;
 
 		network.channels = this.channels
