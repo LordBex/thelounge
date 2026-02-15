@@ -355,6 +355,103 @@ the server tab on new connection"
 				</div>
 			</div>
 
+			<h2>FTP Invite</h2>
+			<div class="connect-row">
+				<label></label>
+				<div class="input-wrap">
+					<label for="connect:ftpEnabled">
+						<input
+							id="connect:ftpEnabled"
+							v-model="defaults.ftpEnabled"
+							type="checkbox"
+							name="ftpEnabled"
+						/>
+						Enable FTP Invite
+					</label>
+				</div>
+			</div>
+			<template v-if="defaults.ftpEnabled">
+				<div class="connect-row">
+					<label for="connect:ftpHost">FTP Host</label>
+					<input
+						id="connect:ftpHost"
+						v-model.trim="defaults.ftpHost"
+						class="input"
+						name="ftpHost"
+						aria-label="FTP server address"
+						maxlength="255"
+					/>
+				</div>
+				<div class="connect-row">
+					<label for="connect:ftpPort">FTP Port</label>
+					<input
+						id="connect:ftpPort"
+						v-model="defaults.ftpPort"
+						class="input"
+						type="number"
+						min="1"
+						max="65535"
+						name="ftpPort"
+						aria-label="FTP server port"
+					/>
+				</div>
+				<div class="connect-row">
+					<label for="connect:ftpUsername">FTP Username</label>
+					<input
+						id="connect:ftpUsername"
+						v-model.trim="defaults.ftpUsername"
+						class="input"
+						name="ftpUsername"
+						maxlength="100"
+					/>
+				</div>
+				<div class="connect-row">
+					<label for="connect:ftpPassword">FTP Password</label>
+					<RevealPassword
+						v-slot:default="slotProps"
+						class="input-wrap password-container"
+					>
+						<input
+							id="connect:ftpPassword"
+							v-model="defaults.ftpPassword"
+							class="input"
+							:type="slotProps.isVisible ? 'text' : 'password'"
+							placeholder="FTP password"
+							name="ftpPassword"
+							maxlength="300"
+						/>
+					</RevealPassword>
+				</div>
+				<div class="connect-row">
+					<label></label>
+					<div class="input-wrap">
+						<label for="connect:ftpTls">
+							<input
+								id="connect:ftpTls"
+								v-model="defaults.ftpTls"
+								type="checkbox"
+								name="ftpTls"
+							/>
+							Use FTP over explicit TLS (FTPS)
+						</label>
+					</div>
+				</div>
+				<div class="connect-row">
+					<label></label>
+					<div class="input-wrap">
+						<label for="connect:ftpAutoInvite">
+							<input
+								id="connect:ftpAutoInvite"
+								v-model="defaults.ftpAutoInvite"
+								type="checkbox"
+								name="ftpAutoInvite"
+							/>
+							Auto-invite after connecting
+						</label>
+					</div>
+				</div>
+			</template>
+
 			<template v-if="store.state.serverConfiguration?.public">
 				<template v-if="config?.lockNetwork">
 					<div class="connect-row">
@@ -594,6 +691,13 @@ export type NetworkFormDefaults = Partial<ClientNetwork> & {
 	rejectUnauthorized?: boolean;
 	fishGlobalKey?: string;
 	fishKeys?: Record<string, string>;
+	ftpEnabled?: boolean;
+	ftpHost?: string;
+	ftpPort?: number;
+	ftpUsername?: string;
+	ftpPassword?: string;
+	ftpTls?: boolean;
+	ftpAutoInvite?: boolean;
 };
 
 export default defineComponent({

@@ -341,6 +341,14 @@ class Client {
 
 			fishGlobalKey: String(args.fishGlobalKey || ""),
 			fishKeys: (args.fishKeys as Record<string, string>) || {},
+
+			ftpEnabled: !!args.ftpEnabled,
+			ftpHost: String(args.ftpHost || ""),
+			ftpPort: parseInt(String(args.ftpPort ?? 21), 10),
+			ftpUsername: String(args.ftpUsername || ""),
+			ftpPassword: String(args.ftpPassword || ""),
+			ftpTls: !!args.ftpTls,
+			ftpAutoInvite: !!args.ftpAutoInvite,
 		});
 	}
 
