@@ -80,7 +80,8 @@
     "ua-parser-js": "2.0.6",
     "undici": "7.16.0",
     "uuid": "13.0.0",
-    "web-push": "3.6.7"
+    "web-push": "3.6.7",
+    "basic-ftp": "5.0.5"
   },
   "optionalDependencies": {
     "better-sqlite3": "12.4.1"
