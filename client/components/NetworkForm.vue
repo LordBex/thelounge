@@ -325,6 +325,7 @@ the server tab on new connection"
 								maxlength="100"
 								aria-label="Channel or user name"
 								style="margin: 0"
+								@input="entry.target = entry.target.toLowerCase()"
 							/>
 							<input
 								v-model="entry.key"
