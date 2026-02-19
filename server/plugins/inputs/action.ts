@@ -3,6 +3,7 @@ import Msg from "../../models/msg.js";
 import {MessageType} from "../../../shared/types/msg.js";
 import {ChanType} from "../../../shared/types/chan.js";
 import {createFishMessage} from "../../utils/fish.js";
+import Config from "../../config.js";
 
 const commands = ["slap", "me"];
 
@@ -33,7 +34,7 @@ const input: PluginInputHandler = function ({irc}, chan, cmd, args) {
 			text = text || args.join(" ");
 
 			// If FiSH key is set, encrypt CTCP ACTION and send as normal PRIVMSG with +OK
-			if (chan.blowfishKey) {
+			if (Config.values.fish.enabled && chan.blowfishKey) {
 				const ctcp = "\x01ACTION " + text + "\x01";
 				const toSend = createFishMessage(ctcp, chan.blowfishKey);
 				irc.say(chan.name, toSend);

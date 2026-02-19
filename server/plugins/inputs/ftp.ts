@@ -5,6 +5,7 @@ import {MessageType} from "../../../shared/types/msg.js";
 import {Channel} from "../../models/chan.js";
 import {NetworkWithIrcFramework} from "../../models/network.js";
 import {sendFtpInvite} from "../ftp-client.js";
+import Config from "../../config.js";
 
 const commands = ["ftp", "ftpinvite"];
 
@@ -61,6 +62,17 @@ function handleFtpInvite(
 }
 
 const input: PluginInputHandler = function (network, chan, cmd, args) {
+	if (!Config.values.ftpInvite.enabled) {
+		chan.pushMessage(
+			this,
+			new Msg({
+				type: MessageType.ERROR,
+				text: "FTP Invite is not enabled on this server.",
+			})
+		);
+		return;
+	}
+
 	if (!network) {
 		chan.pushMessage(
 			this,

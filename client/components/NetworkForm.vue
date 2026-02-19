@@ -290,167 +290,171 @@ the server tab on new connection"
 				</div>
 			</template>
 
-			<h2>FiSH (Blowfish)</h2>
-			<div class="connect-row">
-				<label for="connect:fishGlobalKey">Global key</label>
-				<input
-					id="connect:fishGlobalKey"
-					v-model.trim="defaults.fishGlobalKey"
-					class="input"
-					name="fishGlobalKey"
-					placeholder="Optional global key for this network"
-				/>
-			</div>
-			<div class="connect-row" style="display: block">
-				<label for="connect:fishKeys" style="margin-bottom: 5px">
-					Per-channel or User-Channels
-					<span
-						class="tooltipped tooltipped-ne tooltipped-no-delay"
-						aria-label="#channel key or nick key"
-					>
-						<button class="extra-help" />
-					</span>
-				</label>
-				<div class="fish-keys-section">
-					<div
-						v-for="(entry, index) in fishKeysEntries"
-						:key="index"
-						class="connect-row fish-key-row"
-					>
-						<div class="input-wrap fish-key-inputs">
-							<input
-								v-model="entry.target"
-								class="input fish-target-input"
-								placeholder="#channel or nick"
-								maxlength="100"
-								aria-label="Channel or user name"
-								style="margin: 0"
-								@input="entry.target = entry.target.toLowerCase()"
-							/>
-							<input
-								v-model="entry.key"
-								type="password"
-								class="input fish-key-input"
-								placeholder="encryption key"
-								maxlength="300"
-								aria-label="Encryption key"
-								style="margin: 0"
-							/>
-							<button
-								type="button"
-								class="btn fish-remove-btn"
-								:disabled="fishKeysEntries.length <= 1"
-								title="Remove entry"
-								style="width: auto; margin: 0"
-								@click="removeFishKeyEntry(index)"
-							>
-								Remove
+			<template v-if="config?.fishEnabled">
+				<h2>FiSH (Blowfish)</h2>
+				<div class="connect-row">
+					<label for="connect:fishGlobalKey">Global key</label>
+					<input
+						id="connect:fishGlobalKey"
+						v-model.trim="defaults.fishGlobalKey"
+						class="input"
+						name="fishGlobalKey"
+						placeholder="Optional global key for this network"
+					/>
+				</div>
+				<div class="connect-row" style="display: block">
+					<label for="connect:fishKeys" style="margin-bottom: 5px">
+						Per-channel or User-Channels
+						<span
+							class="tooltipped tooltipped-ne tooltipped-no-delay"
+							aria-label="#channel key or nick key"
+						>
+							<button class="extra-help" />
+						</span>
+					</label>
+					<div class="fish-keys-section">
+						<div
+							v-for="(entry, index) in fishKeysEntries"
+							:key="index"
+							class="connect-row fish-key-row"
+						>
+							<div class="input-wrap fish-key-inputs">
+								<input
+									v-model="entry.target"
+									class="input fish-target-input"
+									placeholder="#channel or nick"
+									maxlength="100"
+									aria-label="Channel or user name"
+									style="margin: 0"
+									@input="entry.target = entry.target.toLowerCase()"
+								/>
+								<input
+									v-model="entry.key"
+									type="password"
+									class="input fish-key-input"
+									placeholder="encryption key"
+									maxlength="300"
+									aria-label="Encryption key"
+									style="margin: 0"
+								/>
+								<button
+									type="button"
+									class="btn fish-remove-btn"
+									:disabled="fishKeysEntries.length <= 1"
+									title="Remove entry"
+									style="width: auto; margin: 0"
+									@click="removeFishKeyEntry(index)"
+								>
+									Remove
+								</button>
+							</div>
+						</div>
+						<div class="connect-row">
+							<button type="button" class="btn" @click="addFishKeyEntry">
+								Add Entry
 							</button>
 						</div>
 					</div>
-					<div class="connect-row">
-						<button type="button" class="btn" @click="addFishKeyEntry">
-							Add Entry
-						</button>
-					</div>
 				</div>
-			</div>
+			</template>
 
-			<h2>FTP Invite</h2>
-			<div class="connect-row">
-				<label></label>
-				<div class="input-wrap">
-					<label for="connect:ftpEnabled">
+			<template v-if="config?.ftpInviteEnabled">
+				<h2>FTP Invite</h2>
+				<div class="connect-row">
+					<label></label>
+					<div class="input-wrap">
+						<label for="connect:ftpEnabled">
+							<input
+								id="connect:ftpEnabled"
+								v-model="defaults.ftpEnabled"
+								type="checkbox"
+								name="ftpEnabled"
+							/>
+							Enable FTP Invite
+						</label>
+					</div>
+				</div>
+				<template v-if="defaults.ftpEnabled">
+					<div class="connect-row">
+						<label for="connect:ftpHost">FTP Host</label>
 						<input
-							id="connect:ftpEnabled"
-							v-model="defaults.ftpEnabled"
-							type="checkbox"
-							name="ftpEnabled"
-						/>
-						Enable FTP Invite
-					</label>
-				</div>
-			</div>
-			<template v-if="defaults.ftpEnabled">
-				<div class="connect-row">
-					<label for="connect:ftpHost">FTP Host</label>
-					<input
-						id="connect:ftpHost"
-						v-model.trim="defaults.ftpHost"
-						class="input"
-						name="ftpHost"
-						aria-label="FTP server address"
-						maxlength="255"
-					/>
-				</div>
-				<div class="connect-row">
-					<label for="connect:ftpPort">FTP Port</label>
-					<input
-						id="connect:ftpPort"
-						v-model="defaults.ftpPort"
-						class="input"
-						type="number"
-						min="1"
-						max="65535"
-						name="ftpPort"
-						aria-label="FTP server port"
-					/>
-				</div>
-				<div class="connect-row">
-					<label for="connect:ftpUsername">FTP Username</label>
-					<input
-						id="connect:ftpUsername"
-						v-model.trim="defaults.ftpUsername"
-						class="input"
-						name="ftpUsername"
-						maxlength="100"
-					/>
-				</div>
-				<div class="connect-row">
-					<label for="connect:ftpPassword">FTP Password</label>
-					<RevealPassword
-						v-slot:default="slotProps"
-						class="input-wrap password-container"
-					>
-						<input
-							id="connect:ftpPassword"
-							v-model="defaults.ftpPassword"
+							id="connect:ftpHost"
+							v-model.trim="defaults.ftpHost"
 							class="input"
-							:type="slotProps.isVisible ? 'text' : 'password'"
-							placeholder="FTP password"
-							name="ftpPassword"
-							maxlength="300"
+							name="ftpHost"
+							aria-label="FTP server address"
+							maxlength="255"
 						/>
-					</RevealPassword>
-				</div>
-				<div class="connect-row">
-					<label></label>
-					<div class="input-wrap">
-						<label for="connect:ftpTls">
-							<input
-								id="connect:ftpTls"
-								v-model="defaults.ftpTls"
-								type="checkbox"
-								name="ftpTls"
-							/>
-							Use FTP over explicit TLS (FTPS)
-						</label>
 					</div>
-				</div>
-				<div class="connect-row">
-					<label></label>
-					<div class="input-wrap">
-						<label for="connect:ftpAutoInvite">
-							<input
-								id="connect:ftpAutoInvite"
-								v-model="defaults.ftpAutoInvite"
-								type="checkbox"
-								name="ftpAutoInvite"
-							/>
-							Auto-invite after connecting
-						</label>
+					<div class="connect-row">
+						<label for="connect:ftpPort">FTP Port</label>
+						<input
+							id="connect:ftpPort"
+							v-model="defaults.ftpPort"
+							class="input"
+							type="number"
+							min="1"
+							max="65535"
+							name="ftpPort"
+							aria-label="FTP server port"
+						/>
 					</div>
-				</div>
+					<div class="connect-row">
+						<label for="connect:ftpUsername">FTP Username</label>
+						<input
+							id="connect:ftpUsername"
+							v-model.trim="defaults.ftpUsername"
+							class="input"
+							name="ftpUsername"
+							maxlength="100"
+						/>
+					</div>
+					<div class="connect-row">
+						<label for="connect:ftpPassword">FTP Password</label>
+						<RevealPassword
+							v-slot:default="slotProps"
+							class="input-wrap password-container"
+						>
+							<input
+								id="connect:ftpPassword"
+								v-model="defaults.ftpPassword"
+								class="input"
+								:type="slotProps.isVisible ? 'text' : 'password'"
+								placeholder="FTP password"
+								name="ftpPassword"
+								maxlength="300"
+							/>
+						</RevealPassword>
+					</div>
+					<div class="connect-row">
+						<label></label>
+						<div class="input-wrap">
+							<label for="connect:ftpTls">
+								<input
+									id="connect:ftpTls"
+									v-model="defaults.ftpTls"
+									type="checkbox"
+									name="ftpTls"
+								/>
+								Use FTP over explicit TLS (FTPS)
+							</label>
+						</div>
+					</div>
+					<div class="connect-row">
+						<label></label>
+						<div class="input-wrap">
+							<label for="connect:ftpAutoInvite">
+								<input
+									id="connect:ftpAutoInvite"
+									v-model="defaults.ftpAutoInvite"
+									type="checkbox"
+									name="ftpAutoInvite"
+								/>
+								Auto-invite after connecting
+							</label>
+						</div>
+					</div>
+				</template>
 			</template>
 
 			<template v-if="store.state.serverConfiguration?.public">

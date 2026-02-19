@@ -9,6 +9,8 @@ type SharedConfigurationBase = {
 	prefetch: boolean;
 	fileUpload: boolean;
 	ldapEnabled: boolean;
+	fishEnabled: boolean;
+	ftpInviteEnabled: boolean;
 	isUpdateAvailable: boolean;
 	applicationServerKey: string;
 	version: string;

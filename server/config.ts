@@ -78,6 +78,14 @@ type Debug = {
 	raw: boolean;
 };
 
+type Fish = {
+	enabled: boolean;
+};
+
+type FtpInvite = {
+	enabled: boolean;
+};
+
 type StoragePolicy = {
 	enabled: boolean;
 	maxAgeDays: number;
@@ -122,6 +130,8 @@ export type ConfigType = {
 	oidentd?: string;
 	ldap: Ldap;
 	debug: Debug;
+	fish: Fish;
+	ftpInvite: FtpInvite;
 	themeColor: string;
 };
 

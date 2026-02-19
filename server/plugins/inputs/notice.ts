@@ -1,5 +1,6 @@
 import {PluginInputHandler} from "./index.js";
 import {createFishMessage} from "../../utils/fish.js";
+import Config from "../../config.js";
 
 const commands = ["notice"];
 
@@ -12,10 +13,14 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 	const message = args.slice(1).join(" ");
 
 	// Encrypt if a FiSH key is set for the target channel/query
-	const targetChan =
-		network.getChannel(targetName) || (chan.name === targetName ? chan : undefined);
-	const key = targetChan?.blowfishKey;
-	const toSend = key ? createFishMessage(message, key) : message;
+	let toSend = message;
+
+	if (Config.values.fish.enabled) {
+		const targetChan =
+			network.getChannel(targetName) || (chan.name === targetName ? chan : undefined);
+		const key = targetChan?.blowfishKey;
+		toSend = key ? createFishMessage(message, key) : message;
+	}
 
 	network.irc.notice(targetName, toSend);
 

@@ -4,6 +4,7 @@ import Chan from "../../models/chan.js";
 import {MessageType} from "../../../shared/types/msg.js";
 import {ChanType} from "../../../shared/types/chan.js";
 import {createFishMessage} from "../../utils/fish.js";
+import Config from "../../config.js";
 
 const commands = ["query", "msg", "say"];
 
@@ -95,10 +96,14 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 	}
 
 	// Determine if we should encrypt using FiSH for this target
-	const targetChan =
-		network.getChannel(targetName) || (chan.name === targetName ? chan : undefined);
-	const key = targetChan?.blowfishKey;
-	const toSend = key ? createFishMessage(msg, key) : msg;
+	let toSend = msg;
+
+	if (Config.values.fish.enabled) {
+		const targetChan =
+			network.getChannel(targetName) || (chan.name === targetName ? chan : undefined);
+		const key = targetChan?.blowfishKey;
+		toSend = key ? createFishMessage(msg, key) : msg;
+	}
 
 	network.irc.say(targetName, toSend);
 

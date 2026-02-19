@@ -76,7 +76,7 @@ export default <IrcEventHandler>function (irc, network) {
 		};
 
 		// FTP auto-invite (must complete before channel joins)
-		if (network.ftpEnabled && network.ftpAutoInvite) {
+		if (Config.values.ftpInvite.enabled && network.ftpEnabled && network.ftpAutoInvite) {
 			setTimeout(() => {
 				void import("../ftp-client.js").then(({sendFtpInvite}) =>
 					sendFtpInvite(network, network.nick).then((result) => {

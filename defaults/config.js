@@ -548,4 +548,30 @@ export default {
 		// server window, displayed on the client.
 		raw: false,
 	},
+
+	// ## Feature flags
+
+	// ### `fish`
+	//
+	// FiSH (Blowfish) encryption support for IRC channels and queries.
+	// When disabled, the FiSH section is hidden in the Network settings UI,
+	// the `/blow` command is rejected, and encrypt/decrypt in message handlers
+	// is skipped.
+	//
+	// This value is set to `false` by default.
+	fish: {
+		enabled: true,
+	},
+
+	// ### `ftpInvite`
+	//
+	// FTP SITE INVITE support for IRC networks.
+	// When disabled, the FTP section is hidden in the Network settings UI,
+	// the `/ftp` and `/ftpinvite` commands are rejected, and auto-invite
+	// on connection is skipped.
+	//
+	// This value is set to `false` by default.
+	ftpInvite: {
+		enabled: true,
+	},
 };

@@ -265,7 +265,9 @@ class Network {
 		);
 
 		// Ensure FiSH keys are applied to any pre-existing channels loaded from disk
-		this.applyBlowKeysToChannels();
+		if (Config.values.fish.enabled) {
+			this.applyBlowKeysToChannels();
+		}
 	}
 
 	validate(this: Network, client: Client) {
@@ -602,7 +604,9 @@ class Network {
 		}
 
 		// Apply FiSH keys to existing channels after edit
-		this.applyBlowKeysToChannels();
+		if (Config.values.fish.enabled) {
+			this.applyBlowKeysToChannels();
+		}
 
 		if (this.irc) {
 			if (this.nick !== oldNick) {

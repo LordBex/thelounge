@@ -9,6 +9,7 @@ import {MessageType} from "../../../shared/types/msg.js";
 import {ChanType} from "../../../shared/types/chan.js";
 import {MessageEventArgs} from "irc-framework";
 import {tryDecryptFishLine} from "../../utils/fish.js";
+import Config from "../../config.js";
 
 const nickRegExp = /(?:\x03[0-9]{1,2}(?:,[0-9]{1,2})?)?([\w[\]\\`^{|}-]+)/g;
 
@@ -115,7 +116,7 @@ export default <IrcEventHandler>function (this: Client, irc, network) {
 			from = chan.getUser(data.nick);
 
 			// Attempt mIRC FiSH Blowfish decryption if applicable
-			if (chan.blowfishKey) {
+			if (Config.values.fish.enabled && chan.blowfishKey) {
 				const decrypted = tryDecryptFishLine(data.message, chan.blowfishKey);
 
 				if (decrypted !== null) {

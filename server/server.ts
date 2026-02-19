@@ -955,6 +955,8 @@ function getClientConfiguration(): SharedConfiguration | LockedSharedConfigurati
 	const common = {
 		fileUpload: Config.values.fileUpload.enable,
 		ldapEnabled: Config.values.ldap.enable,
+		fishEnabled: Config.values.fish.enabled,
+		ftpInviteEnabled: Config.values.ftpInvite.enabled,
 		isUpdateAvailable: changelog.isUpdateAvailable,
 		applicationServerKey: manager!.webPush.vapidKeys!.publicKey,
 		version: Helper.getVersionNumber(),
