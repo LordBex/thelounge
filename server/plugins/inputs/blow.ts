@@ -29,7 +29,14 @@ const input: PluginInputHandler = function (network, chan, _cmd, args) {
 	}
 
 	if (sub.toLowerCase() === "off" || sub.toLowerCase() === "clear") {
+		// Persist the key removal to the network's fishKeys map
+		const keyMap = network.fishKeys || {};
+		delete keyMap[chan.name.toLowerCase()];
+		network.fishKeys = keyMap;
 		chan.blowfishKey = undefined;
+
+		this.save();
+
 		chan.pushMessage(
 			this,
 			new Msg({
@@ -40,7 +47,14 @@ const input: PluginInputHandler = function (network, chan, _cmd, args) {
 		return true;
 	}
 
+	// Persist the key to the network's fishKeys map
+	const keyMap = network.fishKeys || {};
+	keyMap[chan.name.toLowerCase()] = sub;
+	network.fishKeys = keyMap;
 	chan.blowfishKey = sub;
+
+	this.save();
+
 	chan.pushMessage(
 		this,
 		new Msg({
