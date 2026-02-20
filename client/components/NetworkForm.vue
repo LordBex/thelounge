@@ -361,7 +361,7 @@ the server tab on new connection"
 								class="btn fish-remove-btn"
 								:disabled="fishKeysEntries.length <= 1"
 								title="Remove entry"
-								style="width: auto; margin: 0"
+								style="margin: 0"
 								@click="removeFishKeyEntry(index)"
 							>
 								Remove
@@ -653,8 +653,13 @@ the server tab on new connection"
 
 .fish-remove-btn {
 	flex-shrink: 0;
-	min-width: 70px;
+	width: 55px !important;
+	min-width: 55px !important;
+	padding: 9px 5px !important;
 	margin-left: 10px;
+	font-size: 10px !important;
+	text-align: center !important;
+	letter-spacing: 0 !important;
 }
 
 .fish-mode-select {
