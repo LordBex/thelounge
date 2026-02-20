@@ -17,8 +17,10 @@ type BlowfishBlock = readonly [number, number, number, number, number, number, n
 // Constants
 const FISH_BASE64 = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-// CBC uses a fixed zero IV for FiSH compatibility
-const CBC_IV: BlowfishBlock = [0, 0, 0, 0, 0, 0, 0, 0];
+// Generate random IV for CBC mode
+const generateRandomIV = (): BlowfishBlock => {
+	return Array.from({length: 8}, () => Math.floor(Math.random() * 256)) as unknown as BlowfishBlock;
+};
 
 const INITIAL_P: readonly number[] = [
 	0x243f6a88, 0x85a308d3, 0x13198a2e, 0x03707344, 0xa4093822, 0x299f31d0, 0x082efa98, 0xec4e6c89,
@@ -507,14 +509,18 @@ const xorBlocks = (a: BlowfishBlock, b: BlowfishBlock): BlowfishBlock => [
 	a[7] ^ b[7],
 ];
 
-// CBC encryption with fixed zero IV for FiSH compatibility
+// CBC encryption - generates random IV and prepends it to ciphertext
 const fishEncryptCBC = (plaintext: string, key: string): string => {
 	const blowfish = getCachedBlowfish(key);
 	const data = padData(stringToBytes(plaintext));
 
-	// Use zero IV for FiSH compatibility
-	let previousCiphertext: BlowfishBlock = CBC_IV;
+	// Generate random IV for this message
+	const iv = generateRandomIV();
+	let previousCiphertext: BlowfishBlock = iv;
 	const encryptedBlocks: number[] = [];
+
+	// Prepend IV to the output (first 8 bytes)
+	encryptedBlocks.push(...iv);
 
 	for (let i = 0; i < data.length; i += 8) {
 		const slice = data.slice(i, i + 8);
@@ -537,11 +543,12 @@ const fishEncryptCBC = (plaintext: string, key: string): string => {
 	}
 
 	// Use standard Base64 encoding (RFC 4648) for CBC
+	// IV is already prepended to encryptedBlocks
 	const base64 = Buffer.from(encryptedBlocks).toString("base64");
 	return base64;
 };
 
-// CBC decryption with fixed zero IV for FiSH compatibility
+// CBC decryption - extracts IV from first 8 bytes of ciphertext
 const fishDecryptCBC = (base64Ciphertext: string, key: string): DecryptResult => {
 	if (base64Ciphertext.length === 0) {
 		return {text: "", status: "error"};
@@ -558,17 +565,29 @@ const fishDecryptCBC = (base64Ciphertext: string, key: string): DecryptResult =>
 		return {text: "", status: "error"};
 	}
 
-	// CBC must have complete 8-byte blocks
-	if (ciphertext.length % 8 !== 0) {
+	// CBC must have at least one block (IV + at least 8 bytes ciphertext)
+	if (ciphertext.length < 16 || ciphertext.length % 8 !== 0) {
 		return {text: "", status: "error"};
 	}
 
-	// Use zero IV for FiSH compatibility
-	let previousCiphertext: BlowfishBlock = CBC_IV;
+	// Extract IV from first 8 bytes
+	const iv: BlowfishBlock = [
+		ciphertext[0],
+		ciphertext[1],
+		ciphertext[2],
+		ciphertext[3],
+		ciphertext[4],
+		ciphertext[5],
+		ciphertext[6],
+		ciphertext[7],
+	];
+
+	let previousCiphertext: BlowfishBlock = iv;
 	const result: number[] = [];
 
+	// Process actual ciphertext starting from byte 8
 	try {
-		for (let i = 0; i < ciphertext.length; i += 8) {
+		for (let i = 8; i < ciphertext.length; i += 8) {
 			const ciphertextBlock: BlowfishBlock = [
 				ciphertext[i] || 0,
 				ciphertext[i + 1] || 0,
