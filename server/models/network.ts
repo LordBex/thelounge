@@ -12,6 +12,7 @@ import Client from "../client.js";
 import {MessageType} from "../../shared/types/msg.js";
 import {ChanType} from "../../shared/types/chan.js";
 import {SharedNetwork} from "../../shared/types/network.js";
+import type {FishMode} from "../utils/fish.js";
 
 type NetworkIrcOptions = {
 	host: string;
@@ -122,6 +123,8 @@ export type NetworkFormData = {
 	join?: string; // backwards compatibility
 	fishGlobalKey?: string;
 	fishKeys?: Record<string, string>;
+	fishGlobalKeyMode?: FishMode;
+	fishKeyModes?: Record<string, FishMode>;
 	ftpEnabled?: boolean;
 	ftpHost?: string;
 	ftpPort?: string | number;
@@ -160,6 +163,8 @@ class Network {
 	// FiSH Blowfish settings persisted per-network
 	fishGlobalKey?: string;
 	fishKeys?: Record<string, string>;
+	fishGlobalKeyMode?: FishMode;
+	fishKeyModes?: Record<string, FishMode>;
 
 	// FTP Invite settings persisted per-network
 	ftpEnabled?: boolean;
@@ -229,6 +234,8 @@ class Network {
 			// FiSH defaults
 			fishGlobalKey: "",
 			fishKeys: {},
+			fishGlobalKeyMode: "ecb" as FishMode,
+			fishKeyModes: {},
 
 			// FTP defaults
 			ftpEnabled: false,
@@ -451,6 +458,16 @@ class Network {
 		return keyMap[lower] || this.fishGlobalKey || undefined;
 	}
 
+	private resolveBlowModeFor(name: string): FishMode {
+		if (!name) {
+			return this.fishGlobalKeyMode || "ecb";
+		}
+
+		const modeMap = this.fishKeyModes || {};
+		const lower = name.toLowerCase();
+		return modeMap[lower] || this.fishGlobalKeyMode || "ecb";
+	}
+
 	private applyBlowKeysToChannels() {
 		for (const c of this.channels) {
 			if (c.type !== ChanType.CHANNEL && c.type !== ChanType.QUERY) {
@@ -458,6 +475,7 @@ class Network {
 			}
 
 			c.blowfishKey = this.resolveBlowKeyFor(c.name);
+			c.blowfishMode = this.resolveBlowModeFor(c.name);
 		}
 	}
 
@@ -555,6 +573,31 @@ class Network {
 			}
 
 			this.fishKeys = map;
+		}
+
+		// FiSH: read global key mode (only update when provided)
+		if (Object.prototype.hasOwnProperty.call(args, "fishGlobalKeyMode")) {
+			const rawMode = args.fishGlobalKeyMode;
+			this.fishGlobalKeyMode = rawMode === "cbc" ? "cbc" : "ecb";
+		}
+
+		// FiSH: read per-target key modes (only update when provided)
+		if (Object.prototype.hasOwnProperty.call(args, "fishKeyModes")) {
+			const value = args.fishKeyModes as unknown;
+			const map: Record<string, FishMode> = {};
+
+			if (value && typeof value === "object") {
+				for (const [rawName, rawMode] of Object.entries(value as Record<string, unknown>)) {
+					const name = Helper.toTrimmedString(rawName).toLowerCase();
+					const mode = rawMode === "cbc" ? "cbc" : "ecb";
+
+					if (name) {
+						map[name] = mode;
+					}
+				}
+			}
+
+			this.fishKeyModes = map;
 		}
 
 		// FTP settings (only update when provided)
@@ -704,9 +747,10 @@ class Network {
 	}
 
 	addChannel(newChan: Chan) {
-		// Assign FiSH key based on network configuration when adding
+		// Assign FiSH key and mode based on network configuration when adding
 		if (newChan && (newChan.type === ChanType.CHANNEL || newChan.type === ChanType.QUERY)) {
 			newChan.blowfishKey = this.resolveBlowKeyFor(newChan.name);
+			newChan.blowfishMode = this.resolveBlowModeFor(newChan.name);
 		}
 
 		let index = this.channels.length; // Default to putting as the last item in the array
@@ -776,6 +820,8 @@ class Network {
 		const data = _.pick(this, fieldsToReturn) as {uuid: string} & Partial<Network> & {
 				fishGlobalKey?: string;
 				fishKeys?: Record<string, string>;
+				fishGlobalKeyMode?: FishMode;
+				fishKeyModes?: Record<string, FishMode>;
 				hasSTSPolicy?: boolean;
 			};
 
@@ -784,6 +830,8 @@ class Network {
 		// Include FiSH fields for editing UI
 		data.fishGlobalKey = this.fishGlobalKey || "";
 		data.fishKeys = {...(this.fishKeys || {})};
+		data.fishGlobalKeyMode = this.fishGlobalKeyMode || "ecb";
+		data.fishKeyModes = {...(this.fishKeyModes || {})};
 
 		// Include FTP fields for editing UI
 		data.ftpEnabled = this.ftpEnabled || false;
@@ -827,6 +875,8 @@ class Network {
 			// FiSH persistence
 			"fishGlobalKey",
 			"fishKeys",
+			"fishGlobalKeyMode",
+			"fishKeyModes",
 
 			// FTP Invite persistence
 			"ftpEnabled",

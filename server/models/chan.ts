@@ -37,6 +37,7 @@ class Chan {
 
 	// mIRC FiSH Blowfish key, stored server-side only
 	blowfishKey?: string;
+	blowfishMode?: import("../utils/fish.js").FishMode;
 
 	userAway?: boolean;
 	special?: SpecialChanType;
