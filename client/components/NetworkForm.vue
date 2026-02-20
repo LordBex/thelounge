@@ -351,6 +351,7 @@ the server tab on new connection"
 								v-model="entry.mode"
 								class="input fish-mode-select"
 								aria-label="Encryption mode"
+								style="margin: 0"
 							>
 								<option value="ecb">ECB</option>
 								<option value="cbc">CBC</option>
