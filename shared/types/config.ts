@@ -11,6 +11,7 @@ type SharedConfigurationBase = {
 	ldapEnabled: boolean;
 	fishEnabled: boolean;
 	ftpInviteEnabled: boolean;
+	encodingEnabled: boolean;
 	isUpdateAvailable: boolean;
 	applicationServerKey: string;
 	version: string;

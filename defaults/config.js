@@ -574,4 +574,15 @@ export default {
 	ftpInvite: {
 		enabled: true,
 	},
+
+	// ### `encoding`
+	//
+	// Per-channel/nick encoding support. When enabled, users can set a specific
+	// character encoding (utf8 or latin1) per channel using the `/encoding` command.
+	// Default is auto-detection.
+	//
+	// This value is set to `false` by default.
+	encoding: {
+		enabled: true,
+	},
 };

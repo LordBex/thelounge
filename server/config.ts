@@ -86,6 +86,10 @@ type FtpInvite = {
 	enabled: boolean;
 };
 
+type Encoding = {
+	enabled: boolean;
+};
+
 type StoragePolicy = {
 	enabled: boolean;
 	maxAgeDays: number;
@@ -132,6 +136,7 @@ export type ConfigType = {
 	debug: Debug;
 	fish: Fish;
 	ftpInvite: FtpInvite;
+	encoding: Encoding;
 	themeColor: string;
 };
 

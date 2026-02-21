@@ -170,6 +170,9 @@ class Network {
 	ftpTls?: boolean;
 	ftpAutoInvite?: boolean;
 
+	// Per-channel/nick encoding map: channel/nick (lowercase) -> encoding
+	encodingMap?: Record<string, string>;
+
 	irc?: IrcFramework.Client & {
 		options?: NetworkIrcOptions;
 	};
@@ -239,6 +242,9 @@ class Network {
 			ftpTls: false,
 			ftpAutoInvite: false,
 
+			// Encoding defaults
+			encodingMap: {},
+
 			chanCache: [],
 			ignoreList: [],
 			keepNick: null,
@@ -268,6 +274,7 @@ class Network {
 		if (Config.values.fish.enabled) {
 			this.applyBlowKeysToChannels();
 		}
+
 	}
 
 	validate(this: Network, client: Client) {
@@ -461,6 +468,15 @@ class Network {
 
 			c.blowfishKey = this.resolveBlowKeyFor(c.name);
 		}
+	}
+
+	resolveEncodingFor(name: string): string | undefined {
+		if (!name) {
+			return undefined;
+		}
+
+		const map = this.encodingMap || {};
+		return map[name.toLowerCase()] || undefined;
 	}
 
 	createWebIrc(client: Client) {
@@ -798,6 +814,9 @@ class Network {
 		data.ftpAutoInvite = this.ftpAutoInvite || false;
 		// Note: Don't include ftpPassword for security - user must re-enter
 
+		// Include encoding map for editing UI
+		data.encodingMap = {...(this.encodingMap || {})};
+
 		return data;
 	}
 
@@ -840,6 +859,9 @@ class Network {
 			"ftpPassword",
 			"ftpTls",
 			"ftpAutoInvite",
+
+			// Encoding persistence
+			"encodingMap",
 		]) as Network;
 
 		network.channels = this.channels

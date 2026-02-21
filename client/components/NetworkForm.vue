@@ -358,6 +358,62 @@ the server tab on new connection"
 				</div>
 			</template>
 
+			<template v-if="config?.encodingEnabled">
+				<h2>Encodings</h2>
+				<div class="connect-row" style="display: block">
+					<label style="margin-bottom: 5px">
+						Per-Nick Encoding
+						<span
+							class="tooltipped tooltipped-ne tooltipped-no-delay"
+							aria-label="Set a specific character encoding for messages from a nick (e.g. utf8, latin1, cp1252, iso-8859-2)"
+						>
+							<button class="extra-help" />
+						</span>
+					</label>
+					<div class="encoding-section">
+						<div
+							v-for="(entry, index) in encodingEntries"
+							:key="index"
+							class="connect-row encoding-row"
+						>
+							<div class="input-wrap encoding-inputs">
+								<input
+									v-model="entry.nick"
+									class="input encoding-nick-input"
+									placeholder="nick"
+									maxlength="100"
+									aria-label="Nick name"
+									style="margin: 0"
+									@input="entry.nick = entry.nick.toLowerCase()"
+								/>
+								<input
+									v-model="entry.encoding"
+									class="input encoding-value-input"
+									placeholder="e.g. utf8, latin1, cp1252"
+									maxlength="50"
+									aria-label="Encoding"
+									style="margin: 0"
+								/>
+								<button
+									type="button"
+									class="btn encoding-remove-btn"
+									title="Remove entry"
+									style="width: auto; margin: 0"
+									@click="removeEncodingEntry(index)"
+								>
+									Remove
+								</button>
+							</div>
+						</div>
+						<div class="connect-row">
+							<button type="button" class="btn" @click="addEncodingEntry">
+								Add Entry
+							</button>
+						</div>
+					</div>
+				</div>
+			</template>
+
 			<template v-if="config?.ftpInviteEnabled">
 				<h2>FTP Invite</h2>
 				<div class="connect-row">
@@ -665,6 +721,58 @@ the server tab on new connection"
 		align-self: stretch;
 	}
 }
+
+/* Nick Encoding section styles */
+.encoding-section {
+	width: 100%;
+	padding-top: 10px;
+}
+
+.encoding-row {
+	margin-bottom: 5px;
+}
+
+.encoding-inputs {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+
+.encoding-nick-input {
+	flex: 1;
+	min-width: 120px;
+}
+
+.encoding-value-input {
+	flex: 2;
+	min-width: 150px;
+}
+
+.encoding-remove-btn {
+	flex-shrink: 0;
+	min-width: 70px;
+}
+
+.encoding-remove-btn:disabled {
+	opacity: 0.5;
+}
+
+@media (width <= 768px) {
+	.encoding-inputs {
+		flex-direction: column;
+		gap: 5px;
+	}
+
+	.encoding-nick-input,
+	.encoding-value-input {
+		min-width: auto;
+	}
+
+	.encoding-remove-btn {
+		margin-left: 0;
+		align-self: stretch;
+	}
+}
 </style>
 
 <script lang="ts">
@@ -703,6 +811,7 @@ export type NetworkFormDefaults = Partial<ClientNetwork> & {
 	ftpPassword?: string;
 	ftpTls?: boolean;
 	ftpAutoInvite?: boolean;
+	encodingMap?: Record<string, string>;
 };
 
 export default defineComponent({
@@ -857,6 +966,53 @@ export default defineComponent({
 			}
 		};
 
+		// Nick Encoding table management
+		interface EncodingEntry {
+			nick: string;
+			encoding: string;
+		}
+
+		const encodingEntries = ref<EncodingEntry[]>([]);
+
+		const parseEncodingMap = (input: Record<string, string> | undefined): EncodingEntry[] => {
+			if (!input || Object.keys(input).length === 0) {
+				return [];
+			}
+
+			return Object.entries(input).map(([nick, encoding]) => ({nick, encoding}));
+		};
+
+		const encodingMapValue = computed(() => {
+			const map: Record<string, string> = {};
+
+			for (const entry of encodingEntries.value) {
+				const nick = entry.nick.trim().toLowerCase();
+				const encoding = entry.encoding.trim().toLowerCase();
+
+				if (nick && encoding) {
+					map[nick] = encoding;
+				}
+			}
+
+			return map;
+		});
+
+		watch(
+			() => props.defaults.encodingMap,
+			(newValue) => {
+				encodingEntries.value = parseEncodingMap(newValue);
+			},
+			{immediate: true}
+		);
+
+		const addEncodingEntry = () => {
+			encodingEntries.value.push({nick: "", encoding: ""});
+		};
+
+		const removeEncodingEntry = (index: number) => {
+			encodingEntries.value.splice(index, 1);
+		};
+
 		const onSubmit = (event: Event) => {
 			const formData = new FormData(event.target as HTMLFormElement);
 			const data: Partial<ClientNetwork> = {};
@@ -865,7 +1021,11 @@ export default defineComponent({
 				data[key] = value;
 			});
 
-			props.handleSubmit({...data, fishKeys: fishKeysValue.value} as ClientNetwork);
+			props.handleSubmit({
+				...data,
+				fishKeys: fishKeysValue.value,
+				encodingMap: encodingMapValue.value,
+			} as ClientNetwork);
 		};
 
 		return {
@@ -883,6 +1043,10 @@ export default defineComponent({
 			fishKeysValue,
 			addFishKeyEntry,
 			removeFishKeyEntry,
+			encodingEntries,
+			encodingMapValue,
+			addEncodingEntry,
+			removeEncodingEntry,
 		};
 	},
 });

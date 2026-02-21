@@ -73,6 +73,7 @@ const builtInInputs = [
 	"mute",
 	"blow",
 	"ftp",
+	"encoding",
 ];
 
 for (const input of builtInInputs) {

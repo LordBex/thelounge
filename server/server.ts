@@ -957,6 +957,7 @@ function getClientConfiguration(): SharedConfiguration | LockedSharedConfigurati
 		ldapEnabled: Config.values.ldap.enable,
 		fishEnabled: Config.values.fish.enabled,
 		ftpInviteEnabled: Config.values.ftpInvite.enabled,
+		encodingEnabled: Config.values.encoding.enabled,
 		isUpdateAvailable: changelog.isUpdateAvailable,
 		applicationServerKey: manager!.webPush.vapidKeys!.publicKey,
 		version: Helper.getVersionNumber(),
