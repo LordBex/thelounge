@@ -301,6 +301,18 @@ the server tab on new connection"
 					placeholder="Optional global key for this network"
 				/>
 			</div>
+			<div class="connect-row">
+				<label for="connect:fishGlobalKeyMode">Mode</label>
+				<select
+					id="connect:fishGlobalKeyMode"
+					v-model="defaults.fishGlobalKeyMode"
+					class="input"
+					name="fishGlobalKeyMode"
+				>
+					<option value="ecb">ECB (default)</option>
+					<option value="cbc">CBC (recommended)</option>
+				</select>
+			</div>
 			<div class="connect-row" style="display: block">
 				<label for="connect:fishKeys" style="margin-bottom: 5px">
 					Per-channel or User-Channels
@@ -335,12 +347,21 @@ the server tab on new connection"
 								aria-label="Encryption key"
 								style="margin: 0"
 							/>
+							<select
+								v-model="entry.mode"
+								class="input fish-mode-select"
+								aria-label="Encryption mode"
+								style="margin: 0"
+							>
+								<option value="ecb">ECB</option>
+								<option value="cbc">CBC</option>
+							</select>
 							<button
 								type="button"
 								class="btn fish-remove-btn"
 								:disabled="fishKeysEntries.length <= 1"
 								title="Remove entry"
-								style="width: auto; margin: 0"
+								style="margin: 0"
 								@click="removeFishKeyEntry(index)"
 							>
 								Remove
@@ -632,8 +653,18 @@ the server tab on new connection"
 
 .fish-remove-btn {
 	flex-shrink: 0;
-	min-width: 70px;
+	width: 55px !important;
+	min-width: 55px !important;
+	padding: 9px 5px !important;
 	margin-left: 10px;
+	font-size: 10px !important;
+	text-align: center !important;
+	letter-spacing: 0 !important;
+}
+
+.fish-mode-select {
+	flex: 0;
+	min-width: 80px;
 }
 
 .fish-remove-btn:disabled {
@@ -691,6 +722,8 @@ export type NetworkFormDefaults = Partial<ClientNetwork> & {
 	rejectUnauthorized?: boolean;
 	fishGlobalKey?: string;
 	fishKeys?: Record<string, string>;
+	fishGlobalKeyMode?: "ecb" | "cbc";
+	fishKeyModes?: Record<string, "ecb" | "cbc">;
 	ftpEnabled?: boolean;
 	ftpHost?: string;
 	ftpPort?: number;
@@ -798,23 +831,28 @@ export default defineComponent({
 		interface FishKeyEntry {
 			target: string;
 			key: string;
+			mode: "ecb" | "cbc";
 		}
 
 		const fishKeysEntries = ref<FishKeyEntry[]>([]);
 
 		// Parse fishKeys object into table entries
-		const parseFishKeys = (input: Record<string, string> | undefined): FishKeyEntry[] => {
+		const parseFishKeys = (
+			input: Record<string, string> | undefined,
+			modeInput: Record<string, "ecb" | "cbc"> | undefined
+		): FishKeyEntry[] => {
 			if (!input || Object.keys(input).length === 0) {
-				return [{target: "", key: ""}];
+				return [{target: "", key: "", mode: "ecb"}];
 			}
 
 			const entries: FishKeyEntry[] = [];
 
 			for (const [target, key] of Object.entries(input)) {
-				entries.push({target, key: String(key ?? "")});
+				const mode = modeInput?.[target] || "ecb";
+				entries.push({target, key: String(key ?? ""), mode});
 			}
 
-			return entries.length > 0 ? entries : [{target: "", key: ""}];
+			return entries.length > 0 ? entries : [{target: "", key: "", mode: "ecb"}];
 		};
 
 		// Convert table entries into mapping object
@@ -833,17 +871,32 @@ export default defineComponent({
 			return map;
 		});
 
+		// Convert table entries into mode mapping object
+		const fishKeyModesValue = computed(() => {
+			const map: Record<string, "ecb" | "cbc"> = {};
+
+			for (const entry of fishKeysEntries.value) {
+				const target = entry.target.trim();
+
+				if (target) {
+					map[target] = entry.mode;
+				}
+			}
+
+			return map;
+		});
+
 		// Initialize entries from defaults
 		watch(
-			() => props.defaults.fishKeys,
-			(newValue) => {
-				fishKeysEntries.value = parseFishKeys(newValue);
+			() => [props.defaults.fishKeys, props.defaults.fishKeyModes],
+			([keys, modes]) => {
+				fishKeysEntries.value = parseFishKeys(keys, modes);
 			},
 			{immediate: true}
 		);
 
 		const addFishKeyEntry = () => {
-			fishKeysEntries.value.push({target: "", key: ""});
+			fishKeysEntries.value.push({target: "", key: "", mode: "ecb"});
 		};
 
 		const removeFishKeyEntry = (index: number) => {
@@ -860,7 +913,11 @@ export default defineComponent({
 				data[key] = value;
 			});
 
-			props.handleSubmit({...data, fishKeys: fishKeysValue.value} as ClientNetwork);
+			props.handleSubmit({
+				...data,
+				fishKeys: fishKeysValue.value,
+				fishKeyModes: fishKeyModesValue.value,
+			} as ClientNetwork);
 		};
 
 		return {

@@ -3,7 +3,7 @@ import Msg from "../../models/msg.js";
 import Chan from "../../models/chan.js";
 import {MessageType} from "../../../shared/types/msg.js";
 import {ChanType} from "../../../shared/types/chan.js";
-import {createFishMessage} from "../../utils/fish.js";
+import {createFishMessage, type FishMode} from "../../utils/fish.js";
 
 const commands = ["query", "msg", "say"];
 
@@ -98,7 +98,8 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 	const targetChan =
 		network.getChannel(targetName) || (chan.name === targetName ? chan : undefined);
 	const key = targetChan?.blowfishKey;
-	const toSend = key ? createFishMessage(msg, key) : msg;
+	const mode: FishMode = targetChan?.blowfishMode || "ecb";
+	const toSend = key ? createFishMessage(msg, key, mode) : msg;
 
 	network.irc.say(targetName, toSend);
 

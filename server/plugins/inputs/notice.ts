@@ -1,5 +1,5 @@
 import {PluginInputHandler} from "./index.js";
-import {createFishMessage} from "../../utils/fish.js";
+import {createFishMessage, type FishMode} from "../../utils/fish.js";
 
 const commands = ["notice"];
 
@@ -15,7 +15,8 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 	const targetChan =
 		network.getChannel(targetName) || (chan.name === targetName ? chan : undefined);
 	const key = targetChan?.blowfishKey;
-	const toSend = key ? createFishMessage(message, key) : message;
+	const mode: FishMode = targetChan?.blowfishMode || "ecb";
+	const toSend = key ? createFishMessage(message, key, mode) : message;
 
 	network.irc.notice(targetName, toSend);
 

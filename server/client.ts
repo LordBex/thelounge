@@ -341,6 +341,8 @@ class Client {
 
 			fishGlobalKey: String(args.fishGlobalKey || ""),
 			fishKeys: (args.fishKeys as Record<string, string>) || {},
+			fishGlobalKeyMode: (args.fishGlobalKeyMode as "ecb" | "cbc") || "ecb",
+			fishKeyModes: (args.fishKeyModes as Record<string, "ecb" | "cbc">) || {},
 
 			ftpEnabled: !!args.ftpEnabled,
 			ftpHost: String(args.ftpHost || ""),
