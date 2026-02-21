@@ -890,10 +890,7 @@ export default defineComponent({
 		watch(
 			() => [props.defaults.fishKeys, props.defaults.fishKeyModes],
 			([keys, modes]) => {
-				fishKeysEntries.value = parseFishKeys(
-					keys as Record<string, string> | undefined,
-					modes as Record<string, "ecb" | "cbc"> | undefined
-				);
+				fishKeysEntries.value = parseFishKeys(keys, modes);
 			},
 			{immediate: true}
 		);

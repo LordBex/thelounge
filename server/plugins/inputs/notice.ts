@@ -1,6 +1,5 @@
 import {PluginInputHandler} from "./index.js";
-import {createFishMessage} from "../../utils/fish.js";
-import type {FishMode} from "../../utils/fish.js";
+import {createFishMessage, type FishMode} from "../../utils/fish.js";
 
 const commands = ["notice"];
 

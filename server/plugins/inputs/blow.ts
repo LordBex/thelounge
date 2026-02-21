@@ -30,6 +30,7 @@ const input: PluginInputHandler = function (network, chan, _cmd, args) {
 				})
 			);
 		}
+
 		return true;
 	}
 

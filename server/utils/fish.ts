@@ -19,7 +19,9 @@ const FISH_BASE64 = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTU
 
 // Generate random IV for CBC mode
 const generateRandomIV = (): BlowfishBlock => {
-	return Array.from({length: 8}, () => Math.floor(Math.random() * 256)) as unknown as BlowfishBlock;
+	return Array.from({length: 8}, () =>
+		Math.floor(Math.random() * 256)
+	) as unknown as BlowfishBlock;
 };
 
 const INITIAL_P: readonly number[] = [
@@ -626,6 +628,7 @@ export const fishEncrypt = (plaintext: string, key: string, mode: FishMode = "ec
 	if (mode === "cbc") {
 		return fishEncryptCBC(plaintext, key);
 	}
+
 	return fishEncryptECB(plaintext, key);
 };
 
@@ -638,6 +641,7 @@ export const fishDecrypt = (
 	if (mode === "cbc") {
 		return fishDecryptCBC(ciphertext, key);
 	}
+
 	return fishDecryptECB(ciphertext, key);
 };
 

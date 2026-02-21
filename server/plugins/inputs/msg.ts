@@ -3,8 +3,7 @@ import Msg from "../../models/msg.js";
 import Chan from "../../models/chan.js";
 import {MessageType} from "../../../shared/types/msg.js";
 import {ChanType} from "../../../shared/types/chan.js";
-import {createFishMessage} from "../../utils/fish.js";
-import type {FishMode} from "../../utils/fish.js";
+import {createFishMessage, type FishMode} from "../../utils/fish.js";
 
 const commands = ["query", "msg", "say"];
 
