@@ -4,6 +4,7 @@ import Chan from "../../models/chan.js";
 import {MessageType} from "../../../shared/types/msg.js";
 import {ChanType} from "../../../shared/types/chan.js";
 import {createFishMessage, type FishMode} from "../../utils/fish.js";
+import Config from "../../config.js";
 
 const commands = ["query", "msg", "say"];
 
@@ -88,20 +89,22 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 		return true;
 	}
 
-	const msg = args.join(" ");
+	let msg = args.join(" ");
 
 	if (msg.length === 0) {
 		return true;
 	}
 
 	// Determine if we should encrypt using FiSH for this target
-	const targetChan =
-		network.getChannel(targetName) || (chan.name === targetName ? chan : undefined);
-	const key = targetChan?.blowfishKey;
-	const mode: FishMode = targetChan?.blowfishMode || "ecb";
-	const toSend = key ? createFishMessage(msg, key, mode) : msg;
+	if (Config.values.fish.enabled) {
+		const targetChan =
+			network.getChannel(targetName) || (chan.name === targetName ? chan : undefined);
+		const key = targetChan?.blowfishKey;
+		const mode: FishMode = targetChan?.blowfishMode || "ecb";
+		msg = key ? createFishMessage(msg, key, mode) : msg;
+	}
 
-	network.irc.say(targetName, toSend);
+	network.irc.say(targetName, msg);
 
 	// If the IRCd does not support echo-message, simulate the message
 	// being sent back to us. Emit the same text we sent (encrypted or plain)
@@ -124,7 +127,7 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 				hostname: network.irc.user.host,
 				target: targetName,
 				group: targetGroup,
-				message: toSend,
+				message: msg,
 			});
 		}
 	}

@@ -1,24 +1,17 @@
 import {PluginInputHandler} from "./index.js";
 import Msg from "../../models/msg.js";
 import {MessageType} from "../../../shared/types/msg.js";
-import Config from "../../config.js";
 import type {FishMode} from "../../utils/fish.js";
+import Config from "../../config.js";
 
 const commands = ["blow"];
 
 const input: PluginInputHandler = function (network, chan, _cmd, args) {
-	if (!chan) {
+	if (!Config.values.fish.enabled) {
 		return true;
 	}
 
-	if (!Config.values.fish.enabled) {
-		chan.pushMessage(
-			this,
-			new Msg({
-				type: MessageType.ERROR,
-				text: "FiSH is not enabled on this server.",
-			})
-		);
+	if (!chan) {
 		return true;
 	}
 
