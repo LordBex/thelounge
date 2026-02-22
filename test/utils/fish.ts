@@ -132,13 +132,14 @@ describe("FiSH Blowfish encryption", function () {
 	});
 
 	describe("tryDecryptFishMessage", function () {
-		it("should decrypt +OK <payload> format", function () {
+		it("should decrypt +OK <payload> format and return {text, mode}", function () {
 			const key = "fishkey";
 			const plaintext = "hello fish";
 			const encrypted = fishEncrypt(plaintext, key);
 			const result = tryDecryptFishMessage(`+OK ${encrypted}`, key);
 			expect(result).to.not.equal(null);
-			expect(result).to.include(plaintext);
+			expect(result!.text).to.include(plaintext);
+			expect(result!.mode).to.equal("ecb");
 		});
 
 		it("should decrypt *OK <payload> format", function () {
@@ -147,7 +148,7 @@ describe("FiSH Blowfish encryption", function () {
 			const encrypted = fishEncrypt(plaintext, key);
 			const result = tryDecryptFishMessage(`*OK ${encrypted}`, key);
 			expect(result).to.not.equal(null);
-			expect(result).to.include(plaintext);
+			expect(result!.text).to.include(plaintext);
 		});
 
 		it("should decrypt mcps <payload> format", function () {
@@ -156,7 +157,7 @@ describe("FiSH Blowfish encryption", function () {
 			const encrypted = fishEncrypt(plaintext, key);
 			const result = tryDecryptFishMessage(`mcps ${encrypted}`, key);
 			expect(result).to.not.equal(null);
-			expect(result).to.include(plaintext);
+			expect(result!.text).to.include(plaintext);
 		});
 
 		it("should return null for non-FiSH messages", function () {
@@ -168,21 +169,26 @@ describe("FiSH Blowfish encryption", function () {
 			const result = tryDecryptFishMessage("+OK somedata");
 			expect(result).to.equal(null);
 		});
-
-		it("should return string with [ECB] color prefix on success", function () {
-			const key = "fishkey";
-			const plaintext = "hello fish";
-			const encrypted = fishEncrypt(plaintext, key);
-			const result = tryDecryptFishMessage(`+OK ${encrypted}`, key);
-			expect(result).to.not.equal(null);
-			// \x0314 is IRC color code 14, \x03 resets
-			expect(result).to.match(/^\x0314\[ECB\]\x03 /);
-		});
 	});
 
 	describe("tryDecryptFishLine", function () {
-		it("should be the same function as tryDecryptFishMessage", function () {
-			expect(tryDecryptFishLine).to.equal(tryDecryptFishMessage);
+		it("should return formatted string with [ECB] color prefix for ECB messages", function () {
+			const key = "fishkey";
+			const plaintext = "hello fish";
+			const encrypted = fishEncrypt(plaintext, key);
+			const result = tryDecryptFishLine(`+OK ${encrypted}`, key);
+			expect(result).to.not.equal(null);
+			// \x0314 is IRC color code 14, \x03 resets
+			expect(result).to.match(/^\x0314\[ECB\]\x03 /);
+			expect(result).to.include(plaintext);
+		});
+
+		it("should return null for non-FiSH messages", function () {
+			expect(tryDecryptFishLine("just a regular message", "key")).to.equal(null);
+		});
+
+		it("should return null when no key provided", function () {
+			expect(tryDecryptFishLine("+OK somedata")).to.equal(null);
 		});
 	});
 });

@@ -4,15 +4,25 @@
 // Types
 import log from "../log.js";
 
+export type FishMode = "ecb" | "cbc";
+
 interface DecryptResult {
 	text: string;
 	status: "success" | "partial" | "error";
+	mode?: FishMode;
 }
 
 type BlowfishBlock = readonly [number, number, number, number, number, number, number, number];
 
 // Constants
 const FISH_BASE64 = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+// Generate random IV for CBC mode
+const generateRandomIV = (): BlowfishBlock => {
+	return Array.from({length: 8}, () =>
+		Math.floor(Math.random() * 256)
+	) as unknown as BlowfishBlock;
+};
 
 const INITIAL_P: readonly number[] = [
 	0x243f6a88, 0x85a308d3, 0x13198a2e, 0x03707344, 0xa4093822, 0x299f31d0, 0x082efa98, 0xec4e6c89,
@@ -397,8 +407,8 @@ const decodeBase64Block = (chunk: string): [number, number] | null => {
 	return [left >>> 0, right >>> 0];
 };
 
-// Main encryption function
-export const fishEncrypt = (plaintext: string, key: string): string => {
+// ECB encryption (original FiSH method)
+const fishEncryptECB = (plaintext: string, key: string): string => {
 	const blowfish = getCachedBlowfish(key);
 	const data = padData(stringToBytes(plaintext));
 
@@ -429,8 +439,8 @@ export const fishEncrypt = (plaintext: string, key: string): string => {
 	return result;
 };
 
-// Main decryption function
-export const fishDecrypt = (ciphertext: string, key: string): DecryptResult => {
+// ECB decryption (original FiSH method)
+const fishDecryptECB = (ciphertext: string, key: string): DecryptResult => {
 	if (ciphertext.length < 12) {
 		return {text: "", status: "error"};
 	}
@@ -489,27 +499,213 @@ export const fishDecrypt = (ciphertext: string, key: string): DecryptResult => {
 	}
 };
 
+// XOR two blocks together for CBC mode
+const xorBlocks = (a: BlowfishBlock, b: BlowfishBlock): BlowfishBlock => [
+	a[0] ^ b[0],
+	a[1] ^ b[1],
+	a[2] ^ b[2],
+	a[3] ^ b[3],
+	a[4] ^ b[4],
+	a[5] ^ b[5],
+	a[6] ^ b[6],
+	a[7] ^ b[7],
+];
+
+// CBC encryption - generates random IV and prepends it to ciphertext
+const fishEncryptCBC = (plaintext: string, key: string): string => {
+	const blowfish = getCachedBlowfish(key);
+	const data = padData(stringToBytes(plaintext));
+
+	// Generate random IV for this message
+	const iv = generateRandomIV();
+	let previousCiphertext: BlowfishBlock = iv;
+	const encryptedBlocks: number[] = [];
+
+	// Prepend IV to the output (first 8 bytes)
+	encryptedBlocks.push(...iv);
+
+	for (let i = 0; i < data.length; i += 8) {
+		const slice = data.slice(i, i + 8);
+		const plaintextBlock: BlowfishBlock = [
+			slice[0] || 0,
+			slice[1] || 0,
+			slice[2] || 0,
+			slice[3] || 0,
+			slice[4] || 0,
+			slice[5] || 0,
+			slice[6] || 0,
+			slice[7] || 0,
+		];
+
+		// XOR with previous ciphertext block (CBC chaining)
+		const xoredBlock = xorBlocks(plaintextBlock, previousCiphertext);
+		const encrypted = blowfish.encryptBlock(xoredBlock);
+		previousCiphertext = encrypted;
+		encryptedBlocks.push(...encrypted);
+	}
+
+	// Use standard Base64 encoding (RFC 4648) for CBC
+	// IV is already prepended to encryptedBlocks
+	const base64 = Buffer.from(encryptedBlocks).toString("base64");
+	return base64;
+};
+
+// CBC decryption - extracts IV from first 8 bytes of ciphertext
+const fishDecryptCBC = (base64Ciphertext: string, key: string): DecryptResult => {
+	if (base64Ciphertext.length === 0) {
+		return {text: "", status: "error"};
+	}
+
+	const blowfish = getCachedBlowfish(key);
+
+	let ciphertext: number[];
+
+	try {
+		// Decode from standard Base64
+		ciphertext = Array.from(Buffer.from(base64Ciphertext, "base64"));
+	} catch {
+		return {text: "", status: "error"};
+	}
+
+	// CBC must have at least one block (IV + at least 8 bytes ciphertext)
+	if (ciphertext.length < 16 || ciphertext.length % 8 !== 0) {
+		return {text: "", status: "error"};
+	}
+
+	// Extract IV from first 8 bytes
+	const iv: BlowfishBlock = [
+		ciphertext[0],
+		ciphertext[1],
+		ciphertext[2],
+		ciphertext[3],
+		ciphertext[4],
+		ciphertext[5],
+		ciphertext[6],
+		ciphertext[7],
+	];
+
+	let previousCiphertext: BlowfishBlock = iv;
+	const result: number[] = [];
+
+	// Process actual ciphertext starting from byte 8
+	try {
+		for (let i = 8; i < ciphertext.length; i += 8) {
+			const ciphertextBlock: BlowfishBlock = [
+				ciphertext[i] || 0,
+				ciphertext[i + 1] || 0,
+				ciphertext[i + 2] || 0,
+				ciphertext[i + 3] || 0,
+				ciphertext[i + 4] || 0,
+				ciphertext[i + 5] || 0,
+				ciphertext[i + 6] || 0,
+				ciphertext[i + 7] || 0,
+			];
+
+			// Decrypt the block
+			const decrypted = blowfish.decryptBlock(ciphertextBlock);
+
+			// XOR with previous ciphertext block (CBC chaining)
+			const plaintextBlock = xorBlocks(decrypted, previousCiphertext);
+			result.push(...plaintextBlock);
+
+			previousCiphertext = ciphertextBlock;
+		}
+
+		const decryptedText = removeBadChars(bytesToString(result));
+		return {
+			text: decryptedText,
+			status: "success",
+		};
+	} catch {
+		return {text: "", status: "error"};
+	}
+};
+
 // High-level functions
-export const tryDecryptFishMessage = (message: string, key?: string): string | null => {
+
+// Encryption with mode selection
+export const fishEncrypt = (plaintext: string, key: string, mode: FishMode = "ecb"): string => {
+	if (mode === "cbc") {
+		return fishEncryptCBC(plaintext, key);
+	}
+
+	return fishEncryptECB(plaintext, key);
+};
+
+// Decryption with mode selection
+export const fishDecrypt = (
+	ciphertext: string,
+	key: string,
+	mode: FishMode = "ecb"
+): DecryptResult => {
+	if (mode === "cbc") {
+		return fishDecryptCBC(ciphertext, key);
+	}
+
+	return fishDecryptECB(ciphertext, key);
+};
+
+// Create encrypted message with proper format based on mode
+export const createFishMessage = (
+	plaintext: string,
+	key: string,
+	mode: FishMode = "ecb"
+): string => {
+	const encrypted = fishEncrypt(plaintext, key, mode);
+
+	if (mode === "cbc") {
+		// CBC uses +OK * with standard Base64
+		return `+OK *${encrypted}`;
+	}
+
+	// ECB uses +OK with FISH_BASE64
+	return `+OK ${encrypted}`;
+};
+
+// Auto-detect mode from message format and decrypt
+export const tryDecryptFishMessage = (
+	message: string,
+	key?: string
+): {text: string; mode: FishMode} | null => {
 	if (!key) {
 		return null;
 	}
 
-	const match = message.match(/^\s*(?:\+OK|\*OK|mcps)\s+(.+)$/);
+	// Check for CBC format: +OK *<standard_base64>
+	const cbcMatch = message.match(/^\s*(?:\+OK|\*OK|mcps)\s+\*(.+)$/);
 
-	if (!match) {
+	if (cbcMatch) {
+		const payload = cbcMatch[1].trim();
+		const result = fishDecryptCBC(payload, key);
+
+		if (result.status !== "error") {
+			return {text: result.text, mode: "cbc"};
+		}
+	}
+
+	// Check for ECB format: +OK <fish_base64>
+	const ecbMatch = message.match(/^\s*(?:\+OK|\*OK|mcps)\s+(.+)$/);
+
+	if (ecbMatch) {
+		const payload = ecbMatch[1].trim();
+		const result = fishDecryptECB(payload, key);
+
+		if (result.status !== "error") {
+			return {text: result.text, mode: "ecb"};
+		}
+	}
+
+	return null;
+};
+
+// Legacy function for compatibility - returns formatted string with mode tag
+export const tryDecryptFishLine = (message: string, key?: string): string | null => {
+	const result = tryDecryptFishMessage(message, key);
+
+	if (!result) {
 		return null;
 	}
 
-	const payload = match[1].trim();
-	const result = fishDecrypt(payload, key);
-
-	return result.status !== "error" ? `\u000314[ECB]\u0003 ${result.text}` : null;
+	const tag = result.mode === "cbc" ? "[CBC]" : "[ECB]";
+	return `\u000314${tag}\u0003 ${result.text}`;
 };
-
-export const createFishMessage = (plaintext: string, key: string): string => {
-	const encrypted = fishEncrypt(plaintext, key);
-	return `+OK ${encrypted}`;
-};
-
-export const tryDecryptFishLine = tryDecryptFishMessage;
