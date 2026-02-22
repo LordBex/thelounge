@@ -32,7 +32,7 @@ function handleFtpResult(
 	}
 }
 
-function handleFtpInvite(
+async function resolveAndSendFtpInvite(
 	client: Client,
 	network: NetworkWithIrcFramework,
 	chan: Channel,
@@ -49,6 +49,19 @@ function handleFtpInvite(
 		return;
 	}
 
+	const password = network.ftpPassword ?? "";
+
+	if (!password) {
+		chan.pushMessage(
+			client,
+			new Msg({
+				type: MessageType.ERROR,
+				text: "FTP: No password configured for this network.",
+			})
+		);
+		return;
+	}
+
 	chan.pushMessage(
 		client,
 		new Msg({
@@ -56,9 +69,8 @@ function handleFtpInvite(
 		})
 	);
 
-	void sendFtpInvite(network, targetUsername).then((result) => {
-		handleFtpResult(client, chan, result);
-	});
+	const result = await sendFtpInvite(network, targetUsername, password);
+	handleFtpResult(client, chan, result);
 }
 
 const input: PluginInputHandler = function (network, chan, cmd, args) {
@@ -87,7 +99,12 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 	// Handle /ftpinvite command
 	if (cmd === "ftpinvite") {
 		const targetUsername = args[0] || network.nick;
-		handleFtpInvite(this, network, chan, targetUsername);
+		void resolveAndSendFtpInvite(this, network, chan, targetUsername).catch((err: Error) => {
+			chan.pushMessage(
+				this,
+				new Msg({type: MessageType.ERROR, text: `FTP error: ${err.message}`})
+			);
+		});
 		return;
 	}
 
@@ -117,7 +134,12 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 			})
 		);
 	} else if (subCommand === "test") {
-		handleFtpInvite(this, network, chan, network.nick);
+		void resolveAndSendFtpInvite(this, network, chan, network.nick).catch((err: Error) => {
+			chan.pushMessage(
+				this,
+				new Msg({type: MessageType.ERROR, text: `FTP error: ${err.message}`})
+			);
+		});
 	} else {
 		chan.pushMessage(
 			this,

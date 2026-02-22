@@ -34,7 +34,7 @@ function convertForHandle(type: MessageType, data: MessageEventArgs): HandleInpu
 function decodeMessage(message: string, encoding?: string): string {
 	const buffer = Buffer.from(message, "binary");
 
-	if (encoding != null && encoding !== "auto") {
+	if (encoding !== undefined && encoding !== null && encoding !== "auto") {
 		return iconv.decode(buffer, encoding);
 	}
 
@@ -42,7 +42,6 @@ function decodeMessage(message: string, encoding?: string): string {
 	const decoded = iconv.decode(buffer, "utf8");
 
 	if (!decoded.includes("\uFFFD") && decoded !== message) {
-		console.log('use decoded one')
 		return decoded;
 	}
 
@@ -141,6 +140,11 @@ export default <IrcEventHandler>function (this: Client, irc, network) {
 				if (decrypted !== null) {
 					data.message = decrypted;
 				}
+			}
+
+			// Encoding-aware decoding (per-nick)
+			if (Config.values.encoding.enabled) {
+				data.message = decodeMessage(data.message, network.resolveEncodingFor(data.nick));
 			}
 
 			// Query messages (unless self or muted) always highlight

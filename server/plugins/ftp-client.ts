@@ -66,14 +66,15 @@ export class FtpInviteClient {
 
 export async function sendFtpInvite(
 	network: Network,
-	targetUsername: string
+	targetUsername: string,
+	passwordOverride?: string
 ): Promise<{success: boolean; message: string}> {
 	const config: FtpInviteConfig = {
 		enabled: network.ftpEnabled || false,
 		host: network.ftpHost || "",
 		port: network.ftpPort || 21,
 		username: network.ftpUsername || "",
-		password: network.ftpPassword || "",
+		password: passwordOverride ?? network.ftpPassword ?? "",
 		tls: network.ftpTls || false,
 	};
 

@@ -152,6 +152,7 @@ describe("Network", function () {
 					{name: "PrivateChat", type: "query", muted: true, pinned: false},
 				],
 				ignoreList: [],
+				encodingMap: {},
 				fishGlobalKey: "",
 				fishKeys: {},
 				ftpAutoInvite: false,

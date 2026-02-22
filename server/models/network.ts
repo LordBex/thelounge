@@ -12,6 +12,7 @@ import Client from "../client.js";
 import {MessageType} from "../../shared/types/msg.js";
 import {ChanType} from "../../shared/types/chan.js";
 import {SharedNetwork} from "../../shared/types/network.js";
+import {encrypt, decrypt} from "../utils/secretCrypto.js";
 
 type NetworkIrcOptions = {
 	host: string;
@@ -274,7 +275,6 @@ class Network {
 		if (Config.values.fish.enabled) {
 			this.applyBlowKeysToChannels();
 		}
-
 	}
 
 	validate(this: Network, client: Client) {
@@ -294,6 +294,11 @@ class Network {
 		this.username = cleanString(this.username) || "thelounge";
 		this.realname = cleanString(this.realname) || this.nick;
 		this.leaveMessage = cleanString(this.leaveMessage);
+		// Decrypt any credentials that were encrypted at rest before further validation
+		this.password = decrypt(this.password);
+		this.saslPassword = decrypt(this.saslPassword);
+		this.ftpPassword = decrypt(this.ftpPassword || "");
+
 		this.password = cleanString(this.password);
 		this.host = cleanString(this.host).toLowerCase();
 		this.name = cleanString(this.name);
@@ -812,7 +817,7 @@ class Network {
 		data.ftpUsername = this.ftpUsername || "";
 		data.ftpTls = this.ftpTls || false;
 		data.ftpAutoInvite = this.ftpAutoInvite || false;
-		// Note: Don't include ftpPassword for security - user must re-enter
+		data.ftpPassword = this.ftpPassword || "";
 
 		// Include encoding map for editing UI
 		data.encodingMap = {...(this.encodingMap || {})};
@@ -863,6 +868,11 @@ class Network {
 			// Encoding persistence
 			"encodingMap",
 		]) as Network;
+
+		// Encrypt credentials at rest when THE_LOUNGE_SECRET is configured
+		if (network.password) network.password = encrypt(network.password);
+		if (network.saslPassword) network.saslPassword = encrypt(network.saslPassword);
+		if (network.ftpPassword) network.ftpPassword = encrypt(network.ftpPassword);
 
 		network.channels = this.channels
 			.filter(function (channel) {
