@@ -1,4 +1,5 @@
 import {expect, assert} from "chai";
+import {isEncrypted} from "../../server/utils/secretCrypto.js";
 import sinon from "sinon";
 import Chan from "../../server/models/chan.js";
 import {ChanType} from "../../shared/types/chan.js";
@@ -163,6 +164,41 @@ describe("Network", function () {
 				ftpTls: false,
 				ftpUsername: "",
 			});
+		});
+
+		it("should encrypt credentials when THE_LOUNGE_SECRET is set", function () {
+			process.env.THE_LOUNGE_SECRET = "test-export-secret";
+
+			try {
+				const network = new Network({
+					password: "ircpassword",
+					saslPassword: "saslpassword",
+					ftpPassword: "ftppassword",
+				});
+
+				const exported = network.export();
+
+				expect(isEncrypted(exported.password)).to.equal(true);
+				expect(isEncrypted(exported.saslPassword)).to.equal(true);
+				expect(isEncrypted(exported.ftpPassword)).to.equal(true);
+			} finally {
+				delete process.env.THE_LOUNGE_SECRET;
+			}
+		});
+
+		it("should leave empty credentials unencrypted", function () {
+			process.env.THE_LOUNGE_SECRET = "test-export-secret";
+
+			try {
+				const network = new Network({password: "", saslPassword: "", ftpPassword: ""});
+				const exported = network.export();
+
+				expect(isEncrypted(exported.password)).to.equal(false);
+				expect(isEncrypted(exported.saslPassword)).to.equal(false);
+				expect(isEncrypted(exported.ftpPassword)).to.equal(false);
+			} finally {
+				delete process.env.THE_LOUNGE_SECRET;
+			}
 		});
 	});
 
