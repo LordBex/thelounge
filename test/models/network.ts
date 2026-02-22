@@ -182,7 +182,7 @@ describe("Network", function () {
 
 				expect(isEncrypted(exported.password)).to.equal(true);
 				expect(isEncrypted(exported.saslPassword)).to.equal(true);
-				expect(isEncrypted(exported.ftpPassword)).to.equal(true);
+				expect(isEncrypted(exported.ftpPassword ?? "")).to.equal(true);
 			} finally {
 				delete process.env.THE_LOUNGE_SECRET;
 			}

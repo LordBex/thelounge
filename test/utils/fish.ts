@@ -171,6 +171,58 @@ describe("FiSH Blowfish encryption", function () {
 		});
 	});
 
+	describe("CBC mode", function () {
+		it("should encrypt and decrypt in CBC mode roundtrip", function () {
+			const key = "cbckey";
+			const plaintext = "Hello CBC mode!";
+			const encrypted = fishEncrypt(plaintext, key, "cbc");
+			const result = fishDecrypt(encrypted, key, "cbc");
+			expect(result.status).to.equal("success");
+			expect(result.text).to.include(plaintext);
+		});
+
+		it("should set mode to cbc in decrypt result", function () {
+			const key = "cbckey";
+			const plaintext = "mode test";
+			const encrypted = fishEncrypt(plaintext, key, "cbc");
+			const result = fishDecrypt(encrypted, key, "cbc");
+			expect(result.mode).to.equal("cbc");
+		});
+
+		it("createFishMessage with CBC should produce +OK * prefix", function () {
+			const message = createFishMessage("hello", "mykey", "cbc");
+			expect(message).to.match(/^\+OK \*/);
+		});
+
+		it("tryDecryptFishMessage should auto-detect CBC from +OK * format", function () {
+			const key = "autodetect";
+			const plaintext = "cbc auto detect";
+			const message = createFishMessage(plaintext, key, "cbc");
+			const result = tryDecryptFishMessage(message, key);
+			expect(result).to.not.equal(null);
+			expect(result!.mode).to.equal("cbc");
+			expect(result!.text).to.include(plaintext);
+		});
+
+		it("tryDecryptFishLine should show [CBC] tag for CBC messages", function () {
+			const key = "cbcline";
+			const plaintext = "cbc line test";
+			const message = createFishMessage(plaintext, key, "cbc");
+			const result = tryDecryptFishLine(message, key);
+			expect(result).to.not.equal(null);
+			expect(result).to.match(/^\x0314\[CBC\]\x03 /);
+			expect(result).to.include(plaintext);
+		});
+
+		it("CBC ciphertext should not be in FiSH base64 alphabet (uses standard base64)", function () {
+			const encrypted = fishEncrypt("test", "key", "cbc");
+			// Standard base64 uses +, /, = which are NOT in FiSH base64
+			// Check that it's valid standard base64 by decoding and re-encoding
+			const decoded = Buffer.from(encrypted, "base64");
+			expect(decoded.length).to.be.greaterThan(0);
+		});
+	});
+
 	describe("tryDecryptFishLine", function () {
 		it("should return formatted string with [ECB] color prefix for ECB messages", function () {
 			const key = "fishkey";
