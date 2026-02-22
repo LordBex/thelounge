@@ -2,6 +2,7 @@
 // Functional approach with proper typing and error handling
 
 // Types
+import crypto from "node:crypto";
 import log from "../log.js";
 
 export type FishMode = "ecb" | "cbc";
@@ -17,11 +18,10 @@ type BlowfishBlock = readonly [number, number, number, number, number, number, n
 // Constants
 const FISH_BASE64 = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-// Generate random IV for CBC mode
+// Generate cryptographically secure random IV for CBC mode
 const generateRandomIV = (): BlowfishBlock => {
-	return Array.from({length: 8}, () =>
-		Math.floor(Math.random() * 256)
-	) as unknown as BlowfishBlock;
+	const bytes = crypto.randomBytes(8);
+	return [bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]];
 };
 
 const INITIAL_P: readonly number[] = [
@@ -493,6 +493,7 @@ const fishDecryptECB = (ciphertext: string, key: string): DecryptResult => {
 		return {
 			text: decryptedText,
 			status: isPartial ? "partial" : "success",
+			mode: "ecb" as FishMode,
 		};
 	} catch {
 		return {text: "", status: "error"};
@@ -615,6 +616,7 @@ const fishDecryptCBC = (base64Ciphertext: string, key: string): DecryptResult =>
 		return {
 			text: decryptedText,
 			status: "success",
+			mode: "cbc" as FishMode,
 		};
 	} catch {
 		return {text: "", status: "error"};
