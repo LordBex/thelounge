@@ -14,6 +14,7 @@ import {ChanType} from "../../shared/types/chan.js";
 import {SharedNetwork} from "../../shared/types/network.js";
 import {encrypt, decrypt} from "../utils/secretCrypto.js";
 import type {FishMode} from "../utils/fish.js";
+import type {DH1080Ctx} from "../utils/dh1080.js";
 
 type NetworkIrcOptions = {
 	host: string;
@@ -179,6 +180,10 @@ class Network {
 	// Per-channel/nick encoding map: channel/nick (lowercase) -> encoding
 	encodingMap?: Record<string, string>;
 
+	// Pending DH1080 key exchanges: nick (lowercase) -> DH1080Ctx
+	// This is runtime-only and not persisted
+	dh1080Pending?: Map<string, DH1080Ctx>;
+
 	irc?: IrcFramework.Client & {
 		options?: NetworkIrcOptions;
 	};
@@ -252,6 +257,9 @@ class Network {
 
 			// Encoding defaults
 			encodingMap: {},
+
+			// DH1080 pending exchanges (runtime only, not persisted)
+			dh1080Pending: new Map<string, DH1080Ctx>(),
 
 			chanCache: [],
 			ignoreList: [],

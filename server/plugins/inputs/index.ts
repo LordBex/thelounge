@@ -58,6 +58,7 @@ const builtInInputs = [
 	"invite",
 	"kick",
 	"kill",
+	"keyexchange",
 	"list",
 	"mode",
 	"msg",

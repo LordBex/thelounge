@@ -561,6 +561,13 @@ export default {
 	// This value is set to `false` by default.
 	fish: {
 		enabled: true,
+		// Allow DH1080 key exchange via `/keyexchange` command.
+		// When enabled, users can perform automated Diffie-Hellman key exchange
+		// with other IRC clients supporting the DH1080 protocol.
+		//
+		// Note: DH1080 on IRC has known security limitations (MITM vulnerability)
+		// as there is no authentication of the other party.
+		allowKeyExchange: true,
 	},
 
 	// ### `ftpInvite`

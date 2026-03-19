@@ -80,6 +80,7 @@ type Debug = {
 
 type Fish = {
 	enabled: boolean;
+	allowKeyExchange: boolean;
 };
 
 type FtpInvite = {

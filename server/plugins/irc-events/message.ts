@@ -11,6 +11,7 @@ import {MessageEventArgs} from "irc-framework";
 import {tryDecryptFishLine} from "../../utils/fish.js";
 import Config from "../../config.js";
 import iconv from "iconv-lite";
+import {isDH1080Message, handleDH1080Message} from "./dh1080.js";
 
 const nickRegExp = /(?:\x03[0-9]{1,2}(?:,[0-9]{1,2})?)?([\w[\]\\`^{|}-]+)/g;
 
@@ -51,6 +52,24 @@ function decodeMessage(message: string, encoding?: string): string {
 
 export default <IrcEventHandler>function (this: Client, irc, network) {
 	irc.on("notice", (data) => {
+		// Check if this is a DH1080 key exchange message
+		if (
+			Config.values.fish.enabled &&
+			Config.values.fish.allowKeyExchange &&
+			isDH1080Message(data.message)
+		) {
+			// Handle DH1080 messages - don't display them as normal notices
+			handleDH1080Message(
+				this,
+				network,
+				data.nick,
+				data.target,
+				data.message,
+				network.getLobby()
+			);
+			return;
+		}
+
 		handleMessage.call(this, convertForHandle(MessageType.NOTICE, data));
 	});
 
