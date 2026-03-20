@@ -120,6 +120,15 @@ export function handleDH1080Message(
 			// Clean up pending exchange
 			network.dh1080Pending.delete(fromLower);
 
+			// Use our requested mode if we specified one, otherwise use what they requested
+			const ourRequestedMode = network.dh1080PendingModes?.get(fromLower);
+			const modeToUse = ourRequestedMode || (wantsCBC ? "cbc" : "ecb");
+
+			// Clean up mode preference
+			if (network.dh1080PendingModes) {
+				network.dh1080PendingModes.delete(fromLower);
+			}
+
 			// Now we can derive the key (we have their public key now)
 			const derivedKey = dh1080Secret(ctx);
 
@@ -129,23 +138,23 @@ export function handleDH1080Message(
 
 			network.fishKeys[fromLower] = derivedKey;
 
-			// Set the encryption mode based on what the other party requested
+			// Set the encryption mode
 			if (!network.fishKeyModes) {
 				network.fishKeyModes = {};
 			}
 
-			network.fishKeyModes[fromLower] = wantsCBC ? "cbc" : "ecb";
+			network.fishKeyModes[fromLower] = modeToUse;
 
 			// Update the channel's blowfish key and mode
 			const targetChan = network.getChannel(fromNick);
 
 			if (targetChan) {
 				targetChan.blowfishKey = derivedKey;
-				targetChan.blowfishMode = wantsCBC ? "cbc" : "ecb";
+				targetChan.blowfishMode = modeToUse;
 			}
 
 			// Notify success
-			const modeText = wantsCBC ? " (CBC mode)" : " (ECB mode)";
+			const modeText = ` (${modeToUse.toUpperCase()} mode)`;
 			const lobby = network.getLobby();
 			lobby.pushMessage(
 				client,

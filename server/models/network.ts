@@ -184,6 +184,10 @@ class Network {
 	// This is runtime-only and not persisted
 	dh1080Pending?: Map<string, DH1080Ctx>;
 
+	// Pending DH1080 mode preferences: nick (lowercase) -> "cbc" | "ecb"
+	// This is runtime-only and not persisted
+	dh1080PendingModes?: Map<string, "cbc" | "ecb">;
+
 	irc?: IrcFramework.Client & {
 		options?: NetworkIrcOptions;
 	};
@@ -260,6 +264,7 @@ class Network {
 
 			// DH1080 pending exchanges (runtime only, not persisted)
 			dh1080Pending: new Map<string, DH1080Ctx>(),
+			dh1080PendingModes: new Map<string, "cbc" | "ecb">(),
 
 			chanCache: [],
 			ignoreList: [],

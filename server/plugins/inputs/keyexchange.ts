@@ -46,20 +46,38 @@ const input: PluginInputHandler = function (network, chan, _cmd, args) {
 			this,
 			new Msg({
 				type: MessageType.ERROR,
-				text: "Usage: /keyexchange <nick>",
+				text: "Usage: /keyexchange [cbc|ecb] <nick>",
 			})
 		);
 		return true;
 	}
 
-	const targetNick = args[0].trim();
+	// Parse arguments: /keyexchange [mode] <nick>
+	let targetNick: string;
+	let mode: "cbc" | "ecb" | undefined;
+
+	if (args.length === 1) {
+		// /keyexchange <nick>
+		targetNick = args[0].trim();
+	} else {
+		// /keyexchange [mode] <nick>
+		const modeArg = args[0].toLowerCase();
+
+		if (modeArg === "cbc" || modeArg === "ecb") {
+			mode = modeArg;
+			targetNick = args[1].trim();
+		} else {
+			// First arg is not a mode, treat as nick
+			targetNick = args[0].trim();
+		}
+	}
 
 	if (!targetNick) {
 		chan.pushMessage(
 			this,
 			new Msg({
 				type: MessageType.ERROR,
-				text: "Usage: /keyexchange <nick>",
+				text: "Usage: /keyexchange [cbc|ecb] <nick>",
 			})
 		);
 		return true;
@@ -88,19 +106,31 @@ const input: PluginInputHandler = function (network, chan, _cmd, args) {
 	const ctx: DH1080Ctx = dh1080Create();
 	network.dh1080Pending.set(targetLower, ctx);
 
-	// Send DH1080_INIT message
+	// Store the requested mode for this exchange
+	if (mode) {
+		if (!network.dh1080PendingModes) {
+			network.dh1080PendingModes = new Map<string, "cbc" | "ecb">();
+		}
+
+		network.dh1080PendingModes.set(targetLower, mode);
+	}
+
+	// Send DH1080_INIT message with mode suffix if requested
 	const initMsg = dh1080Pack(ctx, false);
-	network.irc.notice(targetNick, initMsg);
+	const initMsgWithMode = mode === "cbc" ? `${initMsg} CBC` : initMsg;
+
+	network.irc.notice(targetNick, initMsgWithMode);
 
 	// Note: We can't derive the key yet - we need to receive their public key first
 	// The key will be set in dh1080.ts when we receive DH1080_FINISH
 
 	// Notify the user
+	const modeText = mode ? ` (${mode.toUpperCase()} mode)` : "";
 	chan.pushMessage(
 		this,
 		new Msg({
 			type: MessageType.NOTICE,
-			text: `Key exchange initiated with ${targetNick}. Waiting for DH1080_FINISH response...`,
+			text: `Key exchange initiated with ${targetNick}${modeText}. Waiting for DH1080_FINISH response...`,
 		})
 	);
 
@@ -109,6 +139,11 @@ const input: PluginInputHandler = function (network, chan, _cmd, args) {
 	setTimeout(() => {
 		if (network.dh1080Pending?.has(targetLower)) {
 			network.dh1080Pending.delete(targetLower);
+
+			if (network.dh1080PendingModes) {
+				network.dh1080PendingModes.delete(targetLower);
+			}
+
 			chan.pushMessage(
 				this,
 				new Msg({
