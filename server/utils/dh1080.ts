@@ -344,7 +344,7 @@ export function dh1080Unpack(message: string, ctx: DH1080Ctx): boolean {
 /**
  * Derive the final key from DH1080 shared secret
  * @param ctx - DH1080 context with completed exchange
- * @returns base64-encoded SHA256 hash of shared secret
+ * @returns dh1080_b64encode (FiSH non-standard base64) of SHA256 hash of shared secret
  */
 export function dh1080Secret(ctx: DH1080Ctx): string {
 	if (ctx.secret === 0n) {
@@ -354,8 +354,8 @@ export function dh1080Secret(ctx: DH1080Ctx): string {
 	const secretBytes = int2Bytes(ctx.secret);
 	const hash = crypto.createHash("sha256").update(secretBytes).digest();
 
-	// Use standard base64 for the final key
-	return hash.toString("base64");
+	// Use dh1080_b64encode (FiSH non-standard base64) for compatibility with WeeChat/fish.py
+	return dh1080B64Encode(hash);
 }
 
 /**
