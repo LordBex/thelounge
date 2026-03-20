@@ -12,7 +12,6 @@ import {tryDecryptFishMessage} from "../../utils/fish.js";
 import Config from "../../config.js";
 import iconv from "iconv-lite";
 import {isDH1080Message, handleDH1080Message} from "./dh1080.js";
-import log from "../../log.js";
 
 const nickRegExp = /(?:\x03[0-9]{1,2}(?:,[0-9]{1,2})?)?([\w[\]\\`^{|}-]+)/g;
 
@@ -139,11 +138,6 @@ export default <IrcEventHandler>function (this: Client, irc, network) {
 					network.fishKeys[target.toLowerCase()];
 				const isEncryptedFiSH = hasKey && data.message.match(/^\s*(?:\+OK|\*OK|mcps)\s+/);
 
-				// Debug logging for FiSH troubleshooting
-				log.info(
-					`FiSH DEBUG: target=${target}, type=${data.type}, msg=${data.message.substring(0, 50)}, hasKey=${!!hasKey}, isEncrypted=${!!isEncryptedFiSH}`
-				);
-
 				// Send notices that are not targeted at us into the server window
 				// But create a query window for encrypted messages or regular private messages
 				if (data.type === MessageType.NOTICE && !isEncryptedFiSH) {
@@ -169,14 +163,8 @@ export default <IrcEventHandler>function (this: Client, irc, network) {
 			from = chan.getUser(data.nick);
 
 			// Attempt mIRC FiSH Blowfish decryption if applicable
-			log.info(
-				`FiSH DEBUG: chan=${chan.name}, hasKey=${!!chan.blowfishKey}, msg=${data.message.substring(0, 50)}`
-			);
-
 			if (Config.values.fish.enabled && chan.blowfishKey) {
 				const result = tryDecryptFishMessage(data.message, chan.blowfishKey);
-
-				log.info(`FiSH DEBUG: decryption result=${result !== null ? "SUCCESS" : "FAILED"}`);
 
 				if (result !== null) {
 					// Update the mode to match what was detected from the incoming message

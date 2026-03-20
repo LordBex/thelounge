@@ -60,6 +60,9 @@ export function handleDH1080Message(
 
 	// Handle DH1080_FINISH - response to our initiation or from someone we initiated with
 	if (message.startsWith("DH1080_FINISH ")) {
+		// Detect CBC mode request from " CBC" suffix
+		const wantsCBC = message.endsWith(" CBC");
+		const cleanMessage = wantsCBC ? message.slice(0, -4) : message;
 		// Check if we have a pending exchange for this nick
 		const ctx = network.dh1080Pending.get(fromLower);
 
@@ -68,7 +71,7 @@ export function handleDH1080Message(
 			// Create a new context for this "incoming" exchange
 			const newCtx: DH1080Ctx = dh1080Create();
 
-			if (dh1080Unpack(message, newCtx)) {
+			if (dh1080Unpack(cleanMessage, newCtx)) {
 				// Calculate and store the key
 				const derivedKey = dh1080Secret(newCtx);
 
@@ -78,23 +81,29 @@ export function handleDH1080Message(
 
 				network.fishKeys[fromLower] = derivedKey;
 
-				// Note: We don't set fishKeyModes here - it will be auto-detected
-				// from the first encrypted message we receive from this nick
+				// Set the encryption mode based on what the other party requested
+				if (!network.fishKeyModes) {
+					network.fishKeyModes = {};
+				}
 
-				// Update the channel's blowfish key (mode not set - will be detected)
+				network.fishKeyModes[fromLower] = wantsCBC ? "cbc" : "ecb";
+
+				// Update the channel's blowfish key and mode
 				const targetChan = network.getChannel(fromNick);
 
 				if (targetChan) {
 					targetChan.blowfishKey = derivedKey;
+					targetChan.blowfishMode = wantsCBC ? "cbc" : "ecb";
 				}
 
 				// Notify the user
+				const modeText = wantsCBC ? " (CBC mode)" : " (ECB mode)";
 				const lobby = network.getLobby();
 				lobby.pushMessage(
 					client,
 					new Msg({
 						type: MessageType.NOTICE,
-						text: `Key exchange with ${fromNick} completed successfully.`,
+						text: `Key exchange with ${fromNick} completed successfully.${modeText}`,
 					})
 				);
 
@@ -107,7 +116,7 @@ export function handleDH1080Message(
 		}
 
 		// We initiated this exchange, complete it
-		if (dh1080Unpack(message, ctx)) {
+		if (dh1080Unpack(cleanMessage, ctx)) {
 			// Clean up pending exchange
 			network.dh1080Pending.delete(fromLower);
 
@@ -120,23 +129,29 @@ export function handleDH1080Message(
 
 			network.fishKeys[fromLower] = derivedKey;
 
-			// Note: We don't set fishKeyModes here - it will be auto-detected
-			// from the first encrypted message we receive from this nick
+			// Set the encryption mode based on what the other party requested
+			if (!network.fishKeyModes) {
+				network.fishKeyModes = {};
+			}
 
-			// Update the channel's blowfish key (mode not set - will be detected)
+			network.fishKeyModes[fromLower] = wantsCBC ? "cbc" : "ecb";
+
+			// Update the channel's blowfish key and mode
 			const targetChan = network.getChannel(fromNick);
 
 			if (targetChan) {
 				targetChan.blowfishKey = derivedKey;
+				targetChan.blowfishMode = wantsCBC ? "cbc" : "ecb";
 			}
 
 			// Notify success
+			const modeText = wantsCBC ? " (CBC mode)" : " (ECB mode)";
 			const lobby = network.getLobby();
 			lobby.pushMessage(
 				client,
 				new Msg({
 					type: MessageType.NOTICE,
-					text: `Key exchange with ${fromNick} completed successfully.`,
+					text: `Key exchange with ${fromNick} completed successfully.${modeText}`,
 				})
 			);
 
@@ -153,6 +168,10 @@ export function handleDH1080Message(
 
 	// Handle DH1080_INIT - someone is initiating a key exchange with us
 	if (message.startsWith("DH1080_INIT ")) {
+		// Detect CBC mode request from " CBC" suffix
+		const wantsCBC = message.endsWith(" CBC");
+		const cleanMessage = wantsCBC ? message.slice(0, -4) : message;
+
 		// Check if there's already a pending exchange
 		if (network.dh1080Pending.has(fromLower)) {
 			// Already have an exchange in progress, notify and ignore
@@ -170,7 +189,7 @@ export function handleDH1080Message(
 		// Create new DH1080 context
 		const ctx: DH1080Ctx = dh1080Create();
 
-		if (!dh1080Unpack(message, ctx)) {
+		if (!dh1080Unpack(cleanMessage, ctx)) {
 			currentChan?.pushMessage(
 				client,
 				new Msg({
@@ -194,33 +213,40 @@ export function handleDH1080Message(
 
 		network.fishKeys[fromLower] = derivedKey;
 
-		// Note: We don't set fishKeyModes here - it will be auto-detected
-		// from the first encrypted message we receive from this nick
+		// Set the encryption mode based on what the other party requested
+		if (!network.fishKeyModes) {
+			network.fishKeyModes = {};
+		}
 
-		// Update the channel's blowfish key (mode not set - will be detected)
+		network.fishKeyModes[fromLower] = wantsCBC ? "cbc" : "ecb";
+
+		// Update the channel's blowfish key and mode
 		const targetChan = network.getChannel(fromNick);
 
 		if (targetChan) {
 			targetChan.blowfishKey = derivedKey;
+			targetChan.blowfishMode = wantsCBC ? "cbc" : "ecb";
 		}
 
-		// Send DH1080_FINISH response
+		// Send DH1080_FINISH response with CBC suffix if they want CBC
 		const finishMsg = dh1080Pack(ctx, true);
+		const finishMsgWithMode = wantsCBC ? `${finishMsg} CBC` : finishMsg;
 
 		if (network.irc) {
-			network.irc.notice(fromNick, finishMsg);
+			network.irc.notice(fromNick, finishMsgWithMode);
 		}
 
 		// Clean up pending exchange immediately (we've set the key)
 		network.dh1080Pending.delete(fromLower);
 
 		// Notify the user
+		const modeText = wantsCBC ? " (CBC mode)" : " (ECB mode)";
 		const lobby = network.getLobby();
 		lobby.pushMessage(
 			client,
 			new Msg({
 				type: MessageType.NOTICE,
-				text: `Key exchange with ${fromNick} completed successfully.`,
+				text: `Key exchange with ${fromNick} completed successfully.${modeText}`,
 			})
 		);
 
