@@ -130,8 +130,17 @@ export default <IrcEventHandler>function (this: Client, irc, network) {
 			chan = network.getChannel(target);
 
 			if (typeof chan === "undefined") {
+				// Check if this is an encrypted FiSH message - these need their own query window
+				// so the blowfish key can be properly associated
+				const isEncryptedFiSH =
+					Config.values.fish.enabled &&
+					network.fishKeys &&
+					network.fishKeys[target.toLowerCase()] &&
+					data.message.match(/^\s*(?:\+OK|\*OK|mcps)\s+/);
+
 				// Send notices that are not targeted at us into the server window
-				if (data.type === MessageType.NOTICE) {
+				// But create a query window for encrypted messages or regular private messages
+				if (data.type === MessageType.NOTICE && !isEncryptedFiSH) {
 					showInActive = true;
 					chan = network.getLobby();
 				} else {
