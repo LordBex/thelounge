@@ -17,6 +17,7 @@ export type ClientMessage = SharedMsg;
 type ClientChan = Omit<SharedChan, "messages"> & {
 	moreHistoryAvailable: boolean;
 	editTopic: boolean;
+	traceMode: boolean;
 	messages: ClientMessage[];
 
 	// these are added in store/initChannel

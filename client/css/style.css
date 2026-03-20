@@ -514,6 +514,12 @@ p {
 	/* https://fontawesome.com/icons/thumbtack?style=solid */
 }
 
+.context-menu-trace::before {
+	content: "\f120";
+
+	/* https://fontawesome.com/icons/terminal?style=solid */
+}
+
 .channel-list-item .not-secure-icon::before {
 	content: "\f071";
 
@@ -2025,6 +2031,20 @@ textarea.input {
 
 #chat .msg[data-type="unhandled"] .from {
 	color: var(--body-color-muted);
+}
+
+#chat.trace-mode .from {
+	display: none;
+}
+
+#chat.trace-mode .content {
+	font-family: Consolas, Menlo, Monaco, "Lucida Console", "DejaVu Sans Mono", "Courier New", monospace;
+	border-left: none;
+	padding-left: 0;
+}
+
+#chat.trace-mode ~ #form {
+	display: none;
 }
 
 #chat .chat-view[data-type="special"] table th {

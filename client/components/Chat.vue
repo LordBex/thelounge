@@ -7,6 +7,7 @@
 				'time-seconds': store.state.settings.showSeconds,
 				'time-12h': store.state.settings.use12hClock,
 				'colored-nicks': true, // TODO temporarily fixes themes, to be removed in next major version
+				'trace-mode': channel.traceMode,
 			}"
 		>
 			<div

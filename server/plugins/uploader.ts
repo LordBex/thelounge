@@ -286,6 +286,7 @@ class Uploader {
 							new Blob([fs.readFileSync(destPath)]),
 							fileName || path.basename(destPath.toString())
 						);
+						form.append("id_length", "16");
 
 						const controller = new AbortController();
 						const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout

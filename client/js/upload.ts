@@ -374,7 +374,8 @@ class Uploader {
 		}
 	}
 
-	insertUploadUrl(url: string, filename: string | undefined) {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	insertUploadUrl(url: string, _filename: string | undefined) {
 		const fullURL = new URL(url, location.toString()).toString();
 		const textbox = document.getElementById("input");
 
@@ -390,14 +391,8 @@ class Uploader {
 		// Get the remaining text after the cursor
 		const cursorToTail = textbox.value.substring(initStart);
 
-		let content = fullURL;
-
-		if (filename) {
-			content = `${filename} (${fullURL})`;
-		}
-
 		// Construct the value by the point where we want the cursor to be
-		const textBeforeTail = headToCursor + content + " ";
+		const textBeforeTail = headToCursor + fullURL + " ";
 
 		updateCursor(textbox, textBeforeTail + cursorToTail);
 

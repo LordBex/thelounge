@@ -34,6 +34,14 @@ function convertForHandle(type: MessageType, data: MessageEventArgs): HandleInpu
 }
 
 function decodeMessage(message: string, encoding?: string): string {
+	// If the message contains characters outside the Latin-1 range (code point > 255),
+	// it is already a Unicode string (e.g. a simulated echo of a message we sent),
+	// not a raw binary string from IRC. Skip re-decoding to avoid corrupting emojis
+	// and other non-BMP characters (e.g. 😎 would become "=" via surrogate byte truncation).
+	if ([...message].some((ch) => (ch.codePointAt(0) ?? 0) > 255)) {
+		return message;
+	}
+
 	const buffer = Buffer.from(message, "binary");
 
 	if (encoding !== undefined && encoding !== null && encoding !== "auto") {

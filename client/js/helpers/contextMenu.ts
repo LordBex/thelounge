@@ -238,6 +238,18 @@ export function generateChannelContextMenu(
 		});
 	}
 
+	// Add trace mode toggle for all non-special channel types
+	if (channel.type !== ChanType.SPECIAL) {
+		items.push({
+			label: channel.traceMode ? "Disable trace mode" : "Enable trace mode",
+			type: "item",
+			class: "trace",
+			action() {
+				channel.traceMode = !channel.traceMode;
+			},
+		});
+	}
+
 	// Add close menu item
 	items.push({
 		label: closeMap[channel.type],

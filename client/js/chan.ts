@@ -17,6 +17,7 @@ export function toClientChan(shared: SharedNetworkChan): ClientChan {
 	const channel: ClientChan = {
 		...props,
 		editTopic: false,
+		traceMode: false,
 		pendingMessage: "",
 		inputHistoryPosition: 0,
 		historyLoading: false,
