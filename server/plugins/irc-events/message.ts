@@ -8,7 +8,7 @@ import User from "../../models/user.js";
 import {MessageType} from "../../../shared/types/msg.js";
 import {ChanType} from "../../../shared/types/chan.js";
 import {MessageEventArgs} from "irc-framework";
-import {tryDecryptFishLine} from "../../utils/fish.js";
+import {tryDecryptFishMessage} from "../../utils/fish.js";
 import Config from "../../config.js";
 import iconv from "iconv-lite";
 import {isDH1080Message, handleDH1080Message} from "./dh1080.js";
@@ -155,10 +155,23 @@ export default <IrcEventHandler>function (this: Client, irc, network) {
 
 			// Attempt mIRC FiSH Blowfish decryption if applicable
 			if (Config.values.fish.enabled && chan.blowfishKey) {
-				const decrypted = tryDecryptFishLine(data.message, chan.blowfishKey);
+				const result = tryDecryptFishMessage(data.message, chan.blowfishKey);
 
-				if (decrypted !== null) {
-					data.message = decrypted;
+				if (result !== null) {
+					// Update the mode to match what was detected from the incoming message
+					// This ensures we reply with the same format (ECB or CBC)
+					chan.blowfishMode = result.mode;
+
+					if (!network.fishKeyModes) {
+						network.fishKeyModes = {};
+					}
+
+					const fromLower = data.nick.toLowerCase();
+					network.fishKeyModes[fromLower] = result.mode;
+
+					// Format with mode tag for display
+					const tag = result.mode === "cbc" ? "[CBC]" : "[ECB]";
+					data.message = `\u000314${tag}\u0003 ${result.text}`;
 				}
 			}
 

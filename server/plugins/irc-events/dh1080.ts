@@ -78,18 +78,14 @@ export function handleDH1080Message(
 
 				network.fishKeys[fromLower] = derivedKey;
 
-				if (!network.fishKeyModes) {
-					network.fishKeyModes = {};
-				}
+				// Note: We don't set fishKeyModes here - it will be auto-detected
+				// from the first encrypted message we receive from this nick
 
-				network.fishKeyModes[fromLower] = "cbc";
-
-				// Update the channel's blowfish key
+				// Update the channel's blowfish key (mode not set - will be detected)
 				const targetChan = network.getChannel(fromNick);
 
 				if (targetChan) {
 					targetChan.blowfishKey = derivedKey;
-					targetChan.blowfishMode = "cbc";
 				}
 
 				// Notify the user
@@ -98,7 +94,7 @@ export function handleDH1080Message(
 					client,
 					new Msg({
 						type: MessageType.NOTICE,
-						text: `Key exchange with ${fromNick} completed successfully (CBC mode).`,
+						text: `Key exchange with ${fromNick} completed successfully.`,
 					})
 				);
 
@@ -124,18 +120,14 @@ export function handleDH1080Message(
 
 			network.fishKeys[fromLower] = derivedKey;
 
-			if (!network.fishKeyModes) {
-				network.fishKeyModes = {};
-			}
+			// Note: We don't set fishKeyModes here - it will be auto-detected
+			// from the first encrypted message we receive from this nick
 
-			network.fishKeyModes[fromLower] = "cbc";
-
-			// Update the channel's blowfish key
+			// Update the channel's blowfish key (mode not set - will be detected)
 			const targetChan = network.getChannel(fromNick);
 
 			if (targetChan) {
 				targetChan.blowfishKey = derivedKey;
-				targetChan.blowfishMode = "cbc";
 			}
 
 			// Notify success
@@ -144,7 +136,7 @@ export function handleDH1080Message(
 				client,
 				new Msg({
 					type: MessageType.NOTICE,
-					text: `Key exchange with ${fromNick} completed successfully (CBC mode).`,
+					text: `Key exchange with ${fromNick} completed successfully.`,
 				})
 			);
 
@@ -202,18 +194,14 @@ export function handleDH1080Message(
 
 		network.fishKeys[fromLower] = derivedKey;
 
-		if (!network.fishKeyModes) {
-			network.fishKeyModes = {};
-		}
+		// Note: We don't set fishKeyModes here - it will be auto-detected
+		// from the first encrypted message we receive from this nick
 
-		network.fishKeyModes[fromLower] = "cbc";
-
-		// Update the channel's blowfish key
+		// Update the channel's blowfish key (mode not set - will be detected)
 		const targetChan = network.getChannel(fromNick);
 
 		if (targetChan) {
 			targetChan.blowfishKey = derivedKey;
-			targetChan.blowfishMode = "cbc";
 		}
 
 		// Send DH1080_FINISH response
@@ -232,7 +220,7 @@ export function handleDH1080Message(
 			client,
 			new Msg({
 				type: MessageType.NOTICE,
-				text: `Key exchange with ${fromNick} completed successfully (CBC mode).`,
+				text: `Key exchange with ${fromNick} completed successfully.`,
 			})
 		);
 
