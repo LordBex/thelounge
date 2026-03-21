@@ -117,9 +117,14 @@
 		<div v-if="!store.state.serverConfiguration?.public">
 			<h2>Custom Commands</h2>
 			<p class="help">
-				Define shortcuts for frequently used commands. Use <code>$1</code>,
-				<code>$2</code> for positional arguments and <code>$*</code> for all remaining
-				arguments. Use <code>$$</code> for a literal dollar sign.
+				Define shortcuts for frequently used commands. Placeholders:
+				<code>$1</code> = first argument, <code>$2</code> = second argument,
+				<code>$*</code> = all arguments.
+			</p>
+			<p class="help example">
+				Example: <code>op</code> → <code>/msg chanserv op #mychannel $1</code><br />
+				Usage: <code>/op SomeUser</code> expands to
+				<code>/msg chanserv op #mychannel SomeUser</code>
 			</p>
 
 			<div v-if="!showRawJson">
@@ -214,6 +219,16 @@
 .no-commands {
 	color: var(--body-color-muted);
 	margin-bottom: 8px;
+}
+
+.help.example {
+	font-size: 0.9em;
+	color: var(--body-color-muted);
+	margin-top: 4px;
+}
+
+.help.example code {
+	color: var(--body-color);
 }
 
 .toggle-raw {
