@@ -127,6 +127,7 @@ export type NetworkFormData = {
 	fishKeys?: Record<string, string>;
 	fishGlobalKeyMode?: FishMode;
 	fishKeyModes?: Record<string, FishMode>;
+	fishExcludeList?: string[];
 	ftpEnabled?: boolean;
 	ftpHost?: string;
 	ftpPort?: string | number;
@@ -167,6 +168,10 @@ class Network {
 	fishKeys?: Record<string, string>;
 	fishGlobalKeyMode?: FishMode;
 	fishKeyModes?: Record<string, FishMode>;
+
+	// FiSH exclusion list: targets to exclude from global key encryption
+	// Supports wildcards (* and ?), case-insensitive
+	fishExcludeList?: string[];
 
 	// FTP Invite settings persisted per-network
 	ftpEnabled?: boolean;
@@ -249,6 +254,7 @@ class Network {
 			fishKeys: {},
 			fishGlobalKeyMode: "ecb" as FishMode,
 			fishKeyModes: {},
+			fishExcludeList: [],
 
 			// FTP defaults
 			ftpEnabled: false,
@@ -482,7 +488,18 @@ class Network {
 
 		const keyMap = this.fishKeys || {};
 		const lower = name.toLowerCase();
-		return keyMap[lower] || this.fishGlobalKey || undefined;
+
+		// If there's a specific key for this target, use it (exclusions don't apply)
+		if (keyMap[lower]) {
+			return keyMap[lower];
+		}
+
+		// Check if this target is excluded from global key encryption
+		if (this.fishGlobalKey && this.isFishExcluded(name)) {
+			return undefined;
+		}
+
+		return this.fishGlobalKey || undefined;
 	}
 
 	private resolveBlowModeFor(name: string): FishMode {
@@ -492,7 +509,28 @@ class Network {
 
 		const modeMap = this.fishKeyModes || {};
 		const lower = name.toLowerCase();
-		return modeMap[lower] || this.fishGlobalKeyMode || "ecb";
+
+		if (modeMap[lower]) {
+			return modeMap[lower];
+		}
+
+		// If excluded from global key, return default mode
+		if (this.fishGlobalKey && this.isFishExcluded(name)) {
+			return "ecb";
+		}
+
+		return this.fishGlobalKeyMode || "ecb";
+	}
+
+	private isFishExcluded(name: string): boolean {
+		if (!this.fishExcludeList || this.fishExcludeList.length === 0) {
+			return false;
+		}
+
+		const lowerName = name.toLowerCase();
+		return this.fishExcludeList.some((pattern) =>
+			Helper.compareWithWildcard(pattern.toLowerCase(), lowerName)
+		);
 	}
 
 	private applyBlowKeysToChannels() {
@@ -634,6 +672,19 @@ class Network {
 			}
 
 			this.fishKeyModes = map;
+		}
+
+		// FiSH: read exclusion list (only update when provided)
+		if (Object.prototype.hasOwnProperty.call(args, "fishExcludeList")) {
+			const value = args.fishExcludeList;
+
+			if (Array.isArray(value)) {
+				this.fishExcludeList = value
+					.map((item) => Helper.toTrimmedString(item).toLowerCase())
+					.filter((item) => item.length > 0);
+			} else {
+				this.fishExcludeList = [];
+			}
 		}
 
 		// FTP settings (only update when provided)
@@ -870,6 +921,7 @@ class Network {
 		data.fishKeys = {...(this.fishKeys || {})};
 		data.fishGlobalKeyMode = this.fishGlobalKeyMode || "ecb";
 		data.fishKeyModes = {...(this.fishKeyModes || {})};
+		data.fishExcludeList = [...(this.fishExcludeList || [])];
 
 		// Include FTP fields for editing UI
 		data.ftpEnabled = this.ftpEnabled || false;
@@ -918,6 +970,7 @@ class Network {
 			"fishKeys",
 			"fishGlobalKeyMode",
 			"fishKeyModes",
+			"fishExcludeList",
 
 			// FTP Invite persistence
 			"ftpEnabled",

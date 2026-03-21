@@ -158,6 +158,7 @@ describe("Network", function () {
 				fishGlobalKeyMode: "ecb",
 				fishKeys: {},
 				fishKeyModes: {},
+				fishExcludeList: [],
 				ftpAutoInvite: false,
 				ftpEnabled: false,
 				ftpHost: "",

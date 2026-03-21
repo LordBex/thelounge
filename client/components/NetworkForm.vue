@@ -377,6 +377,29 @@ the server tab on new connection"
 						</div>
 					</div>
 				</div>
+				<div class="connect-row">
+					<label for="connect:fishExcludeList">
+						Exclusions
+						<span
+							class="tooltipped tooltipped-ne tooltipped-no-delay"
+							aria-label="Channels or nicks to exclude from global key encryption.
+One per line. Supports wildcards * and ?
+Example: NickServ, *Serv, #plainchannel"
+						>
+							<button class="extra-help" />
+						</span>
+					</label>
+					<textarea
+						id="connect:fishExcludeList"
+						ref="fishExcludeInput"
+						autocomplete="off"
+						:value="(defaults.fishExcludeList || []).join('\n')"
+						class="input"
+						name="fishExcludeList"
+						placeholder="NickServ&#10;ChanServ&#10;*Serv&#10;#plaintext"
+						@input="resizeFishExcludeInput"
+					/>
+				</div>
 			</template>
 
 			<template v-if="config?.encodingEnabled">
@@ -837,6 +860,7 @@ export type NetworkFormDefaults = Partial<ClientNetwork> & {
 	fishKeys?: Record<string, string>;
 	fishGlobalKeyMode?: "ecb" | "cbc";
 	fishKeyModes?: Record<string, "ecb" | "cbc">;
+	fishExcludeList?: string[];
 	ftpEnabled?: boolean;
 	ftpHost?: string;
 	ftpPort?: number;
@@ -904,6 +928,40 @@ export default defineComponent({
 				});
 			}
 		);
+
+		const fishExcludeInput = ref<HTMLTextAreaElement | null>(null);
+
+		const resizeFishExcludeInput = () => {
+			if (!fishExcludeInput.value) {
+				return;
+			}
+
+			fishExcludeInput.value.style.height = "";
+			fishExcludeInput.value.style.height = `${Math.ceil(
+				fishExcludeInput.value.scrollHeight + 2
+			)}px`;
+		};
+
+		watch(
+			() => props.defaults.fishExcludeList,
+			() => {
+				void nextTick(() => {
+					resizeFishExcludeInput();
+				});
+			},
+			{immediate: true}
+		);
+
+		const fishExcludeListValue = computed(() => {
+			if (!fishExcludeInput.value) {
+				return [];
+			}
+
+			return fishExcludeInput.value.value
+				.split("\n")
+				.map((line) => line.trim().toLowerCase())
+				.filter((line) => line.length > 0);
+		});
 
 		watch(
 			() => props.defaults?.tls,
@@ -1078,6 +1136,7 @@ export default defineComponent({
 				...data,
 				fishKeys: fishKeysValue.value,
 				fishKeyModes: fishKeyModesValue.value,
+				fishExcludeList: fishExcludeListValue.value,
 				encodingMap: encodingMapValue.value,
 			} as ClientNetwork);
 		};
@@ -1097,6 +1156,9 @@ export default defineComponent({
 			fishKeysValue,
 			addFishKeyEntry,
 			removeFishKeyEntry,
+			fishExcludeInput,
+			resizeFishExcludeInput,
+			fishExcludeListValue,
 			encodingEntries,
 			encodingMapValue,
 			addEncodingEntry,
