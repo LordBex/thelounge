@@ -6,6 +6,7 @@ import {TypedStore} from "../store";
 import useCloseChannel from "../hooks/use-close-channel";
 import {ChanType} from "../../../shared/types/chan";
 import {openInNewTab} from "./openInNewTab";
+import storage from "../localStorage";
 
 type BaseContextMenuItem = {
 	label: string;
@@ -246,6 +247,20 @@ export function generateChannelContextMenu(
 			class: "trace",
 			action() {
 				channel.traceMode = !channel.traceMode;
+
+				// Persist to localStorage
+				const stored = storage.get("thelounge.channels.traceMode");
+				const traceModeChannels = stored
+					? new Set<number>(JSON.parse(stored))
+					: new Set<number>();
+
+				if (channel.traceMode) {
+					traceModeChannels.add(channel.id);
+				} else {
+					traceModeChannels.delete(channel.id);
+				}
+
+				storage.set("thelounge.channels.traceMode", JSON.stringify([...traceModeChannels]));
 			},
 		});
 	}

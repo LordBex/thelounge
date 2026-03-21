@@ -2,6 +2,7 @@ import {ClientChan, ClientMessage} from "./types";
 import {SharedNetworkChan} from "../../shared/types/network";
 import {SharedMsg, MessageType} from "../../shared/types/msg";
 import {ChanType} from "../../shared/types/chan";
+import storage from "./localStorage";
 
 export function toClientChan(shared: SharedNetworkChan): ClientChan {
 	const history: string[] = [""].concat(
@@ -14,10 +15,17 @@ export function toClientChan(shared: SharedNetworkChan): ClientChan {
 	);
 	// filter the unused vars
 	const {messages, ...props} = shared;
+
+	// Restore traceMode from localStorage
+	const storedTrace = storage.get("thelounge.channels.traceMode");
+	const traceModeChannels = storedTrace
+		? new Set<number>(JSON.parse(storedTrace))
+		: new Set<number>();
+
 	const channel: ClientChan = {
 		...props,
 		editTopic: false,
-		traceMode: false,
+		traceMode: traceModeChannels.has(shared.id),
 		pendingMessage: "",
 		inputHistoryPosition: 0,
 		historyLoading: false,
