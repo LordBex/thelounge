@@ -114,15 +114,123 @@
 				/>
 			</label>
 		</div>
+		<div v-if="!store.state.serverConfiguration?.public">
+			<h2>Custom Commands</h2>
+			<p class="help">
+				Define shortcuts for frequently used commands. Use <code>$1</code>,
+				<code>$2</code> for positional arguments and <code>$*</code> for all remaining
+				arguments. Use <code>$$</code> for a literal dollar sign.
+			</p>
+
+			<div v-if="!showRawJson">
+				<!-- List-based editor -->
+				<div
+					v-for="(expansion, cmd) in customCommandsList"
+					:key="cmd"
+					class="custom-command-row"
+				>
+					<code>/{{ cmd }}</code>
+					<span class="arrow">→</span>
+					<code class="expansion">{{ expansion }}</code>
+					<button type="button" class="btn btn-small" @click="removeCommand(cmd)">
+						Remove
+					</button>
+				</div>
+				<div v-if="Object.keys(customCommandsList).length === 0" class="no-commands">
+					No custom commands defined yet.
+				</div>
+				<div class="add-command-form">
+					<input
+						v-model="newCommandName"
+						type="text"
+						class="input"
+						placeholder="shortcut"
+						@keypress.enter.prevent="addCommand"
+					/>
+					<input
+						v-model="newCommandExpansion"
+						type="text"
+						class="input"
+						placeholder="/msg chanserv ..."
+						@keypress.enter.prevent="addCommand"
+					/>
+					<button type="button" class="btn btn-small" @click="addCommand">Add</button>
+				</div>
+				<p v-if="commandError" class="error">{{ commandError }}</p>
+			</div>
+
+			<div v-else>
+				<!-- Raw JSON editor -->
+				<label for="customCommandsRaw" class="sr-only">Custom commands JSON</label>
+				<textarea
+					id="customCommandsRaw"
+					:value="customCommandsJson"
+					class="input"
+					rows="6"
+					placeholder='{"shortcut": "/msg chanserv ..."}'
+					@input="updateRawJson"
+				/>
+				<p v-if="jsonError" class="error">{{ jsonError }}</p>
+			</div>
+
+			<button type="button" class="btn btn-small toggle-raw" @click="toggleRawJson">
+				{{ showRawJson ? "Show list editor" : "Show raw JSON" }}
+			</button>
+		</div>
 	</div>
 </template>
 
-<style></style>
+<style>
+.custom-command-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+	padding: 4px 0;
+}
+
+.custom-command-row .arrow {
+	color: var(--body-color-muted);
+}
+
+.custom-command-row .expansion {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.add-command-form {
+	display: flex;
+	gap: 8px;
+	margin-top: 12px;
+}
+
+.add-command-form .input:first-child {
+	width: 120px;
+	flex-shrink: 0;
+}
+
+.no-commands {
+	color: var(--body-color-muted);
+	margin-bottom: 8px;
+}
+
+.toggle-raw {
+	margin-top: 12px;
+}
+
+.error {
+	color: var(--error-color);
+	margin-top: 8px;
+}
+</style>
 
 <script lang="ts">
 import {computed, defineComponent, onMounted, ref} from "vue";
 import {useStore} from "../../js/store";
 import {BeforeInstallPromptEvent} from "../../js/types";
+import {validateAliases} from "../../js/customCommands";
 
 let installPromptEvent: BeforeInstallPromptEvent | null = null;
 
@@ -136,10 +244,23 @@ export default defineComponent({
 	setup() {
 		const store = useStore();
 		const canRegisterProtocol = ref(false);
+		const showRawJson = ref(false);
+		const newCommandName = ref("");
+		const newCommandExpansion = ref("");
+		const commandError = ref("");
+		const jsonError = ref("");
 
 		const hasInstallPromptEvent = computed(() => {
 			// TODO: This doesn't hide the button after clicking
 			return installPromptEvent !== null;
+		});
+
+		const customCommandsList = computed(() => {
+			return store.state.settings.customCommands || {};
+		});
+
+		const customCommandsJson = computed(() => {
+			return JSON.stringify(store.state.settings.customCommands || {}, null, 2);
 		});
 
 		onMounted(() => {
@@ -188,6 +309,105 @@ export default defineComponent({
 			window.navigator.registerProtocolHandler("ircs", uri);
 		};
 
+		const toggleRawJson = () => {
+			showRawJson.value = !showRawJson.value;
+			jsonError.value = "";
+		};
+
+		const addCommand = () => {
+			commandError.value = "";
+			const name = newCommandName.value.trim().toLowerCase();
+			const expansion = newCommandExpansion.value.trim();
+
+			if (!name) {
+				commandError.value = "Command name is required.";
+				return;
+			}
+
+			if (!expansion) {
+				commandError.value = "Expansion is required.";
+				return;
+			}
+
+			if (!name.match(/^[a-zA-Z0-9_-]+$/)) {
+				commandError.value =
+					"Command name can only contain letters, numbers, underscores, and hyphens.";
+				return;
+			}
+
+			const updated = {...store.state.settings.customCommands, [name]: expansion};
+			store
+				.dispatch("settings/update", {
+					name: "customCommands",
+					value: updated,
+					sync: true,
+				})
+				.catch((e) => {
+					// eslint-disable-next-line no-console
+					console.error(e);
+				});
+
+			newCommandName.value = "";
+			newCommandExpansion.value = "";
+		};
+
+		const removeCommand = (name: string) => {
+			const updated = {...store.state.settings.customCommands};
+			delete updated[name];
+			store
+				.dispatch("settings/update", {
+					name: "customCommands",
+					value: updated,
+					sync: true,
+				})
+				.catch((e) => {
+					// eslint-disable-next-line no-console
+					console.error(e);
+				});
+		};
+
+		const updateRawJson = (e: Event) => {
+			jsonError.value = "";
+			const value = (e.target as HTMLTextAreaElement).value;
+
+			if (!value.trim()) {
+				store
+					.dispatch("settings/update", {
+						name: "customCommands",
+						value: {},
+						sync: true,
+					})
+					.catch((err) => {
+						// eslint-disable-next-line no-console
+						console.error(err);
+					});
+				return;
+			}
+
+			try {
+				const parsed = JSON.parse(value);
+				const validation = validateAliases(parsed);
+
+				if (!validation.valid) {
+					jsonError.value = validation.error || "Invalid format";
+					return;
+				}
+
+				store
+					.dispatch("settings/update", {
+						name: "customCommands",
+						value: validation.result,
+						sync: true,
+					})
+					.catch((err) => {
+						// eslint-disable-next-line no-console
+						console.error(err);
+					});
+			} catch {
+				jsonError.value = "Invalid JSON format.";
+			}
+		};
+
 		return {
 			store,
 			canRegisterProtocol,
@@ -195,6 +415,17 @@ export default defineComponent({
 			nativeInstallPrompt,
 			onForceSyncClick,
 			registerProtocol,
+			showRawJson,
+			customCommandsList,
+			customCommandsJson,
+			newCommandName,
+			newCommandExpansion,
+			commandError,
+			jsonError,
+			toggleRawJson,
+			addCommand,
+			removeCommand,
+			updateRawJson,
 		};
 	},
 });

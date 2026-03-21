@@ -316,6 +316,13 @@ function completeNicks(word: string, isFuzzy: boolean) {
 function getCommands() {
 	let cmds = constants.commands.slice();
 
+	// Add custom commands to autocomplete
+	const customCommands = store.state.settings.customCommands;
+
+	if (customCommands && Object.keys(customCommands).length > 0) {
+		cmds = cmds.concat(Object.keys(customCommands).map((c) => "/" + c));
+	}
+
 	if (!store.state.settings.searchEnabled) {
 		cmds = cmds.filter((c) => c !== "/search");
 	}

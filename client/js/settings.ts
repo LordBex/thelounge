@@ -182,6 +182,10 @@ const defaultConfig = {
 	enableRainbowHotkey: {
 		default: true,
 	},
+	customCommands: {
+		default: {} as Record<string, string>,
+		sync: "always",
+	},
 };
 
 export const config = normalizeConfig(defaultConfig);

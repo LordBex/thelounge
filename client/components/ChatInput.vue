@@ -57,6 +57,7 @@ import Mousetrap from "mousetrap";
 import {wrapCursor} from "undate";
 import autocompletion from "../js/autocompletion";
 import {commands} from "../js/commands/index";
+import {expandCustomCommand} from "../js/customCommands";
 import socket from "../js/socket";
 import upload from "../js/upload";
 import eventbus from "../js/eventbus";
@@ -189,6 +190,24 @@ export default defineComponent({
 
 				if (Object.prototype.hasOwnProperty.call(commands, cmd) && commands[cmd](args)) {
 					return false;
+				}
+
+				// Check custom commands/aliases
+				const customCommands = store.state.settings.customCommands;
+
+				if (customCommands && customCommands[cmd]) {
+					const result = expandCustomCommand(cmd, args, customCommands);
+
+					if (result?.error) {
+						// Show error to user
+						props.channel.pendingMessage = `Error: ${result.error}`;
+						return false;
+					}
+
+					if (result?.expanded) {
+						socket.emit("input", {target, text: result.expanded});
+						return false;
+					}
 				}
 			}
 
