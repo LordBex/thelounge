@@ -42,7 +42,7 @@ class Msg {
 	when!: Date;
 	whois!: WhoisData;
 	users!: string[];
-	statusmsgGroup!: string;
+	statusmsgGroup?: string;
 	params!: string[];
 	massEventSummary?: MassEventSummary;
 
