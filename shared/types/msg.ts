@@ -89,6 +89,7 @@ export interface MassEventSummary {
 export type SharedMsg = {
 	from?: UserInMessage;
 	id: number;
+	msgid?: string;
 	previews?: LinkPreview[];
 	text?: string;
 	type?: MessageType;

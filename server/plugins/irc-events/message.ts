@@ -25,6 +25,7 @@ type HandleInput = {
 	from_server?: boolean;
 	message: string;
 	group?: string;
+	msgid?: string;
 };
 
 function convertForHandle(type: MessageType, data: MessageEventArgs): HandleInput {
@@ -164,6 +165,7 @@ export default <IrcEventHandler>function (this: Client, irc, network) {
 			from: from,
 			highlight: highlight,
 			users: [],
+			msgid: data.msgid,
 		});
 
 		if (showInActive) {

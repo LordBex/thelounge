@@ -10,6 +10,7 @@ import {
 class Msg {
 	from!: UserInMessage;
 	id!: number;
+	msgid?: string;
 	previews!: LinkPreview[];
 	text!: string;
 	type!: MessageType;
