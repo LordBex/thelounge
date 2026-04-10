@@ -15,6 +15,6 @@ ignore:
 spec: ["test/**/*.ts"]
 require:
   - "test/fixtures/env.ts"
-globals:
+global:
   - "__VUE_PROD_DEVTOOLS__"
   - "__VUE__"
