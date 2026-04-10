@@ -29,7 +29,7 @@ type HandleInput = {
 };
 
 function convertForHandle(type: MessageType, data: MessageEventArgs): HandleInput {
-	return {...data, type: type};
+	return {...data, type: type, msgid: data.tags?.msgid};
 }
 
 function decodeMessage(message: string, encoding?: string): string {
