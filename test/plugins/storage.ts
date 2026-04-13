@@ -2,14 +2,11 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import {expect, assert} from "chai";
-import {fileURLToPath} from "url";
 import util from "../util.js";
 import Config from "../../server/config.js";
 import storage from "../../server/plugins/storage.js";
 import link from "../../server/plugins/irc-events/link.js";
 import type {Request, Response} from "express";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe("Image storage", function () {
 	// Increase timeout due to unpredictable I/O on CI services
