@@ -25,6 +25,11 @@ interface ServerToClientEvents {
 	"auth:success": NoPayloadEventHandler;
 
 	"upload:auth": (token: string) => void;
+	"upload:config": EventHandler<{
+		apiKeys: Record<string, string>;
+		apiUrls: Record<string, string>;
+	}>;
+	"upload:config:saved": NoPayloadEventHandler;
 
 	changelog: EventHandler<SharedChangelogData>;
 	"changelog:newversion": NoPayloadEventHandler;
@@ -133,8 +138,13 @@ interface ClientToServerEvents {
 
 	input: EventHandler<{target: number; text: string}>;
 
-	"upload:auth": NoPayloadEventHandler;
+	"upload:auth": (backend: string) => void;
 	"upload:ping": (token: string) => void;
+	"upload:config:get": NoPayloadEventHandler;
+	"upload:config:set": EventHandler<{
+		apiKeys: Record<string, string>;
+		apiUrls: Record<string, string>;
+	}>;
 
 	"mute:change": EventHandler<{target: number; setMutedTo: boolean}>;
 	"pin:change": EventHandler<{target: number; setPinnedTo: boolean}>;

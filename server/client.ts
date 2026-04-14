@@ -69,6 +69,11 @@ type ClientPushSubscription = {
 	};
 };
 
+export type UploadUserConfig = {
+	apiKeys: Record<string, string>; // backend_id -> encrypt("plainkey") or ""
+	apiUrls: Record<string, string>; // backend_id -> URL (not a secret)
+};
+
 export type UserConfig = {
 	log: boolean;
 	password: string;
@@ -89,6 +94,7 @@ export type UserConfig = {
 		hostname?: string;
 		isSecure?: boolean;
 	};
+	uploadConfig?: UploadUserConfig;
 	networks?: NetworkConfig[];
 };
 
@@ -173,6 +179,10 @@ class Client {
 
 		if (!_.isPlainObject(this.config.browser)) {
 			this.config.browser = {};
+		}
+
+		if (!_.isPlainObject(this.config.uploadConfig)) {
+			this.config.uploadConfig = {apiKeys: {}, apiUrls: {}};
 		}
 
 		if (this.config.clientSettings.awayMessage) {

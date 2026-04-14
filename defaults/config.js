@@ -184,11 +184,11 @@ export default {
 	//
 	// - `enable`: When set to `true`, files can be uploaded on the client with a
 	//   drag-and-drop or using the upload dialog.
-	// - `type`: Defines how the upload is handled.
-	//   - `local`: Files are stored in the `${THELOUNGE_HOME}/uploads` folder.
-	//   - `x0`: Files are uploaded to an external x0-compatible host (see `x0_host`).
-	// - `x0_host`: The URL of the x0-compatible host to upload to when `type` is set to `x0`.
-	//   Defaults to `https://x0.at`.
+	// - `allowBackendSelection`: When set to `true`, users can choose per-user
+	//   upload backends (local, x0, xbackbone, imagebb, catbox, uguu, qu.ax, ptpimg)
+	//   from the Settings UI. Uploaded files stored locally live in
+	//   `${THELOUNGE_HOME}/uploads`. External backend URLs / API keys are
+	//   configured per user and (when `THE_LOUNGE_SECRET` is set) encrypted at rest.
 	// - `maxFileSize`: When file upload is enabled, users sending files above
 	//   this limit will be prompted with an error message in their browser. A value of
 	//   `-1` disables the file size limit and allows files of any size. **Use at
@@ -201,8 +201,7 @@ export default {
 	//   This value is set to `null` by default.
 	fileUpload: {
 		enable: false,
-		type: "local",
-		x0_host: "https://x0.at",
+		allowBackendSelection: true,
 		maxFileSize: 10240,
 		baseUrl: null,
 	},

@@ -11,6 +11,10 @@ import contentDisposition from "content-disposition";
 import type {Socket} from "socket.io";
 import {Application, Request, Response} from "express";
 import {fetch, FormData} from "undici";
+import type Client from "../client.js";
+import {allBackends} from "../../shared/upload-backends.js";
+import {encrypt, decrypt} from "../utils/secretCrypto.js";
+import _ from "lodash";
 
 // Map of allowed mime types to their respecive default filenames
 // that will be rendered in browser without forcing them to be downloaded
@@ -35,19 +39,29 @@ const inlineContentDispositionTypes = {
 	"video/webm": "video.webm",
 };
 
-const uploadTokens = new Map();
+type TokenEntry = {
+	timeout: ReturnType<typeof setTimeout>;
+	client: Client;
+	backend: string;
+};
+
+const uploadTokens = new Map<string, TokenEntry>();
 
 class Uploader {
-	constructor(socket: Socket) {
-		socket.on("upload:auth", () => {
+	constructor(socket: Socket, client: Client) {
+		socket.on("upload:auth", (backend: string) => {
+			const validIds = allBackends.map((b) => b.id);
+
+			if (!validIds.includes(backend)) {
+				return;
+			}
+
 			const token = uuidv4();
+			const timeout = setTimeout(() => uploadTokens.delete(token), 60 * 1000);
+
+			uploadTokens.set(token, {timeout, client, backend});
 
 			socket.emit("upload:auth", token);
-
-			// Invalidate the token in one minute
-			const timeout = Uploader.createTokenTimeout(token);
-
-			uploadTokens.set(token, timeout);
 		});
 
 		socket.on("upload:ping", (token) => {
@@ -55,16 +69,72 @@ class Uploader {
 				return;
 			}
 
-			let timeout = uploadTokens.get(token);
+			const entry = uploadTokens.get(token);
 
-			if (!timeout) {
+			if (!entry) {
 				return;
 			}
 
-			clearTimeout(timeout);
-			timeout = Uploader.createTokenTimeout(token);
-			uploadTokens.set(token, timeout);
+			clearTimeout(entry.timeout);
+			entry.timeout = Uploader.createTokenTimeout(token);
+
+			uploadTokens.set(token, entry);
 		});
+
+		// Upload config events (not in public mode)
+		if (!Config.values.public) {
+			socket.on("upload:config:get", () => {
+				const decryptedKeys: Record<string, string> = {};
+
+				for (const [id, enc] of Object.entries(client.config.uploadConfig?.apiKeys ?? {})) {
+					decryptedKeys[id] = decrypt(enc);
+				}
+
+				socket.emit("upload:config", {
+					apiKeys: decryptedKeys,
+					apiUrls: {...(client.config.uploadConfig?.apiUrls ?? {})},
+				});
+			});
+
+			socket.on("upload:config:set", (data) => {
+				if (!_.isPlainObject(data)) {
+					return;
+				}
+
+				const validIds = new Set(allBackends.map((b) => b.id));
+
+				if (_.isPlainObject(data.apiKeys)) {
+					for (const [id, key] of Object.entries(data.apiKeys)) {
+						if (validIds.has(id) && typeof key === "string") {
+							client.config.uploadConfig!.apiKeys[id] = encrypt(key);
+						}
+					}
+				}
+
+				if (_.isPlainObject(data.apiUrls)) {
+					for (const [id, url] of Object.entries(data.apiUrls)) {
+						if (validIds.has(id) && typeof url === "string") {
+							// Allow empty URLs (to reset to default) and validate non-empty URLs
+							if (url === "" || url.trim() === "") {
+								client.config.uploadConfig!.apiUrls[id] = "";
+							} else {
+								try {
+									new URL(url);
+									client.config.uploadConfig!.apiUrls[id] = url;
+								} catch {
+									// Skip invalid URLs
+									continue;
+								}
+							}
+						}
+					}
+				}
+
+				client.save();
+
+				socket.emit("upload:config:saved");
+			});
+		}
 	}
 
 	static createTokenTimeout(this: void, token: string) {
@@ -73,7 +143,7 @@ class Uploader {
 
 	static router(this: void, express: Application) {
 		express.get("/uploads/:name{/:slug}", Uploader.routeGetFile);
-		express.post("/uploads/new/:token", Uploader.routeUploadFile);
+		express.post("/uploads/:backend/:token", Uploader.routeUploadFile);
 	}
 
 	static async routeGetFile(this: void, req: Request, res: Response) {
@@ -147,6 +217,7 @@ class Uploader {
 		let destPath: fs.PathLike | null;
 		let fileName: string | null;
 		let streamWriter: fs.WriteStream | null;
+		let fileBuffer: Buffer | null = null;
 
 		const doneCallback = () => {
 			// detach the stream and drain any remaining data
@@ -177,10 +248,19 @@ class Uploader {
 			return res.status(400).json({error: err instanceof Error ? err.message : String(err)});
 		};
 
+		// Extract backend and token from route params
+		const backend = req.params.backend as string;
+		const token = req.params.token as string;
+
 		// if the authentication token is incorrect, bail out
-		if (!uploadTokens.delete(req.params.token)) {
+		const entry = uploadTokens.get(token);
+
+		if (!entry) {
 			return abortWithError(Error("Invalid upload token"));
 		}
+
+		uploadTokens.delete(token);
+		clearTimeout(entry.timeout);
 
 		// if the request does not contain any body data, bail out
 		if (req.headers["content-length"] && parseInt(req.headers["content-length"]) < 1) {
@@ -247,7 +327,6 @@ class Uploader {
 			"file",
 			(fieldname: string, fileStream: NodeJS.ReadableStream, filename: string) => {
 				uploadUrl = `${randomName}/${encodeURIComponent(filename)}`;
-
 				fileName = filename;
 
 				if (Config.values.fileUpload.baseUrl) {
@@ -277,47 +356,25 @@ class Uploader {
 					return res.status(400).json({error: "Missing file"});
 				}
 
-				if (Config.values.fileUpload.type === "x0" && destPath && fs.existsSync(destPath)) {
+				// Handle external backends
+				if (backend !== "local" && destPath && fs.existsSync(destPath)) {
 					try {
-						const host = Config.values.fileUpload.x0_host || "https://x0.at";
-						const form = new FormData();
-						form.append(
-							"file",
-							new Blob([fs.readFileSync(destPath)]),
+						fileBuffer = fs.readFileSync(destPath);
+						const result = await Uploader.handleExternalBackend(
+							backend,
+							entry.client,
+							fileBuffer,
 							fileName || path.basename(destPath.toString())
 						);
-						form.append("id_length", "16");
 
-						const controller = new AbortController();
-						const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
-
-						try {
-							const response = await fetch(host, {
-								method: "POST",
-								body: form,
-								signal: controller.signal,
-							});
-
-							clearTimeout(timeout);
-
-							if (!response.ok) {
-								throw new Error(`Upload to ${host} failed: ${response.statusText}`);
-							}
-
-							const resultUrl = await response.text();
-							uploadUrl = resultUrl.trim();
-						} finally {
-							clearTimeout(timeout);
-						}
-
-						// Remove local file
+						// Remove local temp file
 						fs.unlinkSync(destPath);
 
 						try {
 							// Try to remove the directory if empty
 							fs.rmdirSync(destDir);
 						} catch (e: unknown) {
-							// Ignore if directory is not empty (ENOTEMPTY/EEXIST)
+							// Ignore if directory is not empty
 							if (
 								e instanceof Error &&
 								(e as NodeJS.ErrnoException).code !== "ENOTEMPTY" &&
@@ -328,8 +385,10 @@ class Uploader {
 								);
 							}
 						}
+
+						uploadUrl = result;
 					} catch (err) {
-						log.error(`x0 upload failed: ${String(err)}`);
+						log.error(`External upload failed for backend ${backend}: ${String(err)}`);
 
 						// Try to cleanup
 						if (destPath && fs.existsSync(destPath)) {
@@ -395,6 +454,262 @@ class Uploader {
 
 		// pipe request body to busboy for processing
 		return req.pipe(busboyInstance);
+	}
+
+	static async handleExternalBackend(
+		backend: string,
+		client: Client,
+		fileBuffer: Buffer,
+		fileName: string
+	): Promise<string> {
+		const apiKeys = client.config.uploadConfig?.apiKeys ?? {};
+		const apiUrls = client.config.uploadConfig?.apiUrls ?? {};
+		const apiKey = decrypt(apiKeys[backend] ?? "");
+		const apiUrl = apiUrls[backend] ?? "";
+
+		switch (backend) {
+			case "x0":
+				return Uploader.handleX0Upload(fileBuffer, fileName, apiUrl || "https://x0.at");
+			case "xbackbone":
+				return Uploader.handleXBackboneUpload(fileBuffer, fileName, apiUrl, apiKey);
+			case "imagebb":
+				return Uploader.handleImageBBUpload(fileBuffer, fileName, apiKey);
+			case "catbox":
+				return Uploader.handleCatboxUpload(fileBuffer, fileName, apiKey);
+			case "uguu":
+				return Uploader.handleUguuUpload(fileBuffer, fileName);
+			case "quax":
+				return Uploader.handleQuaxUpload(fileBuffer, fileName);
+			case "ptpimg":
+				return Uploader.handlePTPImgUpload(fileBuffer, fileName, apiKey);
+			default:
+				throw new Error(`Unknown backend: ${backend}`);
+		}
+	}
+
+	static async handleX0Upload(buf: Buffer, name: string, host: string): Promise<string> {
+		const hostUrl = host || "https://x0.at";
+		const form = new FormData();
+		form.append("file", new Blob([new Uint8Array(buf)]), name);
+		form.append("id_length", "16");
+
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+		try {
+			const response = await fetch(hostUrl, {
+				method: "POST",
+				body: form,
+				signal: controller.signal,
+			});
+
+			if (!response.ok) {
+				throw new Error(`Upload to ${hostUrl} failed: ${response.statusText}`);
+			}
+
+			const resultUrl = await response.text();
+			return resultUrl.trim();
+		} finally {
+			clearTimeout(timeout);
+		}
+	}
+
+	static async handleXBackboneUpload(
+		buf: Buffer,
+		name: string,
+		url: string,
+		token: string
+	): Promise<string> {
+		const form = new FormData();
+		form.append("file", new Blob([new Uint8Array(buf)]), name);
+
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 60000);
+
+		try {
+			const uploadUrl = url.endsWith("/") ? url + "upload" : url + "/upload";
+			const response = await fetch(uploadUrl, {
+				method: "POST",
+				body: form,
+				headers: {
+					"X-Api-Key": token,
+				},
+				signal: controller.signal,
+			});
+
+			if (!response.ok) {
+				throw new Error(
+					`Upload to XBackbone failed: ${response.status} ${response.statusText}`
+				);
+			}
+
+			const data = (await response.json()) as {url?: string};
+
+			if (!data.url) {
+				throw new Error("No URL in XBackbone response");
+			}
+
+			return data.url;
+		} finally {
+			clearTimeout(timeout);
+		}
+	}
+
+	static async handleImageBBUpload(buf: Buffer, name: string, apiKey: string): Promise<string> {
+		const form = new FormData();
+		form.append("image", new Blob([new Uint8Array(buf)]), name);
+		form.append("key", apiKey);
+
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 60000);
+
+		try {
+			const response = await fetch("https://api.imgbb.com/1/upload", {
+				method: "POST",
+				body: form,
+				signal: controller.signal,
+			});
+
+			if (!response.ok) {
+				throw new Error(`Upload to ImageBB failed: ${response.status}`);
+			}
+
+			const data = (await response.json()) as {data?: {url?: string}};
+
+			if (!data.data?.url) {
+				throw new Error("No URL in ImageBB response");
+			}
+
+			return data.data.url;
+		} finally {
+			clearTimeout(timeout);
+		}
+	}
+
+	static async handleCatboxUpload(buf: Buffer, name: string, userHash?: string): Promise<string> {
+		const form = new FormData();
+		form.append("fileToUpload", new Blob([new Uint8Array(buf)]), name);
+		form.append("reqtype", "fileupload");
+
+		if (userHash) {
+			form.append("userhash", userHash);
+		}
+
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 60000);
+
+		try {
+			const response = await fetch("https://catbox.moe/user/api.php", {
+				method: "POST",
+				body: form,
+				signal: controller.signal,
+			});
+
+			if (!response.ok) {
+				throw new Error(`Upload to Catbox failed: ${response.status}`);
+			}
+
+			const url = await response.text();
+
+			if (url.startsWith("error")) {
+				throw new Error(`Catbox error: ${url}`);
+			}
+
+			return url.trim();
+		} finally {
+			clearTimeout(timeout);
+		}
+	}
+
+	static async handleUguuUpload(buf: Buffer, name: string): Promise<string> {
+		const form = new FormData();
+		form.append("files[]", new Blob([new Uint8Array(buf)]), name);
+
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 60000);
+
+		try {
+			const response = await fetch("https://uguu.se/upload", {
+				method: "POST",
+				body: form,
+				signal: controller.signal,
+			});
+
+			if (!response.ok) {
+				throw new Error(`Upload to Uguu failed: ${response.status}`);
+			}
+
+			const data = (await response.json()) as {files?: Array<{url?: string}>};
+
+			if (!data.files?.[0]?.url) {
+				throw new Error("No URL in Uguu response");
+			}
+
+			return data.files[0].url;
+		} finally {
+			clearTimeout(timeout);
+		}
+	}
+
+	static async handleQuaxUpload(buf: Buffer, name: string): Promise<string> {
+		const form = new FormData();
+		form.append("files[]", new Blob([new Uint8Array(buf)]), name);
+
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 60000);
+
+		try {
+			const response = await fetch("https://qu.ax/upload", {
+				method: "POST",
+				body: form,
+				signal: controller.signal,
+			});
+
+			if (!response.ok) {
+				throw new Error(`Upload to Qu.ax failed: ${response.status}`);
+			}
+
+			const data = (await response.json()) as {files?: Array<{url?: string}>};
+
+			if (!data.files?.[0]?.url) {
+				throw new Error("No URL in Qu.ax response");
+			}
+
+			return data.files[0].url;
+		} finally {
+			clearTimeout(timeout);
+		}
+	}
+
+	static async handlePTPImgUpload(buf: Buffer, name: string, apiKey: string): Promise<string> {
+		const form = new FormData();
+		form.append("file", new Blob([new Uint8Array(buf)]), name);
+		form.append("api_key", apiKey);
+
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 60000);
+
+		try {
+			const response = await fetch("https://ptpimg.me/upload.php", {
+				method: "POST",
+				body: form,
+				signal: controller.signal,
+			});
+
+			if (!response.ok) {
+				throw new Error(`Upload to PTPImg failed: ${response.status}`);
+			}
+
+			const data = (await response.json()) as Array<{code?: string; ext?: string}>;
+
+			if (!data[0]?.code || !data[0]?.ext) {
+				throw new Error("No code/ext in PTPImg response");
+			}
+
+			return `https://ptpimg.me/${data[0].code}.${data[0].ext}`;
+		} finally {
+			clearTimeout(timeout);
+		}
 	}
 
 	static getMaxFileSize() {

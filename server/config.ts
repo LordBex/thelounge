@@ -25,8 +25,7 @@ type Https = {
 
 type FileUpload = {
 	enable: boolean;
-	type: "local" | "x0";
-	x0_host?: string;
+	allowBackendSelection?: boolean;
 	maxFileSize: number;
 	baseUrl?: string;
 };
@@ -245,15 +244,6 @@ class Config {
 					)}`
 				);
 			}
-		}
-
-		if (this.values.fileUpload.type !== "local" && this.values.fileUpload.type !== "x0") {
-			log.warn(
-				`The ${colors.bold(
-					"fileUpload.type"
-				)} you specified is invalid. It must be either "local" or "x0". Defaulting to "local".`
-			);
-			this.values.fileUpload.type = "local";
 		}
 	}
 

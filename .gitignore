@@ -21,3 +21,5 @@ memory.db
 *.db-wal
 CLAUDE.md
 .claude
+/GEMINI.md
+.idea

@@ -19,26 +19,6 @@
 				Open irc:// URLs with The Lounge
 			</button>
 		</div>
-		<div v-if="store.state.serverConfiguration?.fileUpload">
-			<h2>File uploads</h2>
-			<div>
-				<label class="opt">
-					<input
-						:checked="store.state.settings.uploadCanvas"
-						type="checkbox"
-						name="uploadCanvas"
-					/>
-					Attempt to remove metadata from images before uploading
-					<span
-						class="tooltipped tooltipped-n tooltipped-no-delay"
-						aria-label="This option renders the image into a canvas element to remove metadata from the image.
-	This may break orientation if your browser does not support that."
-					>
-						<button class="extra-help" />
-					</span>
-				</label>
-			</div>
-		</div>
 		<div v-if="store.state.settings.searchEnabled">
 			<h2>Enhanced search</h2>
 			<label class="opt">
@@ -113,6 +93,144 @@
 					placeholder="Away message if The Lounge is not open"
 				/>
 			</label>
+		</div>
+		<div v-if="store.state.serverConfiguration?.fileUpload">
+			<h2>File uploads</h2>
+			<div>
+				<label class="opt">
+					<input
+						:checked="store.state.settings.uploadCanvas"
+						type="checkbox"
+						name="uploadCanvas"
+					/>
+					Attempt to remove metadata from images before uploading
+					<span
+						class="tooltipped tooltipped-n tooltipped-no-delay"
+						aria-label="This option renders the image into a canvas element to remove metadata from the image.
+	This may break orientation if your browser does not support that."
+					>
+						<button class="extra-help" />
+					</span>
+				</label>
+			</div>
+			<template
+				v-if="
+					store.state.serverConfiguration?.allowFileUploadBackendSelection &&
+					!store.state.serverConfiguration?.public
+				"
+			>
+				<!-- Image Backend -->
+				<label class="opt">Backend</label>
+				<select
+					name="imageUploadBackend"
+					:value="store.state.settings.imageUploadBackend"
+					class="input"
+				>
+					<option v-for="b in allBackends" :key="b.id" :value="b.id">
+						{{ b.displayName }}
+					</option>
+				</select>
+				<p v-if="selectedImageBackend?.supportNote" class="upload-note">
+					{{ selectedImageBackend.supportNote }}
+				</p>
+
+				<!-- API Key for image backend -->
+				<template v-if="selectedImageBackend?.requiresToken">
+					<label class="opt">{{ selectedImageBackend.displayName }} API Key</label>
+					<RevealPassword v-slot:default="slotProps">
+						<input
+							:type="slotProps.isVisible ? 'text' : 'password'"
+							class="input"
+							:value="apiKeys[imageBackend]"
+							@input="
+								apiKeys[imageBackend] = ($event.target as HTMLInputElement).value
+							"
+						/>
+					</RevealPassword>
+				</template>
+
+				<!-- URL for image backend (x0 / xbackbone) -->
+				<template v-if="selectedImageBackend?.requiresUrl">
+					<label class="opt">{{ selectedImageBackend.displayName }} URL</label>
+					<input
+						type="text"
+						class="input"
+						:placeholder="
+							imageBackend === 'x0'
+								? 'https://x0.at'
+								: 'https://example.com'
+						"
+						:value="apiUrls[imageBackend]"
+						@blur="normalizeUrl(imageBackend)"
+						@input="apiUrls[imageBackend] = ($event.target as HTMLInputElement).value"
+					/>
+					<p
+						v-if="apiUrls[imageBackend] && !isValidUrl(apiUrls[imageBackend])"
+						class="error"
+					>
+						Ungültige URL. Bitte verwende z.B. "https://x0.at" oder "x0.at" (wird
+						automatisch zu https:// konvertiert)
+					</p>
+				</template>
+
+				<!-- File Backend — only shown when image backend is image-only -->
+				<template v-if="selectedImageBackend?.category === 'image'">
+					<label class="opt">File Backend (fallback for non-images)</label>
+					<select
+						name="fileUploadBackend"
+						:value="store.state.settings.fileUploadBackend"
+						class="input"
+					>
+						<option v-for="b in fileCapableBackends" :key="b.id" :value="b.id">
+							{{ b.displayName }}
+						</option>
+					</select>
+
+					<template v-if="selectedFileBackend?.requiresToken">
+						<label class="opt">{{ selectedFileBackend.displayName }} API Key</label>
+						<RevealPassword v-slot:default="slotProps">
+							<input
+								:type="slotProps.isVisible ? 'text' : 'password'"
+								class="input"
+								:value="apiKeys[fileBackend]"
+								@input="
+									apiKeys[fileBackend] = ($event.target as HTMLInputElement).value
+								"
+							/>
+						</RevealPassword>
+					</template>
+
+					<template v-if="selectedFileBackend?.requiresUrl">
+						<label class="opt">{{ selectedFileBackend.displayName }} URL</label>
+						<input
+							type="text"
+							class="input"
+							:placeholder="
+								fileBackend === 'x0'
+									? 'https://x0.at'
+									: 'https://example.com'
+							"
+							:value="apiUrls[fileBackend]"
+							@blur="normalizeUrl(fileBackend)"
+							@input="
+								apiUrls[fileBackend] = ($event.target as HTMLInputElement).value
+							"
+						/>
+						<p
+							v-if="apiUrls[fileBackend] && !isValidUrl(apiUrls[fileBackend])"
+							class="error"
+						>
+							Ungültige URL. Bitte verwende z.B. "https://example.com" oder
+							"example.com" (wird automatisch zu https:// konvertiert)
+						</p>
+					</template>
+				</template>
+
+				<button class="btn btn-small" type="button" @click="saveUploadConfig">
+					Save Upload Settings
+				</button>
+				<span v-if="saveStatus" class="upload-save-status">{{ saveStatus }}</span>
+			</template>
 		</div>
 		<div v-if="!store.state.serverConfiguration?.public">
 			<h2>Custom Commands</h2>
@@ -242,10 +360,13 @@
 </style>
 
 <script lang="ts">
-import {computed, defineComponent, onMounted, ref} from "vue";
+import {computed, defineComponent, onMounted, onUnmounted, ref} from "vue";
 import {useStore} from "../../js/store";
 import {BeforeInstallPromptEvent} from "../../js/types";
 import {validateAliases} from "../../js/customCommands";
+import {allBackends, fileCapableBackends} from "../../../shared/upload-backends";
+import socket from "../../js/socket";
+import RevealPassword from "../RevealPassword.vue";
 
 let installPromptEvent: BeforeInstallPromptEvent | null = null;
 
@@ -256,6 +377,9 @@ window.addEventListener("beforeinstallprompt", (e) => {
 
 export default defineComponent({
 	name: "GeneralSettings",
+	components: {
+		RevealPassword,
+	},
 	setup() {
 		const store = useStore();
 		const canRegisterProtocol = ref(false);
@@ -264,6 +388,9 @@ export default defineComponent({
 		const newCommandExpansion = ref("");
 		const commandError = ref("");
 		const jsonError = ref("");
+		const apiKeys = ref<Record<string, string>>({});
+		const apiUrls = ref<Record<string, string>>({});
+		const saveStatus = ref("");
 
 		const hasInstallPromptEvent = computed(() => {
 			// TODO: This doesn't hide the button after clicking
@@ -278,12 +405,53 @@ export default defineComponent({
 			return JSON.stringify(store.state.settings.customCommands || {}, null, 2);
 		});
 
+		const imageBackend = computed(() => String(store.state.settings.imageUploadBackend));
+		const fileBackend = computed(() => String(store.state.settings.fileUploadBackend));
+		const selectedImageBackend = computed(() => {
+			const backend = String(store.state.settings.imageUploadBackend);
+			return allBackends.find((b) => b.id === backend);
+		});
+		const selectedFileBackend = computed(() => {
+			const backend = String(store.state.settings.fileUploadBackend);
+			return allBackends.find((b) => b.id === backend);
+		});
+
+		const uploadConfigHandler = (data: unknown) => {
+			if (
+				typeof data === "object" &&
+				data !== null &&
+				"apiKeys" in data &&
+				"apiUrls" in data &&
+				typeof (data as {apiKeys: unknown}).apiKeys === "object" &&
+				typeof (data as {apiUrls: unknown}).apiUrls === "object"
+			) {
+				apiKeys.value = {...((data as {apiKeys: Record<string, string>}).apiKeys || {})};
+				apiUrls.value = {...((data as {apiUrls: Record<string, string>}).apiUrls || {})};
+			}
+		};
+
+		const uploadSavedHandler = () => {
+			saveStatus.value = "Saved!";
+			setTimeout(() => (saveStatus.value = ""), 2000);
+		};
+
 		onMounted(() => {
 			// Enable protocol handler registration if supported,
 			// and the network configuration is not locked
 			canRegisterProtocol.value =
 				!!window.navigator.registerProtocolHandler &&
 				!store.state.serverConfiguration?.lockNetwork;
+
+			if (store.state.serverConfiguration?.fileUpload) {
+				socket.emit("upload:config:get");
+				socket.on("upload:config", uploadConfigHandler);
+				socket.on("upload:config:saved", uploadSavedHandler);
+			}
+		});
+
+		onUnmounted(() => {
+			socket.off("upload:config", uploadConfigHandler);
+			socket.off("upload:config:saved", uploadSavedHandler);
 		});
 
 		const nativeInstallPrompt = () => {
@@ -423,6 +591,52 @@ export default defineComponent({
 			}
 		};
 
+		const isValidUrl = (urlString: string): boolean => {
+			if (!urlString || urlString.trim() === "") {
+				return true; // Empty URLs are allowed
+			}
+
+			try {
+				new URL(urlString);
+				return true;
+			} catch {
+				return false;
+			}
+		};
+
+		const normalizeUrl = (backend: string) => {
+			const url = apiUrls[backend]?.trim();
+
+			if (!url) {
+				return; // Keep empty URLs as-is
+			}
+
+			// Check if URL already has a protocol
+			if (url.match(/^https?:\/\//)) {
+				return; // Already has protocol
+			}
+
+			// If it looks like a domain or hostname without protocol, add https://
+			if (url.includes(".") || url === "localhost") {
+				apiUrls[backend] = `https://${url}`;
+			}
+		};
+
+		const saveUploadConfig = () => {
+			// Validate URLs before saving
+			for (const backend of [imageBackend.value, fileBackend.value]) {
+				if (apiUrls[backend] && !isValidUrl(apiUrls[backend])) {
+					store.commit(
+						"currentUserVisibleError",
+						`Ungültige URL für ${backend}: Bitte gib eine vollständige URL ein`
+					);
+					return;
+				}
+			}
+
+			socket.emit("upload:config:set", {apiKeys: apiKeys.value, apiUrls: apiUrls.value});
+		};
+
 		return {
 			store,
 			canRegisterProtocol,
@@ -441,6 +655,18 @@ export default defineComponent({
 			addCommand,
 			removeCommand,
 			updateRawJson,
+			allBackends,
+			fileCapableBackends,
+			apiKeys,
+			apiUrls,
+			saveStatus,
+			imageBackend,
+			fileBackend,
+			selectedImageBackend,
+			selectedFileBackend,
+			saveUploadConfig,
+			isValidUrl,
+			normalizeUrl,
 		};
 	},
 });

@@ -130,6 +130,14 @@ const defaultConfig = {
 	uploadCanvas: {
 		default: true,
 	},
+	imageUploadBackend: {
+		default: "local",
+		sync: "never",
+	},
+	fileUploadBackend: {
+		default: "local",
+		sync: "never",
+	},
 	userStyles: {
 		default: "",
 		apply(store: TypedStore, value: string) {

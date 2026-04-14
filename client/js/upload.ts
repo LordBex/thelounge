@@ -4,10 +4,13 @@ import {BlobReader, BlobWriter, ZipWriter} from "@zip.js/zip.js";
 import socket from "./socket";
 import {store} from "./store";
 import eventbus from "./eventbus";
+import {allBackends} from "../../shared/upload-backends";
+
+type QueuedFile = {file: File; backend: string};
 
 class Uploader {
 	xhr: XMLHttpRequest | null = null;
-	fileQueue: File[] = [];
+	fileQueue: QueuedFile[] = [];
 	tokenKeepAlive: NodeJS.Timeout | null = null;
 
 	overlay: HTMLDivElement | null = null;
@@ -136,7 +139,10 @@ class Uploader {
 			return;
 		}
 
-		if (store.state.serverConfiguration?.fileUploadType === "x0") {
+		const fileBackend = store.state.settings.fileUploadBackend;
+
+		// Show x0 encryption dialog only when file backend is x0
+		if (fileBackend === "x0") {
 			type UploadDialogResult = {
 				password: string;
 				bundle: boolean;
@@ -190,6 +196,11 @@ class Uploader {
 		const wasQueueEmpty = this.fileQueue.length === 0;
 		const maxFileSize = store.state.serverConfiguration?.fileUploadMaxFileSize || 0;
 
+		const imageBackend = store.state.settings.imageUploadBackend;
+		const fileBackend = store.state.settings.fileUploadBackend;
+
+		const imageBackendDef = allBackends.find((b) => b.id === imageBackend);
+
 		for (const file of files) {
 			if (maxFileSize > 0 && file.size > maxFileSize) {
 				this.handleResponse({
@@ -199,7 +210,21 @@ class Uploader {
 				continue;
 			}
 
-			this.fileQueue.push(file);
+			// Determine backend for this file
+			const isImage = file.type.startsWith("image/") && file.type !== "image/svg+xml";
+
+			// Use image backend for images; file backend for everything else
+			// If imageBackend is "both"-category: handles all files
+			// If imageBackend is "image"-category: only handles images, files go to fileBackend
+			let backend: string;
+
+			if (isImage || imageBackendDef?.category === "both") {
+				backend = imageBackend;
+			} else {
+				backend = fileBackend;
+			}
+
+			this.fileQueue.push({file, backend});
 		}
 
 		// if the queue was empty and we added some files to it, and there currently
@@ -235,7 +260,13 @@ class Uploader {
 	}
 
 	requestToken() {
-		socket.emit("upload:auth");
+		if (this.fileQueue.length === 0) {
+			return;
+		}
+
+		const backend = this.fileQueue[0].backend;
+
+		socket.emit("upload:auth", backend);
 	}
 
 	setProgress(value: number) {
@@ -248,11 +279,14 @@ class Uploader {
 	}
 
 	uploadNextFileInQueue(token: string) {
-		const file = this.fileQueue.shift();
+		const queuedFile = this.fileQueue.shift();
 
-		if (!file) {
+		if (!queuedFile) {
 			return;
 		}
+
+		const file = queuedFile.file;
+		const backend = queuedFile.backend;
 
 		// Tell the server that we are still upload to this token
 		// so it does not become invalidated and fail the upload.
@@ -266,9 +300,9 @@ class Uploader {
 			!file.type.includes("svg") &&
 			file.type !== "image/gif"
 		) {
-			this.renderImage(file, (newFile) => this.performUpload(token, newFile));
+			this.renderImage(file, (newFile) => this.performUpload(token, newFile, backend));
 		} else {
-			this.performUpload(token, file);
+			this.performUpload(token, file, backend);
 		}
 	}
 
@@ -311,7 +345,7 @@ class Uploader {
 		fileReader.readAsDataURL(file);
 	}
 
-	performUpload(token: string, file: File) {
+	performUpload(token: string, file: File, backend: string) {
 		this.xhr = new XMLHttpRequest();
 
 		this.xhr.upload.addEventListener(
@@ -352,7 +386,7 @@ class Uploader {
 
 		const formData = new FormData();
 		formData.append("file", file);
-		this.xhr.open("POST", `uploads/new/${token}`);
+		this.xhr.open("POST", `uploads/${encodeURIComponent(backend)}/${token}`);
 		this.xhr.send(formData);
 	}
 
