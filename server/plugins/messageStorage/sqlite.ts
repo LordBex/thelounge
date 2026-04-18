@@ -516,7 +516,7 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 
 		// Select id from SQLite to use as the canonical message ID
 		const rows = await this.serialize_fetchall(
-			"SELECT id, msg, type, time FROM messages WHERE network = ? AND channel = ? ORDER BY time DESC LIMIT ?",
+			"SELECT id, msg, type, time FROM messages WHERE network = ? AND channel = ? ORDER BY time DESC, id DESC LIMIT ?",
 			network.uuid,
 			channel.name.toLowerCase(),
 			limit
@@ -637,7 +637,7 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 
 		const maxResults = 100;
 
-		select += " ORDER BY time DESC LIMIT ? OFFSET ? ";
+		select += " ORDER BY time DESC, id DESC LIMIT ? OFFSET ? ";
 		params.push(maxResults);
 		params.push(query.offset);
 
