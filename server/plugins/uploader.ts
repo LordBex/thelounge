@@ -93,6 +93,7 @@ class Uploader {
 				socket.emit("upload:config", {
 					apiKeys: decryptedKeys,
 					apiUrls: {...(client.config.uploadConfig?.apiUrls ?? {})},
+					apiTtls: {...(client.config.uploadConfig?.apiTtls ?? {})},
 				});
 			});
 
@@ -127,6 +128,26 @@ class Uploader {
 								}
 							}
 						}
+					}
+				}
+
+				if (_.isPlainObject(data.apiTtls)) {
+					for (const [id, presetId] of Object.entries(data.apiTtls)) {
+						if (typeof presetId !== "string") {
+							continue;
+						}
+
+						const backendDef = allBackends.find((b) => b.id === id);
+
+						if (!backendDef || !backendDef.ttl) {
+							continue;
+						}
+
+						if (!backendDef.ttl.some((p) => p.id === presetId)) {
+							continue;
+						}
+
+						client.config.uploadConfig!.apiTtls[id] = presetId;
 					}
 				}
 
@@ -464,8 +485,16 @@ class Uploader {
 	): Promise<string> {
 		const apiKeys = client.config.uploadConfig?.apiKeys ?? {};
 		const apiUrls = client.config.uploadConfig?.apiUrls ?? {};
+		const apiTtls = client.config.uploadConfig?.apiTtls ?? {};
 		const apiKey = decrypt(apiKeys[backend] ?? "");
 		const apiUrl = apiUrls[backend] ?? "";
+
+		const backendDef = allBackends.find((b) => b.id === backend);
+		const presetId = apiTtls[backend];
+		const preset =
+			backendDef?.ttl?.find((p) => p.id === presetId) ??
+			backendDef?.ttl?.find((p) => p.default);
+		const ttlValue = preset?.value;
 
 		switch (backend) {
 			case "x0":
@@ -473,13 +502,13 @@ class Uploader {
 			case "xbackbone":
 				return Uploader.handleXBackboneUpload(fileBuffer, fileName, apiUrl, apiKey);
 			case "imagebb":
-				return Uploader.handleImageBBUpload(fileBuffer, fileName, apiKey);
+				return Uploader.handleImageBBUpload(fileBuffer, fileName, apiKey, ttlValue);
 			case "catbox":
-				return Uploader.handleCatboxUpload(fileBuffer, fileName, apiKey);
+				return Uploader.handleCatboxUpload(fileBuffer, fileName, apiKey, ttlValue);
 			case "uguu":
 				return Uploader.handleUguuUpload(fileBuffer, fileName);
 			case "quax":
-				return Uploader.handleQuaxUpload(fileBuffer, fileName);
+				return Uploader.handleQuaxUpload(fileBuffer, fileName, ttlValue);
 			case "ptpimg":
 				return Uploader.handlePTPImgUpload(fileBuffer, fileName, apiKey);
 			default:
@@ -555,10 +584,19 @@ class Uploader {
 		}
 	}
 
-	static async handleImageBBUpload(buf: Buffer, name: string, apiKey: string): Promise<string> {
+	static async handleImageBBUpload(
+		buf: Buffer,
+		name: string,
+		apiKey: string,
+		ttlValue?: string | number
+	): Promise<string> {
 		const form = new FormData();
 		form.append("image", new Blob([new Uint8Array(buf)]), name);
 		form.append("key", apiKey);
+
+		if (ttlValue !== undefined && ttlValue !== 0 && ttlValue !== "" && ttlValue !== "-") {
+			form.append("expiration", String(ttlValue));
+		}
 
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), 60000);
@@ -586,7 +624,12 @@ class Uploader {
 		}
 	}
 
-	static async handleCatboxUpload(buf: Buffer, name: string, userHash?: string): Promise<string> {
+	static async handleCatboxUpload(
+		buf: Buffer,
+		name: string,
+		userHash?: string,
+		ttlValue?: string | number
+	): Promise<string> {
 		const form = new FormData();
 		form.append("fileToUpload", new Blob([new Uint8Array(buf)]), name);
 		form.append("reqtype", "fileupload");
@@ -595,11 +638,18 @@ class Uploader {
 			form.append("userhash", userHash);
 		}
 
+		let uploadUrl = "https://catbox.moe/user/api.php";
+
+		if (ttlValue !== undefined && ttlValue !== "" && ttlValue !== "-" && ttlValue !== 0) {
+			form.append("time", String(ttlValue));
+			uploadUrl = "https://litterbox.catbox.moe/resources/internals/api.php";
+		}
+
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), 60000);
 
 		try {
-			const response = await fetch("https://catbox.moe/user/api.php", {
+			const response = await fetch(uploadUrl, {
 				method: "POST",
 				body: form,
 				signal: controller.signal,
@@ -651,9 +701,14 @@ class Uploader {
 		}
 	}
 
-	static async handleQuaxUpload(buf: Buffer, name: string): Promise<string> {
+	static async handleQuaxUpload(
+		buf: Buffer,
+		name: string,
+		ttlValue?: string | number
+	): Promise<string> {
 		const form = new FormData();
 		form.append("files[]", new Blob([new Uint8Array(buf)]), name);
+		form.append("expiry", ttlValue !== undefined ? String(ttlValue) : "-1");
 
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), 60000);

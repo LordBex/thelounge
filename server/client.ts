@@ -72,6 +72,7 @@ type ClientPushSubscription = {
 export type UploadUserConfig = {
 	apiKeys: Record<string, string>; // backend_id -> encrypt("plainkey") or ""
 	apiUrls: Record<string, string>; // backend_id -> URL (not a secret)
+	apiTtls: Record<string, string>; // backend_id -> preset id (not a secret)
 };
 
 export type UserConfig = {
@@ -182,7 +183,9 @@ class Client {
 		}
 
 		if (!_.isPlainObject(this.config.uploadConfig)) {
-			this.config.uploadConfig = {apiKeys: {}, apiUrls: {}};
+			this.config.uploadConfig = {apiKeys: {}, apiUrls: {}, apiTtls: {}};
+		} else if (!_.isPlainObject(this.config.uploadConfig!.apiTtls)) {
+			this.config.uploadConfig!.apiTtls = {};
 		}
 
 		if (this.config.clientSettings.awayMessage) {

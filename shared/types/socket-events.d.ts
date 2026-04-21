@@ -28,6 +28,7 @@ interface ServerToClientEvents {
 	"upload:config": EventHandler<{
 		apiKeys: Record<string, string>;
 		apiUrls: Record<string, string>;
+		apiTtls: Record<string, string>;
 	}>;
 	"upload:config:saved": NoPayloadEventHandler;
 
@@ -144,6 +145,7 @@ interface ClientToServerEvents {
 	"upload:config:set": EventHandler<{
 		apiKeys: Record<string, string>;
 		apiUrls: Record<string, string>;
+		apiTtls: Record<string, string>;
 	}>;
 
 	"mute:change": EventHandler<{target: number; setMutedTo: boolean}>;

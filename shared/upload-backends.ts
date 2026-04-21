@@ -3,6 +3,13 @@
  * Imported by both server and client
  */
 
+export type UploadBackendTtlPreset = {
+	id: string;
+	label: string;
+	value: string | number;
+	default: boolean;
+};
+
 export type UploadBackend = {
 	id: string;
 	displayName: string;
@@ -10,6 +17,7 @@ export type UploadBackend = {
 	requiresToken: boolean;
 	requiresUrl: boolean;
 	supportNote?: string;
+	ttl?: UploadBackendTtlPreset[];
 };
 
 export const allBackends: UploadBackend[] = [
@@ -40,6 +48,13 @@ export const allBackends: UploadBackend[] = [
 		category: "image",
 		requiresToken: true,
 		requiresUrl: false,
+		supportNote: "Supported files: Images",
+		ttl: [
+			{id: "1week", label: "1 Week", value: "604800", default: false},
+			{id: "3days", label: "3 Days", value: "259200", default: true},
+			{id: "1day", label: "1 Day", value: "86400", default: false},
+			{id: "forever", label: "Keep Forever", value: "-", default: false},
+		],
 	},
 	{
 		id: "catbox",
@@ -47,7 +62,12 @@ export const allBackends: UploadBackend[] = [
 		category: "image",
 		requiresToken: false,
 		requiresUrl: false,
-		supportNote: "Optional: user hash for longer retention",
+		supportNote: "Supported files: Images, Videos, Audio, and Text",
+		ttl: [
+			{id: "3days", label: "3 Days", value: "72h", default: true},
+			{id: "1day", label: "1 Day", value: "24h", default: false},
+			{id: "forever", label: "Keep Forever", value: "-", default: false},
+		],
 	},
 	{
 		id: "uguu",
@@ -63,6 +83,13 @@ export const allBackends: UploadBackend[] = [
 		category: "image",
 		requiresToken: false,
 		requiresUrl: false,
+		supportNote: "Supported files: Images, Video, and Text",
+		ttl: [
+			{id: "1week", label: "1 Week", value: "7", default: false},
+			{id: "3days", label: "3 Days", value: "3", default: true},
+			{id: "1day", label: "1 Day", value: "1", default: false},
+			{id: "forever", label: "Keep Forever", value: "-1", default: false},
+		],
 	},
 	{
 		id: "ptpimg",
@@ -70,6 +97,7 @@ export const allBackends: UploadBackend[] = [
 		category: "image",
 		requiresToken: true,
 		requiresUrl: false,
+		supportNote: "Supported files: Images",
 	},
 ];
 

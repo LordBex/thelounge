@@ -156,9 +156,7 @@
 						type="text"
 						class="input"
 						:placeholder="
-							imageBackend === 'x0'
-								? 'https://x0.at'
-								: 'https://example.com'
+							imageBackend === 'x0' ? 'https://x0.at' : 'https://example.com'
 						"
 						:value="apiUrls[imageBackend]"
 						@blur="normalizeUrl(imageBackend)"
@@ -173,8 +171,22 @@
 					</p>
 				</template>
 
+				<template v-if="selectedImageBackend?.ttl">
+					<label class="opt">{{ selectedImageBackend.displayName }} — Ablauf</label>
+					<select
+						class="input"
+						:value="effectiveTtl(imageBackend)"
+						@change="apiTtls[imageBackend] = ($event.target as HTMLSelectElement).value"
+					>
+						<option v-for="p in selectedImageBackend.ttl" :key="p.id" :value="p.id">
+							{{ p.label }}
+						</option>
+					</select>
+				</template>
+
 				<!-- File Backend — only shown when image backend is image-only -->
 				<template v-if="selectedImageBackend?.category === 'image'">
+					<hr class="upload-section-divider" />
 					<label class="opt">File Backend (fallback for non-images)</label>
 					<select
 						name="fileUploadBackend"
@@ -206,9 +218,7 @@
 							type="text"
 							class="input"
 							:placeholder="
-								fileBackend === 'x0'
-									? 'https://x0.at'
-									: 'https://example.com'
+								fileBackend === 'x0' ? 'https://x0.at' : 'https://example.com'
 							"
 							:value="apiUrls[fileBackend]"
 							@blur="normalizeUrl(fileBackend)"
@@ -223,6 +233,21 @@
 							Ungültige URL. Bitte verwende z.B. "https://example.com" oder
 							"example.com" (wird automatisch zu https:// konvertiert)
 						</p>
+					</template>
+
+					<template v-if="selectedFileBackend?.ttl">
+						<label class="opt">{{ selectedFileBackend.displayName }} — Ablauf</label>
+						<select
+							class="input"
+							:value="effectiveTtl(fileBackend)"
+							@change="
+								apiTtls[fileBackend] = ($event.target as HTMLSelectElement).value
+							"
+						>
+							<option v-for="p in selectedFileBackend.ttl" :key="p.id" :value="p.id">
+								{{ p.label }}
+							</option>
+						</select>
 					</template>
 				</template>
 
@@ -349,6 +374,13 @@
 	color: var(--body-color);
 }
 
+.upload-section-divider {
+	border: none;
+	border-top: 1px solid var(--body-color-muted);
+	opacity: 0.3;
+	margin: 16px 0 12px;
+}
+
 .toggle-raw {
 	margin-top: 12px;
 }
@@ -390,6 +422,7 @@ export default defineComponent({
 		const jsonError = ref("");
 		const apiKeys = ref<Record<string, string>>({});
 		const apiUrls = ref<Record<string, string>>({});
+		const apiTtls = ref<Record<string, string>>({});
 		const saveStatus = ref("");
 
 		const hasInstallPromptEvent = computed(() => {
@@ -427,7 +460,27 @@ export default defineComponent({
 			) {
 				apiKeys.value = {...((data as {apiKeys: Record<string, string>}).apiKeys || {})};
 				apiUrls.value = {...((data as {apiUrls: Record<string, string>}).apiUrls || {})};
+
+				const ttls = (data as {apiTtls?: unknown}).apiTtls;
+
+				if (typeof ttls === "object" && ttls !== null) {
+					apiTtls.value = {...(ttls as Record<string, string>)};
+				} else {
+					apiTtls.value = {};
+				}
 			}
+		};
+
+		const effectiveTtl = (backendId: string) => {
+			const stored = apiTtls.value[backendId];
+
+			if (stored) {
+				return stored;
+			}
+
+			return (
+				allBackends.find((b) => b.id === backendId)?.ttl?.find((p) => p.default)?.id ?? ""
+			);
 		};
 
 		const uploadSavedHandler = () => {
@@ -634,7 +687,11 @@ export default defineComponent({
 				}
 			}
 
-			socket.emit("upload:config:set", {apiKeys: apiKeys.value, apiUrls: apiUrls.value});
+			socket.emit("upload:config:set", {
+				apiKeys: apiKeys.value,
+				apiUrls: apiUrls.value,
+				apiTtls: apiTtls.value,
+			});
 		};
 
 		return {
@@ -659,6 +716,8 @@ export default defineComponent({
 			fileCapableBackends,
 			apiKeys,
 			apiUrls,
+			apiTtls,
+			effectiveTtl,
 			saveStatus,
 			imageBackend,
 			fileBackend,
