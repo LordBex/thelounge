@@ -7261,7 +7261,7 @@ __metadata:
     socks: "npm:^2.8.3"
     stream-browserify: "npm:^3.0.0"
     util: "npm:^0.12.5"
-  checksum: 10c0/560b039d86a79fe938f8eb314a81c8a879b900cec86ef28e1b579f135a7c736f7a682df8712cda7f01de004d34a5fa2d4a2a02e3ade0be49c7802fb1e1fec1e5
+  checksum: 10c0/75583ce82e55f23354273fe641f34d184b6afe3f2d341253686262e80f681fd559b6e5cb609fe63b35b7fba80c140f8c16e3a4dcee7bb2024e0ef6bdcc4ea4cc
   languageName: node
   linkType: hard
 
