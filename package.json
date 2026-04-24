@@ -65,7 +65,7 @@
     "express": "5.1.0",
     "file-type": "21.1.0",
     "filenamify": "7.0.1",
-    "irc-framework": "github:kiwiirc/irc-framework",
+    "irc-framework": "https://codeload.github.com/kiwiirc/irc-framework/tar.gz/9578e59a1056499e4a03a0f0fd2c260e9aadc541",
     "ldapts": "8.0.9",
     "linkify-it": "5.0.0",
     "lodash": "4.17.23",

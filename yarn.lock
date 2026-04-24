@@ -2563,7 +2563,7 @@ __metadata:
     fork-ts-checker-webpack-plugin: "npm:9.1.0"
     fuzzy: "npm:0.1.3"
     globals: "npm:16.5.0"
-    irc-framework: "github:kiwiirc/irc-framework"
+    irc-framework: "https://codeload.github.com/kiwiirc/irc-framework/tar.gz/9578e59a1056499e4a03a0f0fd2c260e9aadc541"
     ldapts: "npm:8.0.9"
     linkify-it: "npm:5.0.0"
     lodash: "npm:4.17.23"
@@ -7245,9 +7245,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"irc-framework@github:kiwiirc/irc-framework":
+"irc-framework@https://codeload.github.com/kiwiirc/irc-framework/tar.gz/9578e59a1056499e4a03a0f0fd2c260e9aadc541":
   version: 4.14.0
-  resolution: "irc-framework@https://github.com/kiwiirc/irc-framework.git#commit=9578e59a1056499e4a03a0f0fd2c260e9aadc541"
+  resolution: "irc-framework@https://codeload.github.com/kiwiirc/irc-framework/tar.gz/9578e59a1056499e4a03a0f0fd2c260e9aadc541"
   dependencies:
     buffer: "npm:^6.0.3"
     core-js: "npm:^3.38.1"
@@ -7261,7 +7261,7 @@ __metadata:
     socks: "npm:^2.8.3"
     stream-browserify: "npm:^3.0.0"
     util: "npm:^0.12.5"
-  checksum: 10c0/75583ce82e55f23354273fe641f34d184b6afe3f2d341253686262e80f681fd559b6e5cb609fe63b35b7fba80c140f8c16e3a4dcee7bb2024e0ef6bdcc4ea4cc
+  checksum: 10c0/74c2b3f6f7edc8be93f719cbda44b563b98ce1c5adc0a2d766c71dfd9d0d4c69b9b1ca850ba1aceeedaea29d6fdea857d174506c88d540a88827ae1665e40ef2
   languageName: node
   linkType: hard
 
