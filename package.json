@@ -1,7 +1,7 @@
 {
   "name": "@lordbex/thelounge",
   "description": "The self-hosted Web IRC client",
-  "version": "4.8.1",
+  "version": "4.8.5",
   "type": "module",
   "preferGlobal": true,
   "bin": "index.js",
