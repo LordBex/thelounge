@@ -338,16 +338,27 @@ export default defineComponent({
 				return;
 			}
 
-			const confirmed = window.confirm(`Send !${command} for "${requestReleaseName.value}"?`);
+			const channelId = props.channel.id;
+			const releaseName = requestReleaseName.value;
 
-			if (!confirmed) {
-				return;
-			}
+			eventbus.emit(
+				"confirm-dialog",
+				{
+					title: "Confirm request action",
+					text: `Send !${command} for "${releaseName}"?`,
+					button: `Send !${command}`,
+				},
+				(result: boolean) => {
+					if (!result) {
+						return;
+					}
 
-			socket.emit("input", {
-				target: props.channel.id,
-				text: `!${command} ${requestReleaseName.value}`,
-			});
+					socket.emit("input", {
+						target: channelId,
+						text: `!${command} ${releaseName}`,
+					});
+				}
+			);
 		};
 
 		return {
