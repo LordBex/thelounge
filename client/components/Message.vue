@@ -309,10 +309,7 @@ export default defineComponent({
 		};
 
 		const requestReleaseName = computed(() => {
-			if (
-				props.channel?.type !== ChanType.CHANNEL ||
-				prettyMessage.value.type !== MessageType.MESSAGE
-			) {
+			if (props.channel?.type !== ChanType.CHANNEL) {
 				return null;
 			}
 
