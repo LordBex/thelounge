@@ -88,6 +88,29 @@
 				></span>
 				<StatusmsgMarker :group="prettyMessage.statusmsgGroup" />
 				<ParsedMessage :network="network" :message="prettyMessage" />
+				<span v-if="requestReleaseName" class="request-action-buttons">
+					<button
+						type="button"
+						class="request-action-button"
+						@click="sendRequestCommand('reqfilled')"
+					>
+						reqfilled
+					</button>
+					<button
+						type="button"
+						class="request-action-button"
+						@click="sendRequestCommand('reqdel')"
+					>
+						reqdel
+					</button>
+					<button
+						type="button"
+						class="request-action-button"
+						@click="sendRequestCommand('reqwipe')"
+					>
+						reqwipe
+					</button>
+				</span>
 				<LinkPreview
 					v-for="preview in prettyMessage.previews"
 					:key="preview.link"
@@ -179,6 +202,7 @@ import LinkPreview from "./LinkPreview.vue";
 import ParsedMessage from "./ParsedMessage.vue";
 import MessageTypes from "./MessageTypes";
 import StatusmsgMarker from "./StatusmsgMarker.vue";
+import socket from "../js/socket";
 
 import type {ClientChan, ClientMessage, ClientNetwork} from "../js/types";
 import {useStore} from "../js/store";
@@ -284,6 +308,48 @@ export default defineComponent({
 			eventbus.emit("message:reply", `\x02${nick}\x02: \x0314,99"\x1D${content}\x1D"\x03`);
 		};
 
+		const requestReleaseName = computed(() => {
+			if (
+				props.channel?.type !== ChanType.CHANNEL ||
+				prettyMessage.value.type !== MessageType.MESSAGE
+			) {
+				return null;
+			}
+
+			const text = prettyMessage.value.text;
+
+			if (!text) {
+				return null;
+			}
+
+			const match = text.match(/\[Request\]\s*-\s*\[\s*\d+\s*:\]\s*(.+?)(?=\s*~\s*by\b|$)/i);
+
+			if (!match?.[1]) {
+				return null;
+			}
+
+			const releaseName = match[1].trim();
+
+			return releaseName.length > 0 ? releaseName : null;
+		});
+
+		const sendRequestCommand = (command: "reqfilled" | "reqdel" | "reqwipe") => {
+			if (!props.channel || !requestReleaseName.value) {
+				return;
+			}
+
+			const confirmed = window.confirm(`Send !${command} for "${requestReleaseName.value}"?`);
+
+			if (!confirmed) {
+				return;
+			}
+
+			socket.emit("input", {
+				target: props.channel.id,
+				text: `!${command} ${requestReleaseName.value}`,
+			});
+		};
+
 		return {
 			timeFormat,
 			prettyMessage,
@@ -294,6 +360,8 @@ export default defineComponent({
 			canReply,
 			messageActions,
 			replyToMessage,
+			requestReleaseName,
+			sendRequestCommand,
 		};
 	},
 });
