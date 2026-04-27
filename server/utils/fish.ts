@@ -194,8 +194,7 @@ const INITIAL_S: readonly number[][] = [
 
 // Keys are treated byte-wise per FiSH convention (almost always ASCII).
 // Keep the legacy code-unit truncation here so existing keys remain compatible.
-const keyToBytes = (str: string): number[] =>
-	Array.from(str, (char) => char.charCodeAt(0) & 0xff);
+const keyToBytes = (str: string): number[] => Array.from(str, (char) => char.charCodeAt(0) & 0xff);
 
 // Plaintext is encoded/decoded as UTF-8 so that emojis (surrogate pairs) and
 // non-ASCII characters survive the round-trip. The previous implementation used
