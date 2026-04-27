@@ -191,12 +191,26 @@ const INITIAL_S: readonly number[][] = [
 ] as const;
 
 // Utility functions
-const stringToBytes = (str: string): number[] =>
+
+// Keys are treated byte-wise per FiSH convention (almost always ASCII).
+// Keep the legacy code-unit truncation here so existing keys remain compatible.
+const keyToBytes = (str: string): number[] =>
 	Array.from(str, (char) => char.charCodeAt(0) & 0xff);
 
-const bytesToString = (bytes: number[]): string => String.fromCharCode(...bytes);
+// Plaintext is encoded/decoded as UTF-8 so that emojis (surrogate pairs) and
+// non-ASCII characters survive the round-trip. The previous implementation used
+// `charCodeAt(0) & 0xff` which truncates every UTF-16 code unit to a single
+// byte — that turned 😎 (U+1F60E, surrogate pair 0xD83D 0xDE0E) into "=" + 0x0E
+// before encryption, irrecoverably corrupting the message.
+const textToBytes = (str: string): number[] => Array.from(Buffer.from(str, "utf8"));
 
-const removeBadChars = (text: string): string => text.replace(/[\x00\x0d\x0a]/g, "");
+const bytesToText = (bytes: number[]): string => {
+	// Strip FiSH zero padding plus stray CR/LF before decoding. UTF-8
+	// continuation bytes are always in 0x80–0xBF, so removing 0x00/0x0d/0x0a
+	// at the byte level can never split a multi-byte sequence.
+	const cleaned = bytes.filter((b) => b !== 0x00 && b !== 0x0d && b !== 0x0a);
+	return Buffer.from(cleaned).toString("utf8");
+};
 
 const padKey = (key: number[]): number[] => {
 	return key.length < 4 ? [...key, ...(new Array(4 - key.length).fill(0) as number[])] : key;
@@ -349,7 +363,7 @@ const getCachedBlowfish = (key: string): BlowfishInstance => {
 		}
 	}
 
-	const instance = createBlowfish(stringToBytes(key));
+	const instance = createBlowfish(keyToBytes(key));
 	blowfishCache.set(key, instance);
 
 	return instance;
@@ -410,7 +424,7 @@ const decodeBase64Block = (chunk: string): [number, number] | null => {
 // ECB encryption (original FiSH method)
 const fishEncryptECB = (plaintext: string, key: string): string => {
 	const blowfish = getCachedBlowfish(key);
-	const data = padData(stringToBytes(plaintext));
+	const data = padData(textToBytes(plaintext));
 
 	let result = "";
 
@@ -489,7 +503,7 @@ const fishDecryptECB = (ciphertext: string, key: string): DecryptResult => {
 			result.push(...decrypted);
 		}
 
-		const decryptedText = removeBadChars(bytesToString(result));
+		const decryptedText = bytesToText(result);
 		return {
 			text: decryptedText,
 			status: isPartial ? "partial" : "success",
@@ -515,7 +529,7 @@ const xorBlocks = (a: BlowfishBlock, b: BlowfishBlock): BlowfishBlock => [
 // CBC encryption - generates random IV and prepends it to ciphertext
 const fishEncryptCBC = (plaintext: string, key: string): string => {
 	const blowfish = getCachedBlowfish(key);
-	const data = padData(stringToBytes(plaintext));
+	const data = padData(textToBytes(plaintext));
 
 	// Generate random IV for this message
 	const iv = generateRandomIV();
@@ -612,7 +626,7 @@ const fishDecryptCBC = (base64Ciphertext: string, key: string): DecryptResult =>
 			previousCiphertext = ciphertextBlock;
 		}
 
-		const decryptedText = removeBadChars(bytesToString(result));
+		const decryptedText = bytesToText(result);
 		return {
 			text: decryptedText,
 			status: "success",
