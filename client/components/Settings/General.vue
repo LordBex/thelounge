@@ -30,7 +30,7 @@
 				Enable enhanced search with 'Jump to message'
 			</label>
 		</div>
-		<div v-if="store.state.settings.searchEnabled">
+		<div>
 			<h2>Input</h2>
 			<label class="opt">
 				<input
@@ -42,6 +42,20 @@
 				<span
 					class="tooltipped tooltipped-n tooltipped-no-delay"
 					aria-label="You can still use rainbow text with '/rainbow' or '/rgb'"
+				>
+					<button class="extra-help" />
+				</span>
+			</label>
+			<label class="opt">
+				<input
+					:checked="store.state.settings.enableReplyToMessage"
+					type="checkbox"
+					name="enableReplyToMessage"
+				/>
+				Enable reply to message button
+				<span
+					class="tooltipped tooltipped-n tooltipped-no-delay"
+					aria-label="Allow you to reply to a message with a button"
 				>
 					<button class="extra-help" />
 				</span>

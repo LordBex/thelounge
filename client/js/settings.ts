@@ -190,6 +190,9 @@ const defaultConfig = {
 	enableRainbowHotkey: {
 		default: true,
 	},
+	enableReplyToMessage: {
+		default: true,
+	},
 	customCommands: {
 		default: {} as Record<string, string>,
 		sync: "always",
