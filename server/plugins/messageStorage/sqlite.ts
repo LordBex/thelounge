@@ -660,23 +660,21 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 		// We don't adjust for daylight savings time or other weird time jumps
 		const millisecondsInDay = 24 * 60 * 60 * 1000;
 		const deleteBefore = Date.now() - req.olderThanDays * millisecondsInDay;
-		sql += `time <= ${deleteBefore}\n`;
-
-		let typeClause = "";
+		sql += "time <= ?\n";
+		const params: (string | number)[] = [deleteBefore];
 
 		if (req.messageTypes !== null) {
-			typeClause = `type in (${req.messageTypes.map((type) => `'${type}'`).join(",")})\n`;
-		}
-
-		if (typeClause) {
-			sql += `and ${typeClause}`;
+			const placeholder = new Array(req.messageTypes.length).fill("?").join(",");
+			sql += `and type in (${placeholder})\n`;
+			params.push(...req.messageTypes);
 		}
 
 		sql += "order by time asc\n";
-		sql += `limit ${req.limit}\n`;
+		sql += "limit ?\n";
+		params.push(req.limit);
 		sql += ")";
 
-		return this.serialize_run(sql);
+		return this.serialize_run(sql, ...params);
 	}
 
 	/**
