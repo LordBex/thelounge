@@ -106,11 +106,16 @@
 						@click="replyToMessage"
 					>
 						<span aria-hidden="true">
-							<i class="fas fa-reply" style="width: 35px;"></i>
+							<i class="fas fa-reply" style="width: 35px"></i>
 						</span>
 					</button>
 				</span>
-				<i v-for="(action, id) in messageActions" :key="id" :class="['msg-action', action.class]" @click="action.callback(prettyMessage)"></i>
+				<i
+					v-for="(action, id) in messageActions"
+					:key="id"
+					:class="['msg-action', action.class]"
+					@click="action.callback(prettyMessage)"
+				></i>
 			</span>
 		</template>
 	</div>
@@ -257,10 +262,15 @@ export default defineComponent({
 
 		const messageActions = computed(() => {
 			return (
-				prettyMessage.value as ClientMessage & {
-					actions?: Array<{class: string; callback: (message: ClientMessage) => void}>;
-				}
-			).actions || [];
+				(
+					prettyMessage.value as ClientMessage & {
+						actions?: Array<{
+							class: string;
+							callback: (message: ClientMessage) => void;
+						}>;
+					}
+				).actions || []
+			);
 		});
 
 		const replyToMessage = () => {

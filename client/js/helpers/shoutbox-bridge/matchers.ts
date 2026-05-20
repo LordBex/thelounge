@@ -122,11 +122,11 @@ export const matchers: Matcher[] = [
 		type: "basic",
 		name: "MidnightScene",
 		description: "[nick]: message",
-		matches: [ "msbridge" ],
+		matches: ["msbridge"],
 		regex: /^\[(?<nick>[^:\]]+)\]: (?<content>.*)/,
-		transform (message) {
+		transform(message) {
 			return typedGroups(message.text!.match(this.regex));
-		}
+		},
 	},
 	{
 		type: "basic",
@@ -172,11 +172,11 @@ export const matchers: Matcher[] = [
 		type: "basic",
 		name: "YUSCENE",
 		description: "[nick] message",
-		matches: [ "yus" ],
+		matches: ["yus"],
 		regex: /^\[(?<nick>[^:\]]+)\] (?<content>.*)/,
-		transform (message) {
+		transform(message) {
 			return typedGroups(message.text!.match(this.regex));
-		}
+		},
 	},
 ];
 
