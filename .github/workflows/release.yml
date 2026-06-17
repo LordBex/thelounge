@@ -28,6 +28,13 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
 
+      - name: Upgrade npm CLI for Trusted Publishing
+        # npm 10.x (bundled with Node 22) signs provenance via OIDC but uses the
+        # static _authToken from .npmrc for the actual PUT, which is just the
+        # setup-node placeholder. npm 11+ exchanges the OIDC token for a one-time
+        # session token and uses that for the publish.
+        run: npm install -g npm@latest
+
       - name: Install
         run: yarn --immutable
 
