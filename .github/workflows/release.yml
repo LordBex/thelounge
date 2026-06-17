@@ -19,7 +19,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "latest"
+          # Pinned to 22.x (current LTS) — "latest" pulls Node 24, for which
+          # better-sqlite3 12.4.1 ships no prebuilt binaries and the install
+          # gyp build fails silently, breaking the test step.
+          node-version: "22.x"
           registry-url: "https://registry.npmjs.org/"
 
       - name: Enable Corepack
@@ -27,6 +30,9 @@ jobs:
 
       - name: Install
         run: yarn --immutable
+
+      - name: Rebuild native modules
+        run: yarn rebuild better-sqlite3
 
       - name: Build
         run: yarn build
