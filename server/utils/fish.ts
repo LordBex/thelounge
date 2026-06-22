@@ -723,6 +723,7 @@ export const maxEncryptablePlaintextBytes = (mode: FishMode, maxLength: number):
 		const maxCipherBlocks = Math.floor((maxTotalBytes - 8) / 8);
 		return Math.max(0, maxCipherBlocks * 8);
 	}
+
 	const maxBlocks = Math.floor((maxLength - 4) / 12);
 	return Math.max(0, maxBlocks * 8);
 };

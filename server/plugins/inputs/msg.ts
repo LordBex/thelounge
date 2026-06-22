@@ -94,7 +94,7 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 		return true;
 	}
 
-	let msg = args.join(" ");
+	const msg = args.join(" ");
 
 	if (msg.length === 0) {
 		return true;
@@ -112,19 +112,23 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 		if (key) {
 			const maxBytes = maxEncryptablePlaintextBytes(
 				mode,
-				(network.irc.options.message_max_length as number | undefined) ?? 350
+				(network.irc.options as unknown as {message_max_length?: number})
+					.message_max_length ?? 350
 			);
 			const noEcho = !network.irc.network.cap.isEnabled("echo-message");
 
 			let echoTargetName = targetName;
 			let echoGroup: string | undefined;
+
 			if (noEcho) {
 				const parsedTarget = network.irc.network.extractTargetGroup(targetName);
+
 				if (parsedTarget) {
 					echoTargetName = parsedTarget.target;
 					echoGroup = parsedTarget.target_group;
 				}
 			}
+
 			const echoChannel = noEcho ? network.getChannel(echoTargetName) : undefined;
 
 			for (const chunk of splitPlaintext(msg, maxBytes)) {
@@ -142,6 +146,7 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 					});
 				}
 			}
+
 			return true;
 		}
 	}
