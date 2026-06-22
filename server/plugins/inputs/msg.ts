@@ -3,7 +3,12 @@ import Msg from "../../models/msg.js";
 import Chan from "../../models/chan.js";
 import {MessageType} from "../../../shared/types/msg.js";
 import {ChanType} from "../../../shared/types/chan.js";
-import {createFishMessage, type FishMode} from "../../utils/fish.js";
+import {
+	createFishMessage,
+	maxEncryptablePlaintextBytes,
+	splitPlaintext,
+	type FishMode,
+} from "../../utils/fish.js";
 import Config from "../../config.js";
 
 const commands = ["query", "msg", "say"];
@@ -95,13 +100,50 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 		return true;
 	}
 
-	// Determine if we should encrypt using FiSH for this target
+	// When FiSH is active and a key exists for this target, split the plaintext first
+	// so that each chunk, after encryption, fits within the IRC message length limit.
+	// Encrypting first and then letting irc.say() split would corrupt the ciphertext.
 	if (Config.values.fish.enabled) {
 		const targetChan =
 			network.getChannel(targetName) || (chan.name === targetName ? chan : undefined);
 		const key = targetChan?.blowfishKey;
 		const mode: FishMode = targetChan?.blowfishMode || "ecb";
-		msg = key ? createFishMessage(msg, key, mode) : msg;
+
+		if (key) {
+			const maxBytes = maxEncryptablePlaintextBytes(
+				mode,
+				(network.irc.options.message_max_length as number | undefined) ?? 350
+			);
+			const noEcho = !network.irc.network.cap.isEnabled("echo-message");
+
+			let echoTargetName = targetName;
+			let echoGroup: string | undefined;
+			if (noEcho) {
+				const parsedTarget = network.irc.network.extractTargetGroup(targetName);
+				if (parsedTarget) {
+					echoTargetName = parsedTarget.target;
+					echoGroup = parsedTarget.target_group;
+				}
+			}
+			const echoChannel = noEcho ? network.getChannel(echoTargetName) : undefined;
+
+			for (const chunk of splitPlaintext(msg, maxBytes)) {
+				const encrypted = createFishMessage(chunk, key, mode);
+				network.irc.raw("PRIVMSG", targetName, encrypted);
+
+				if (noEcho && typeof echoChannel !== "undefined") {
+					network.irc.emit("privmsg", {
+						nick: network.irc.user.nick,
+						ident: network.irc.user.username,
+						hostname: network.irc.user.host,
+						target: echoTargetName,
+						group: echoGroup,
+						message: encrypted,
+					});
+				}
+			}
+			return true;
+		}
 	}
 
 	network.irc.say(targetName, msg);

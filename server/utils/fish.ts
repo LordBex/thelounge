@@ -713,6 +713,44 @@ export const tryDecryptFishMessage = (
 	return null;
 };
 
+// Maximum plaintext bytes that, when encrypted in the given mode, fit within maxLength IRC chars.
+// ECB: "+OK " (4 chars) + FiSH-base64 where each 8-byte block → 12 chars
+// CBC: "+OK *" (5 chars) + standard base64(8-byte IV + ceil(P/8)*8 cipher bytes)
+export const maxEncryptablePlaintextBytes = (mode: FishMode, maxLength: number): number => {
+	if (mode === "cbc") {
+		const maxB64Chars = Math.floor((maxLength - 5) / 4) * 4;
+		const maxTotalBytes = (maxB64Chars / 4) * 3;
+		const maxCipherBlocks = Math.floor((maxTotalBytes - 8) / 8);
+		return Math.max(0, maxCipherBlocks * 8);
+	}
+	const maxBlocks = Math.floor((maxLength - 4) / 12);
+	return Math.max(0, maxBlocks * 8);
+};
+
+// Split text into chunks where each chunk's UTF-8 byte length does not exceed maxBytes.
+export const splitPlaintext = (text: string, maxBytes: number): string[] => {
+	if (maxBytes <= 0) return [text];
+	const chunks: string[] = [];
+	let current = "";
+	let currentBytes = 0;
+
+	for (const char of text) {
+		const charBytes = Buffer.byteLength(char, "utf8");
+
+		if (currentBytes + charBytes > maxBytes) {
+			if (current) chunks.push(current);
+			current = char;
+			currentBytes = charBytes;
+		} else {
+			current += char;
+			currentBytes += charBytes;
+		}
+	}
+
+	if (current) chunks.push(current);
+	return chunks;
+};
+
 // Legacy function for compatibility - returns formatted string with mode tag
 export const tryDecryptFishLine = (message: string, key?: string): string | null => {
 	const result = tryDecryptFishMessage(message, key);
