@@ -88,29 +88,6 @@
 				></span>
 				<StatusmsgMarker :group="prettyMessage.statusmsgGroup" />
 				<ParsedMessage :network="network" :message="prettyMessage" />
-				<span v-if="requestReleaseName" class="request-action-buttons">
-					<button
-						type="button"
-						class="request-action-button"
-						@click="sendRequestCommand('reqfilled')"
-					>
-						reqfilled
-					</button>
-					<button
-						type="button"
-						class="request-action-button"
-						@click="sendRequestCommand('reqdel')"
-					>
-						reqdel
-					</button>
-					<button
-						type="button"
-						class="request-action-button"
-						@click="sendRequestCommand('reqwipe')"
-					>
-						reqwipe
-					</button>
-				</span>
 				<LinkPreview
 					v-for="preview in prettyMessage.previews"
 					:key="preview.link"
@@ -334,34 +311,6 @@ export default defineComponent({
 
 			return releaseName.length > 0 ? releaseName : null;
 		});
-
-		const sendRequestCommand = (command: "reqfilled" | "reqdel" | "reqwipe") => {
-			if (!props.channel || !requestReleaseName.value) {
-				return;
-			}
-
-			const channelId = props.channel.id;
-			const releaseName = requestReleaseName.value;
-
-			eventbus.emit(
-				"confirm-dialog",
-				{
-					title: "Confirm request action",
-					text: `Send !${command} for "${releaseName}"?`,
-					button: `Send !${command}`,
-				},
-				(result: boolean) => {
-					if (!result) {
-						return;
-					}
-
-					socket.emit("input", {
-						target: channelId,
-						text: `!${command} ${releaseName}`,
-					});
-				}
-			);
-		};
 
 		return {
 			timeFormat,
