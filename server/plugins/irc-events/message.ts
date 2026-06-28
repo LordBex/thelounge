@@ -5,7 +5,7 @@ import Helper from "../../helper.js";
 import Client, {IrcEventHandler} from "../../client.js";
 import Chan from "../../models/chan.js";
 import User from "../../models/user.js";
-import {MessageType} from "../../../shared/types/msg.js";
+import {MessageType, MessageBadge} from "../../../shared/types/msg.js";
 import {ChanType} from "../../../shared/types/chan.js";
 import {MessageEventArgs} from "irc-framework";
 import {tryDecryptFishMessage} from "../../utils/fish.js";
@@ -99,6 +99,7 @@ export default <IrcEventHandler>function (this: Client, irc, network) {
 		let from: User;
 		let highlight = false;
 		let showInActive = false;
+		let fishBadge: MessageBadge | undefined;
 		const self = data.nick === irc.user.nick;
 
 		// Some servers send messages without any nickname
@@ -186,9 +187,13 @@ export default <IrcEventHandler>function (this: Client, irc, network) {
 					const fromLower = data.nick.toLowerCase();
 					network.fishKeyModes[fromLower] = result.mode;
 
-					// Format with mode tag for display
-					const tag = result.mode === "cbc" ? "[CBC]" : "[ECB]";
-					data.message = `\u000314${tag}\u0003 ${result.text}`;
+					// Carry the mode as a separate badge instead of injecting it
+					// into the message text (keeps the tag out of copy/highlight/logs)
+					fishBadge = {
+						label: result.mode === "cbc" ? "[CBC]" : "[ECB]",
+						title: result.mode === "cbc" ? "FiSH (CBC)" : "FiSH (ECB)",
+					};
+					data.message = result.text;
 				}
 			}
 
@@ -219,6 +224,10 @@ export default <IrcEventHandler>function (this: Client, irc, network) {
 
 		if (showInActive) {
 			msg.showInActive = true;
+		}
+
+		if (fishBadge) {
+			msg.badges = [fishBadge];
 		}
 
 		// remove IRC formatting for custom highlight testing

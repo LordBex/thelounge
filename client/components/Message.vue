@@ -58,10 +58,15 @@
 			</span>
 		</template>
 		<template v-else>
-			<span v-if="prettyMessage.type === 'message'" class="from">
+			<span
+				v-if="prettyMessage.type === 'message'"
+				class="from"
+				:class="{'has-badges': prettyMessage.badges && prettyMessage.badges.length}"
+			>
 				<template v-if="prettyMessage.from && prettyMessage.from.nick">
 					<span class="only-copy" aria-hidden="true">&lt;</span>
 					<Username :user="prettyMessage.from" :network="network" :channel="channel" />
+					<MessageBadges :badges="prettyMessage.badges" />
 					<span class="only-copy" aria-hidden="true">&gt;&nbsp;</span>
 				</template>
 			</span>
@@ -72,10 +77,15 @@
 					<span class="only-copy" aria-hidden="true">]&nbsp;</span>
 				</template>
 			</span>
-			<span v-else class="from">
+			<span
+				v-else
+				class="from"
+				:class="{'has-badges': prettyMessage.badges && prettyMessage.badges.length}"
+			>
 				<template v-if="prettyMessage.from && prettyMessage.from.nick">
 					<span class="only-copy" aria-hidden="true">-</span>
 					<Username :user="prettyMessage.from" :network="network" :channel="channel" />
+					<MessageBadges :badges="prettyMessage.badges" />
 					<span class="only-copy" aria-hidden="true">-&nbsp;</span>
 				</template>
 			</span>
@@ -179,7 +189,7 @@ import LinkPreview from "./LinkPreview.vue";
 import ParsedMessage from "./ParsedMessage.vue";
 import MessageTypes from "./MessageTypes";
 import StatusmsgMarker from "./StatusmsgMarker.vue";
-import socket from "../js/socket";
+import MessageBadges from "./MessageBadges.vue";
 
 import type {ClientChan, ClientMessage, ClientNetwork} from "../js/types";
 import {useStore} from "../js/store";
@@ -197,6 +207,7 @@ export default defineComponent({
 	components: {
 		...MessageTypes,
 		StatusmsgMarker,
+		MessageBadges,
 	},
 	props: {
 		message: {type: Object as PropType<ClientMessage>, required: true},
@@ -323,7 +334,6 @@ export default defineComponent({
 			messageActions,
 			replyToMessage,
 			requestReleaseName,
-			sendRequestCommand,
 		};
 	},
 });

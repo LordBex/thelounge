@@ -5,6 +5,7 @@ import {
 	UserInMessage,
 	WhoisData,
 	MassEventSummary,
+	MessageBadge,
 } from "../../shared/types/msg.js";
 
 class Msg {
@@ -45,6 +46,7 @@ class Msg {
 	statusmsgGroup?: string;
 	params!: string[];
 	massEventSummary?: MassEventSummary;
+	badges?: MessageBadge[];
 
 	constructor(attr?: Partial<Msg>) {
 		// Some properties need to be copied in the Msg object instead of referenced
