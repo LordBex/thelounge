@@ -86,6 +86,11 @@ export interface MassEventSummary {
 	endTime: Date;
 }
 
+export type MessageBadge = {
+	label: string;
+	title?: string;
+};
+
 export type SharedMsg = {
 	from?: UserInMessage;
 	id: number;
@@ -126,4 +131,5 @@ export type SharedMsg = {
 	statusmsgGroup?: string;
 	params?: string[];
 	massEventSummary?: MassEventSummary;
+	badges?: MessageBadge[];
 };

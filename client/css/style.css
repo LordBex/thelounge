@@ -2015,6 +2015,35 @@ textarea.input {
 	position: relative;
 }
 
+#chat .from.has-badges {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+}
+
+#chat .from.has-badges .user {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	text-align: right;
+}
+
+#chat .message-badges {
+	display: inline-flex;
+	flex: 0 0 auto;
+	gap: 3px;
+}
+
+#chat .message-badge {
+	flex: 0 0 auto;
+	padding-left: 3px;
+	color: var(--body-color-muted);
+	white-space: nowrap;
+	user-select: none;
+}
+
 #chat .content {
 	flex: 1 1 auto;
 	min-width: 0;
