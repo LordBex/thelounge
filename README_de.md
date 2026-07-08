@@ -63,13 +63,13 @@ The Lounge ist der offizielle, von der Community gepflegte Fork von [Shout](http
 
 ## 🔐 FiSH-Verschlüsselung (Blowfish)
 
-FiSH verschlüsselt den *Nachrichtentext* von Channel- und Query-Nachrichten mit Blowfish, kodiert im klassischen FiSH-Base64-Alphabet, sodass es mit traditionellen IRC-Clients zusammenarbeitet.
+FiSH verschlüsselt den _Nachrichtentext_ von Channel- und Query-Nachrichten mit Blowfish, kodiert im klassischen FiSH-Base64-Alphabet, sodass es mit traditionellen IRC-Clients zusammenarbeitet.
 
 ### Modi
 
-| Modus   | Hinweise                                                                       |
-| ------- | ------------------------------------------------------------------------------ |
-| **ECB** | Standard. Maximale Kompatibilität mit alten Clients. Schwächer (kein IV).       |
+| Modus   | Hinweise                                                                                  |
+| ------- | ----------------------------------------------------------------------------------------- |
+| **ECB** | Standard. Maximale Kompatibilität mit alten Clients. Schwächer (kein IV).                 |
 | **CBC** | Empfohlen. Nutzt pro Nachricht einen zufälligen IV. Beide Seiten müssen ihn unterstützen. |
 
 ### Befehl `/blow`
@@ -202,16 +202,16 @@ encoding: {
 
 ## Befehls-Schnellübersicht
 
-| Befehl           | Aliase      | Zweck                                              |
-| ---------------- | ----------- | -------------------------------------------------- |
-| `/blow`          | —           | FiSH-Blowfish-Schlüssel setzen / löschen / anzeigen |
-| `/keyexchange`   | `/ke`       | DH1080-Key-Exchange mit einem User                 |
-| `/ftp`           | —           | FTP-Status anzeigen / Test-Invite senden           |
-| `/ftpinvite`     | —           | FTP-`SITE INVITE` senden                           |
-| `/encoding`      | —           | Zeichensatz pro Nick setzen                        |
-| `/rainbow`       | `/rgb`      | Regenbogen-Text senden                             |
-| `/mute`          | —           | Channel oder Query stummschalten                   |
-| `/unmute`        | —           | Stummschaltung aufheben                            |
+| Befehl         | Aliase | Zweck                                               |
+| -------------- | ------ | --------------------------------------------------- |
+| `/blow`        | —      | FiSH-Blowfish-Schlüssel setzen / löschen / anzeigen |
+| `/keyexchange` | `/ke`  | DH1080-Key-Exchange mit einem User                  |
+| `/ftp`         | —      | FTP-Status anzeigen / Test-Invite senden            |
+| `/ftpinvite`   | —      | FTP-`SITE INVITE` senden                            |
+| `/encoding`    | —      | Zeichensatz pro Nick setzen                         |
+| `/rainbow`     | `/rgb` | Regenbogen-Text senden                              |
+| `/mute`        | —      | Channel oder Query stummschalten                    |
+| `/unmute`      | —      | Stummschaltung aufheben                             |
 
 Zusätzlich bleiben alle Standard-Befehle von The Lounge verfügbar, darunter `/away`, `/ban`, `/connect`, `/ctcp`, `/disconnect`, `/ignore`, `/ignorelist`, `/invite`, `/join`, `/kick`, `/kill`, `/list`, `/mode`, `/msg`, `/nick`, `/notice`, `/part`, `/quit`, `/raw`, `/rejoin`, `/topic`, `/whois` sowie die clientseitigen `/collapse`, `/expand` und `/search`.
 
@@ -272,4 +272,3 @@ Führe dazu `yarn githooks-install` aus.
 Dieser Fork baut auf [The Lounge](https://github.com/thelounge/thelounge) auf und übernimmt dessen Lizenz (siehe [`LICENSE`](LICENSE)). Die DH1080-Implementierung ist aus WeeChats `fish.py` von Bjorn Edstrom portiert. Die vollständige Liste der Beitragenden zum Upstream-Projekt findest du in [`CREDITS.md`](CREDITS.md).
 
 ---
-

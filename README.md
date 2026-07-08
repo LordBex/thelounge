@@ -63,14 +63,14 @@ The Lounge is the official and community-managed fork of [Shout](https://github.
 
 ## 🔐 FiSH (Blowfish) encryption
 
-FiSH encrypts the *message text* of channel and query messages using Blowfish, encoded in the classic FiSH base64 alphabet so it interoperates with traditional IRC clients.
+FiSH encrypts the _message text_ of channel and query messages using Blowfish, encoded in the classic FiSH base64 alphabet so it interoperates with traditional IRC clients.
 
 ### Modes
 
-| Mode    | Notes                                                                 |
-| ------- | --------------------------------------------------------------------- |
-| **ECB** | Default. Maximum compatibility with old clients. Weaker (no IV).      |
-| **CBC** | Recommended. Uses a random IV per message. Both sides must support it.|
+| Mode    | Notes                                                                  |
+| ------- | ---------------------------------------------------------------------- |
+| **ECB** | Default. Maximum compatibility with old clients. Weaker (no IV).       |
+| **CBC** | Recommended. Uses a random IV per message. Both sides must support it. |
 
 ### `/blow` command
 
@@ -202,16 +202,16 @@ encoding: {
 
 ## Command quick reference
 
-| Command          | Aliases     | Purpose                                            |
-| ---------------- | ----------- | -------------------------------------------------- |
-| `/blow`          | —           | Set / clear / show a FiSH Blowfish key             |
-| `/keyexchange`   | `/ke`       | DH1080 key exchange with a user                     |
-| `/ftp`           | —           | Show FTP status / send a test invite               |
-| `/ftpinvite`     | —           | Send an FTP `SITE INVITE`                           |
-| `/encoding`      | —           | Set a per-nick character encoding                  |
-| `/rainbow`       | `/rgb`      | Send rainbow-coloured text                          |
-| `/mute`          | —           | Mute a channel or query                             |
-| `/unmute`        | —           | Unmute a channel or query                           |
+| Command        | Aliases | Purpose                                |
+| -------------- | ------- | -------------------------------------- |
+| `/blow`        | —       | Set / clear / show a FiSH Blowfish key |
+| `/keyexchange` | `/ke`   | DH1080 key exchange with a user        |
+| `/ftp`         | —       | Show FTP status / send a test invite   |
+| `/ftpinvite`   | —       | Send an FTP `SITE INVITE`              |
+| `/encoding`    | —       | Set a per-nick character encoding      |
+| `/rainbow`     | `/rgb`  | Send rainbow-coloured text             |
+| `/mute`        | —       | Mute a channel or query                |
+| `/unmute`      | —       | Unmute a channel or query              |
 
 In addition, all standard The Lounge commands remain available, including `/away`, `/ban`, `/connect`, `/ctcp`, `/disconnect`, `/ignore`, `/ignorelist`, `/invite`, `/join`, `/kick`, `/kill`, `/list`, `/mode`, `/msg`, `/nick`, `/notice`, `/part`, `/quit`, `/raw`, `/rejoin`, `/topic`, `/whois`, plus the client-side `/collapse`, `/expand` and `/search`.
 
