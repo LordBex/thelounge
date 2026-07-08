@@ -239,6 +239,7 @@ class Uploader {
 		let fileName: string | null;
 		let streamWriter: fs.WriteStream | null;
 		let fileBuffer: Buffer | null = null;
+		let fileMimeType: string | undefined;
 
 		const doneCallback = () => {
 			// detach the stream and drain any remaining data
@@ -346,9 +347,16 @@ class Uploader {
 
 		busboyInstance.on(
 			"file",
-			(fieldname: string, fileStream: NodeJS.ReadableStream, filename: string) => {
+			(
+				fieldname: string,
+				fileStream: NodeJS.ReadableStream,
+				filename: string,
+				encoding: string,
+				mimeType: string
+			) => {
 				uploadUrl = `${randomName}/${encodeURIComponent(filename)}`;
 				fileName = filename;
+				fileMimeType = mimeType;
 
 				if (Config.values.fileUpload.baseUrl) {
 					uploadUrl = new URL(uploadUrl, Config.values.fileUpload.baseUrl).toString();
@@ -385,7 +393,8 @@ class Uploader {
 							backend,
 							entry.client,
 							fileBuffer,
-							fileName || path.basename(destPath.toString())
+							fileName || path.basename(destPath.toString()),
+							fileMimeType
 						);
 
 						// Remove local temp file
@@ -481,7 +490,8 @@ class Uploader {
 		backend: string,
 		client: Client,
 		fileBuffer: Buffer,
-		fileName: string
+		fileName: string,
+		mimeType?: string
 	): Promise<string> {
 		const apiKeys = client.config.uploadConfig?.apiKeys ?? {};
 		const apiUrls = client.config.uploadConfig?.apiUrls ?? {};
@@ -496,30 +506,61 @@ class Uploader {
 			backendDef?.ttl?.find((p) => p.default);
 		const ttlValue = preset?.value;
 
+		const ext = path.extname(fileName);
+		const randomName = crypto.randomBytes(8).toString("hex") + ext;
+
 		switch (backend) {
 			case "x0":
-				return Uploader.handleX0Upload(fileBuffer, fileName, apiUrl || "https://x0.at");
+				return Uploader.handleX0Upload(
+					fileBuffer,
+					randomName,
+					apiUrl || "https://x0.at",
+					mimeType
+				);
 			case "xbackbone":
-				return Uploader.handleXBackboneUpload(fileBuffer, fileName, apiUrl, apiKey);
+				return Uploader.handleXBackboneUpload(
+					fileBuffer,
+					randomName,
+					apiUrl,
+					apiKey,
+					mimeType
+				);
 			case "imagebb":
-				return Uploader.handleImageBBUpload(fileBuffer, fileName, apiKey, ttlValue);
+				return Uploader.handleImageBBUpload(
+					fileBuffer,
+					randomName,
+					apiKey,
+					ttlValue,
+					mimeType
+				);
 			case "catbox":
-				return Uploader.handleCatboxUpload(fileBuffer, fileName, apiKey, ttlValue);
+				return Uploader.handleCatboxUpload(
+					fileBuffer,
+					randomName,
+					apiKey,
+					ttlValue,
+					mimeType
+				);
 			case "uguu":
-				return Uploader.handleUguuUpload(fileBuffer, fileName);
+				return Uploader.handleUguuUpload(fileBuffer, randomName, mimeType);
 			case "quax":
-				return Uploader.handleQuaxUpload(fileBuffer, fileName, ttlValue);
+				return Uploader.handleQuaxUpload(fileBuffer, randomName, ttlValue, mimeType);
 			case "ptpimg":
-				return Uploader.handlePTPImgUpload(fileBuffer, fileName, apiKey);
+				return Uploader.handlePTPImgUpload(fileBuffer, randomName, apiKey, mimeType);
 			default:
 				throw new Error(`Unknown backend: ${backend}`);
 		}
 	}
 
-	static async handleX0Upload(buf: Buffer, name: string, host: string): Promise<string> {
+	static async handleX0Upload(
+		buf: Buffer,
+		name: string,
+		host: string,
+		mimeType?: string
+	): Promise<string> {
 		const hostUrl = host || "https://x0.at";
 		const form = new FormData();
-		form.append("file", new Blob([new Uint8Array(buf)]), name);
+		form.append("file", new Blob([new Uint8Array(buf)], {type: mimeType}), name);
 		form.append("id_length", "16");
 
 		const controller = new AbortController();
@@ -547,10 +588,11 @@ class Uploader {
 		buf: Buffer,
 		name: string,
 		url: string,
-		token: string
+		token: string,
+		mimeType?: string
 	): Promise<string> {
 		const form = new FormData();
-		form.append("file", new Blob([new Uint8Array(buf)]), name);
+		form.append("file", new Blob([new Uint8Array(buf)], {type: mimeType}), name);
 
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), 60000);
@@ -588,10 +630,11 @@ class Uploader {
 		buf: Buffer,
 		name: string,
 		apiKey: string,
-		ttlValue?: string | number
+		ttlValue?: string | number,
+		mimeType?: string
 	): Promise<string> {
 		const form = new FormData();
-		form.append("image", new Blob([new Uint8Array(buf)]), name);
+		form.append("image", new Blob([new Uint8Array(buf)], {type: mimeType}), name);
 		form.append("key", apiKey);
 
 		if (ttlValue !== undefined && ttlValue !== 0 && ttlValue !== "" && ttlValue !== "-") {
@@ -628,10 +671,11 @@ class Uploader {
 		buf: Buffer,
 		name: string,
 		userHash?: string,
-		ttlValue?: string | number
+		ttlValue?: string | number,
+		mimeType?: string
 	): Promise<string> {
 		const form = new FormData();
-		form.append("fileToUpload", new Blob([new Uint8Array(buf)]), name);
+		form.append("fileToUpload", new Blob([new Uint8Array(buf)], {type: mimeType}), name);
 		form.append("reqtype", "fileupload");
 
 		if (userHash) {
@@ -671,9 +715,9 @@ class Uploader {
 		}
 	}
 
-	static async handleUguuUpload(buf: Buffer, name: string): Promise<string> {
+	static async handleUguuUpload(buf: Buffer, name: string, mimeType?: string): Promise<string> {
 		const form = new FormData();
-		form.append("files[]", new Blob([new Uint8Array(buf)]), name);
+		form.append("files[]", new Blob([new Uint8Array(buf)], {type: mimeType}), name);
 
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), 60000);
@@ -704,10 +748,11 @@ class Uploader {
 	static async handleQuaxUpload(
 		buf: Buffer,
 		name: string,
-		ttlValue?: string | number
+		ttlValue?: string | number,
+		mimeType?: string
 	): Promise<string> {
 		const form = new FormData();
-		form.append("files[]", new Blob([new Uint8Array(buf)]), name);
+		form.append("files[]", new Blob([new Uint8Array(buf)], {type: mimeType}), name);
 		form.append("expiry", ttlValue !== undefined ? String(ttlValue) : "-1");
 
 		const controller = new AbortController();
@@ -736,9 +781,14 @@ class Uploader {
 		}
 	}
 
-	static async handlePTPImgUpload(buf: Buffer, name: string, apiKey: string): Promise<string> {
+	static async handlePTPImgUpload(
+		buf: Buffer,
+		name: string,
+		apiKey: string,
+		mimeType?: string
+	): Promise<string> {
 		const form = new FormData();
-		form.append("file", new Blob([new Uint8Array(buf)]), name);
+		form.append("file", new Blob([new Uint8Array(buf)], {type: mimeType}), name);
 		form.append("api_key", apiKey);
 
 		const controller = new AbortController();
