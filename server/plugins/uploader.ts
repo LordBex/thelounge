@@ -402,8 +402,7 @@ class Uploader {
 							effectiveMimeType = fileMimeType;
 						}
 
-						const uploadFileName =
-							fileName || path.basename(destPath.toString());
+						const uploadFileName = fileName || path.basename(destPath.toString());
 
 						log.debug(
 							`Uploading to backend "${backend}": filename="${uploadFileName}", ` +
