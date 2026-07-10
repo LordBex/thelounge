@@ -330,7 +330,7 @@ class Uploader {
 				ctx.drawImage(img, 0, 0);
 
 				canvas.toBlob((blob) => {
-					callback(new File([blob!], file.name));
+					callback(new File([blob!], file.name, {type: file.type}));
 				}, file.type);
 			};
 

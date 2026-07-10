@@ -389,12 +389,34 @@ class Uploader {
 				if (backend !== "local" && destPath && fs.existsSync(destPath)) {
 					try {
 						fileBuffer = fs.readFileSync(destPath);
+						// Prefer server-side content detection over the client-reported
+						// mime type, which is frequently missing or application/octet-stream
+						// (e.g. when the image is re-encoded through the upload canvas).
+						let effectiveMimeType = await Uploader.getFileType(destPath.toString());
+
+						if (
+							(!effectiveMimeType ||
+								effectiveMimeType === "application/octet-stream") &&
+							fileMimeType
+						) {
+							effectiveMimeType = fileMimeType;
+						}
+
+						const uploadFileName =
+							fileName || path.basename(destPath.toString());
+
+						log.debug(
+							`Uploading to backend "${backend}": filename="${uploadFileName}", ` +
+								`mime="${effectiveMimeType ?? "unknown"}" ` +
+								`(client-reported: "${fileMimeType ?? "none"}")`
+						);
+
 						const result = await Uploader.handleExternalBackend(
 							backend,
 							entry.client,
 							fileBuffer,
-							fileName || path.basename(destPath.toString()),
-							fileMimeType
+							uploadFileName,
+							effectiveMimeType ?? undefined
 						);
 
 						// Remove local temp file
