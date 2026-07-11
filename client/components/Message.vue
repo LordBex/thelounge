@@ -61,7 +61,6 @@
 			<span
 				v-if="prettyMessage.type === 'message'"
 				class="from"
-				:class="{'has-badges': prettyMessage.badges && prettyMessage.badges.length}"
 			>
 				<template v-if="prettyMessage.from && prettyMessage.from.nick">
 					<span class="only-copy" aria-hidden="true">&lt;</span>
@@ -80,7 +79,6 @@
 			<span
 				v-else
 				class="from"
-				:class="{'has-badges': prettyMessage.badges && prettyMessage.badges.length}"
 			>
 				<template v-if="prettyMessage.from && prettyMessage.from.nick">
 					<span class="only-copy" aria-hidden="true">-</span>
