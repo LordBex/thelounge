@@ -58,10 +58,7 @@
 			</span>
 		</template>
 		<template v-else>
-			<span
-				v-if="prettyMessage.type === 'message'"
-				class="from"
-			>
+			<span v-if="prettyMessage.type === 'message'" class="from">
 				<template v-if="prettyMessage.from && prettyMessage.from.nick">
 					<span class="only-copy" aria-hidden="true">&lt;</span>
 					<Username :user="prettyMessage.from" :network="network" :channel="channel" />
@@ -76,10 +73,7 @@
 					<span class="only-copy" aria-hidden="true">]&nbsp;</span>
 				</template>
 			</span>
-			<span
-				v-else
-				class="from"
-			>
+			<span v-else class="from">
 				<template v-if="prettyMessage.from && prettyMessage.from.nick">
 					<span class="only-copy" aria-hidden="true">-</span>
 					<Username :user="prettyMessage.from" :network="network" :channel="channel" />
