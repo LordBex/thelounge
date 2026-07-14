@@ -28,6 +28,8 @@ export enum MessageType {
 	PLUGIN = "plugin",
 	WALLOPS = "wallops",
 	MASS_EVENT = "mass_event",
+	WARN = "warn",
+	NOTE = "note",
 }
 
 export type SharedUser = {
