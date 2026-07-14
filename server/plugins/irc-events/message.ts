@@ -28,10 +28,17 @@ type HandleInput = {
 	group?: string;
 	tags?: {[key: string]: string};
 	msgid?: string;
+	/** https://ircv3.net/specs/client-tags/channel-context */
+	channelContext?: string;
 };
 
 function convertForHandle(type: MessageType, data: MessageEventArgs): HandleInput {
-	return {...data, type: type, msgid: data.tags?.msgid};
+	return {
+		...data,
+		type: type,
+		msgid: data.tags?.msgid,
+		channelContext: data.tags?.["+channel-context"],
+	};
 }
 
 function decodeMessage(message: string, encoding?: string): string {
@@ -137,7 +144,19 @@ export default <IrcEventHandler>function (this: Client, irc, network) {
 				target = data.nick;
 			}
 
-			chan = network.getChannel(target);
+			// +channel-context: route private messages to the specified channel
+			// https://ircv3.net/specs/client-tags/channel-context
+			if (data.channelContext && target === data.nick) {
+				const contextChan = network.getChannel(data.channelContext);
+
+				if (contextChan && contextChan.type === ChanType.CHANNEL) {
+					chan = contextChan;
+				}
+			}
+
+			if (!chan) {
+				chan = network.getChannel(target);
+			}
 
 			if (typeof chan === "undefined") {
 				// Check if this is an encrypted FiSH message - these need their own query window
