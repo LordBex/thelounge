@@ -27,6 +27,7 @@ type ClientChan = Omit<SharedChan, "messages"> & {
 	historyLoading: boolean;
 	scrolledToBottom: boolean;
 	usersOutdated: boolean;
+	typingNicks: string[];
 
 	users: ClientUser[];
 };

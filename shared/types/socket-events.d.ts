@@ -1,3 +1,4 @@
+import type {TypingStatus} from "./typing.js";
 import {SharedMention} from "./mention.js";
 import {ChanState, SharedChan, UserGroup} from "./chan.js";
 import {SharedNetwork, SharedServerOptions} from "./network.js";
@@ -99,6 +100,13 @@ interface ServerToClientEvents {
 
 	quit: EventHandler<{network: string}>;
 
+	typing: EventHandler<{
+		network: string;
+		chan: number;
+		nick: string;
+		status: TypingStatus;
+	}>;
+
 	error: (error: unknown) => void;
 
 	connecting: NoPayloadEventHandler;
@@ -191,6 +199,8 @@ interface ClientToServerEvents {
 	"history:clear": EventHandler<{target: number}>;
 
 	search: EventHandler<SearchQuery>;
+
+	typing: EventHandler<{target: number; status: TypingStatus}>;
 }
 
 // Socket.IO requires these interfaces to be defined even if empty

@@ -18,6 +18,7 @@ import Identification from "./identification.js";
 import changelog from "./plugins/changelog.js";
 import inputs from "./plugins/inputs/index.js";
 import Auth from "./plugins/auth.js";
+import {VALID_TYPING_STATUSES} from "../shared/types/typing.js";
 
 import themes from "./plugins/packages/themes.js";
 themes.loadLocalThemes();
@@ -513,6 +514,38 @@ function initializeClient(
 		if (_.isPlainObject(data)) {
 			client.input(data);
 		}
+	});
+
+	socket.on("typing", (data) => {
+		if (!_.isPlainObject(data)) {
+			return;
+		}
+
+		const status = data.status;
+
+		if (!VALID_TYPING_STATUSES.has(status)) {
+			return;
+		}
+
+		const target = client.find(data.target);
+
+		if (!target) {
+			return;
+		}
+
+		const {network, chan} = target;
+
+		if (chan.type !== ChanType.CHANNEL && chan.type !== ChanType.QUERY) {
+			return;
+		}
+
+		const irc = network.irc;
+
+		if (!irc?.network?.cap?.isEnabled("message-tags")) {
+			return;
+		}
+
+		irc.tagmsg(chan.name, {"+typing": status});
 	});
 
 	socket.on("more", (data) => {

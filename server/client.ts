@@ -56,6 +56,7 @@ const events = [
 	"sasl",
 	"spgroups",
 	"spjoin",
+	"tagmsg",
 	"topic",
 	"welcome",
 	"whois",
