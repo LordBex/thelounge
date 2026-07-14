@@ -7,4 +7,5 @@ export type SharedUser = {
 	lastMessage: number;
 	original?: Omit<SharedUser, "original">;
 	string?: string;
+	isBot: boolean;
 };

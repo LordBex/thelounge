@@ -46,9 +46,11 @@ export default <IrcEventHandler>function (irc, network) {
 			self: data.nick === irc.user.nick,
 		});
 
+		const isBot = "bot" in (data.tags || {});
+
 		// User list update callback - executed regardless of buffering
 		const updateUserList = () => {
-			chan.setUser(new User({nick: data.nick}));
+			chan.setUser(new User({nick: data.nick, isBot}));
 			this.emit("users", {
 				chan: chan.id,
 			});
