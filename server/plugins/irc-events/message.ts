@@ -13,7 +13,7 @@ import Config from "../../config.js";
 import iconv from "iconv-lite";
 import {isDH1080Message, handleDH1080Message} from "./dh1080.js";
 
-const nickRegExp = /(?:\x03[0-9]{1,2}(?:,[0-9]{1,2})?)?([\w[\]\\`^{|}-]+)/g;
+const nickRegExp = /(?:\x03[0-9]{1,2}(?:,[0-9]{1,2})?)?([\p{Letter}\p{Number}_[\]\\`^{|}-]+)/gu;
 
 type HandleInput = {
 	nick: string;
