@@ -254,6 +254,7 @@ export default <IrcEventHandler>function (irc, network) {
 		}
 
 		network.serverOptions.NETWORK = data.options.NETWORK;
+		network.serverOptions.supportsReply = irc.network.supportsTag("reply");
 
 		this.emit("network:options", {
 			network: network.uuid,

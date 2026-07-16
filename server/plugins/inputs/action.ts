@@ -7,7 +7,7 @@ import Config from "../../config.js";
 
 const commands = ["slap", "me"];
 
-const input: PluginInputHandler = function ({irc}, chan, cmd, args) {
+const input: PluginInputHandler = function (network, chan, cmd, args, extras) {
 	if (chan.type !== ChanType.CHANNEL && chan.type !== ChanType.QUERY) {
 		chan.pushMessage(
 			this,
@@ -20,27 +20,33 @@ const input: PluginInputHandler = function ({irc}, chan, cmd, args) {
 		return;
 	}
 
+	const irc = network.irc;
 	let text;
 
 	switch (cmd) {
 		case "slap":
 			text = "slaps " + args[0] + " around a bit with a large trout";
 		/* fall through */
-		case "me":
+
+		case "me": {
 			if (args.length === 0) {
 				break;
 			}
 
 			text = text || args.join(" ");
 
+			const replyTo = extras?.replyTo;
+			const replyTags =
+				replyTo && network.serverOptions.supportsReply ? {"+reply": replyTo} : undefined;
+
 			// If FiSH key is set, encrypt CTCP ACTION and send as normal PRIVMSG with +OK
 			if (Config.values.fish.enabled && chan.blowfishKey) {
 				const mode: FishMode = chan.blowfishMode || "ecb";
 				const ctcp = "\x01ACTION " + text + "\x01";
 				const toSend = createFishMessage(ctcp, chan.blowfishKey, mode);
-				irc.say(chan.name, toSend);
+				irc.say(chan.name, toSend, replyTags);
 			} else {
-				irc.action(chan.name, text);
+				irc.action(chan.name, text, replyTags);
 			}
 
 			// If the IRCd does not support echo-message, simulate the message
@@ -50,10 +56,12 @@ const input: PluginInputHandler = function ({irc}, chan, cmd, args) {
 					nick: irc.user.nick,
 					target: chan.name,
 					message: text,
+					tags: replyTo ? {"+reply": replyTo} : undefined,
 				});
 			}
 
 			break;
+		}
 	}
 
 	return true;

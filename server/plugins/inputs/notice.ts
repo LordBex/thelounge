@@ -4,7 +4,7 @@ import Config from "../../config.js";
 
 const commands = ["notice"];
 
-const input: PluginInputHandler = function (network, chan, cmd, args) {
+const input: PluginInputHandler = function (network, chan, cmd, args, extras) {
 	if (!args[1]) {
 		return;
 	}
@@ -21,6 +21,11 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 		const mode: FishMode = targetChan?.blowfishMode || "ecb";
 		message = key ? createFishMessage(message, key, mode) : message;
 	}
+
+	const replyTo = extras?.replyTo;
+	const replyTags =
+		replyTo && network.serverOptions.supportsReply ? {"+reply": replyTo} : undefined;
+	network.irc.notice(targetName, message, replyTags);
 
 	// If the IRCd does not support echo-message, simulate the message
 	// being sent back to us.
@@ -44,6 +49,7 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 			target: targetName,
 			group: targetGroup,
 			message: message,
+			tags: replyTo ? {"+reply": replyTo} : undefined,
 		});
 	}
 

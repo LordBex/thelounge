@@ -10,6 +10,7 @@ import {
 	type FishMode,
 } from "../../utils/fish.js";
 import Config from "../../config.js";
+import IrcFramework from "irc-framework";
 
 const commands = ["query", "msg", "say"];
 
@@ -23,7 +24,7 @@ function getTarget(cmd: string, args: string[], chan: Chan) {
 	}
 }
 
-const input: PluginInputHandler = function (network, chan, cmd, args) {
+const input: PluginInputHandler = function (network, chan, cmd, args, extras) {
 	let targetName = getTarget(cmd, args, chan);
 
 	if (cmd === "query") {
@@ -100,6 +101,10 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 		return true;
 	}
 
+	const replyTo = extras?.replyTo;
+	const replyTags =
+		replyTo && network.serverOptions.supportsReply ? {"+reply": replyTo} : undefined;
+
 	// When FiSH is active and a key exists for this target, split the plaintext first
 	// so that each chunk, after encryption, fits within the IRC message length limit.
 	// Encrypting first and then letting irc.say() split would corrupt the ciphertext.
@@ -130,10 +135,19 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 			}
 
 			const echoChannel = noEcho ? network.getChannel(echoTargetName) : undefined;
+			let chunkReplyTags = replyTags;
 
 			for (const chunk of splitPlaintext(msg, maxBytes)) {
 				const encrypted = createFishMessage(chunk, key, mode);
-				network.irc.raw("PRIVMSG", targetName, encrypted);
+
+				// Only the first chunk is marked as reply
+				if (chunkReplyTags) {
+					const ircMessage = new IrcFramework.Message("PRIVMSG", targetName, encrypted);
+					ircMessage.tags = chunkReplyTags;
+					network.irc.raw(ircMessage);
+				} else {
+					network.irc.raw("PRIVMSG", targetName, encrypted);
+				}
 
 				if (noEcho && typeof echoChannel !== "undefined") {
 					network.irc.emit("privmsg", {
@@ -143,15 +157,18 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 						target: echoTargetName,
 						group: echoGroup,
 						message: encrypted,
+						tags: chunkReplyTags,
 					});
 				}
+
+				chunkReplyTags = undefined;
 			}
 
 			return true;
 		}
 	}
 
-	network.irc.say(targetName, msg);
+	network.irc.say(targetName, msg, replyTags);
 
 	// If the IRCd does not support echo-message, simulate the message
 	// being sent back to us. Emit the same text we sent (encrypted or plain)
@@ -175,6 +192,7 @@ const input: PluginInputHandler = function (network, chan, cmd, args) {
 				target: targetName,
 				group: targetGroup,
 				message: msg,
+				tags: replyTo ? {"+reply": replyTo} : undefined,
 			});
 		}
 	}

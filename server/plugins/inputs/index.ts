@@ -5,17 +5,28 @@ import Network, {NetworkWithIrcFramework} from "../../models/network.js";
 import {PackageInfo} from "../packages/index.js";
 import PublicClient from "../packages/publicClient.js";
 
+export type InputExtras = {
+	replyTo?: string;
+};
+
 export type PluginInputHandler = (
 	this: Client,
 	network: NetworkWithIrcFramework,
 	chan: Channel,
 	cmd: string,
-	args: string[]
+	args: string[],
+	extras?: InputExtras
 ) => void;
 
 type Plugin = {
 	commands: string[];
-	input: (network: Network, chan: Chan, cmd: string, args: string[]) => void;
+	input: (
+		network: Network,
+		chan: Chan,
+		cmd: string,
+		args: string[],
+		extras?: InputExtras
+	) => void;
 	allowDisconnected?: boolean;
 };
 
@@ -83,7 +94,13 @@ for (const input of builtInInputs) {
 			(plugin: {
 				default: {
 					commands: string[];
-					input: (network: Network, chan: Chan, cmd: string, args: string[]) => void;
+					input: (
+						network: Network,
+						chan: Chan,
+						cmd: string,
+						args: string[],
+						extras?: InputExtras
+					) => void;
 					allowDisconnected?: boolean;
 				};
 			}) => {

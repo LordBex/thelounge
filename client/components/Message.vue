@@ -19,6 +19,11 @@
 				: prettyMessage.from.nick)
 		"
 		:data-bridged="prettyMessage.from?.shoutbox"
+		:data-msgid="message.msgid"
+		@touchstart.passive="onTouchStart"
+		@touchend="onTouchEnd"
+		@touchmove="onTouchCancel"
+		@touchcancel="onTouchCancel"
 	>
 		<span
 			aria-hidden="true"
@@ -41,6 +46,12 @@
 		<template v-else-if="prettyMessage.type === 'action'">
 			<span class="from"><span class="only-copy">*&nbsp;</span></span>
 			<span class="content" dir="auto">
+				<ReplyContext
+					v-if="message.replyTo"
+					:message="message"
+					:parent-in-history="parentInHistory"
+					@scroll-to-parent="scrollToParent"
+				/>
 				<StatusmsgMarker :group="prettyMessage.statusmsgGroup" />
 				<Username
 					:user="prettyMessage.from"
@@ -82,6 +93,12 @@
 				</template>
 			</span>
 			<span class="content" dir="auto">
+				<ReplyContext
+					v-if="message.replyTo"
+					:message="message"
+					:parent-in-history="parentInHistory"
+					@scroll-to-parent="scrollToParent"
+				/>
 				<span
 					v-if="prettyMessage.showInActive"
 					aria-label="This message was shown in your active channel"
@@ -98,79 +115,17 @@
 					:channel="channel"
 				/>
 			</span>
-			<span class="actions">
-				<span v-if="canReply" class="reply-action">
-					<button
-						type="button"
-						class="reply-button"
-						aria-label="Reply to message"
-						title="Reply to message"
-						@click="replyToMessage"
-					>
-						<span aria-hidden="true">
-							<i class="fas fa-reply" style="width: 35px"></i>
-						</span>
-					</button>
-				</span>
-				<i
-					v-for="(action, id) in messageActions"
-					:key="id"
-					:class="['msg-action', action.class]"
-					@click="action.callback(prettyMessage)"
-				></i>
-			</span>
 		</template>
+		<div v-if="canReply" class="msg-actions">
+			<span class="tooltipped tooltipped-w tooltipped-no-touch" aria-label="Reply"
+				><button class="msg-action-reply" aria-label="Reply" @click.stop="startReply"
+			/></span>
+		</div>
 	</div>
 </template>
 
-<style scoped>
-#chat .msg .actions {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.25rem;
-	margin-left: auto;
-	opacity: 0;
-	pointer-events: none;
-	transition: opacity 0.15s ease;
-	position: absolute;
-	height: 25px;
-	z-index: 1;
-	top: -5px;
-	right: 5px;
-}
-
-#chat .msg:hover .actions,
-#chat .msg:focus-within .actions,
-#chat .msg.is-focused .actions {
-	opacity: 1;
-	pointer-events: auto;
-}
-
-#chat .msg .reply-action {
-	display: inline-flex;
-	align-items: center;
-}
-
-#chat .msg .reply-button {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	padding: 0;
-	line-height: 1;
-	background: transparent;
-	border: 0;
-	color: inherit;
-}
-
-#chat .msg .reply-button:hover,
-#chat .msg .reply-button:focus {
-	color: var(--button-color);
-	opacity: 1;
-}
-</style>
-
 <script lang="ts">
-import {computed, defineComponent, PropType} from "vue";
+import {computed, defineComponent, onBeforeUnmount, PropType} from "vue";
 import dayjs from "dayjs";
 
 import constants from "../js/constants";
@@ -179,6 +134,7 @@ import localetime from "../js/helpers/localetime";
 import Username from "./Username.vue";
 import LinkPreview from "./LinkPreview.vue";
 import ParsedMessage from "./ParsedMessage.vue";
+import ReplyContext from "./ReplyContext.vue";
 import MessageTypes from "./MessageTypes";
 import StatusmsgMarker from "./StatusmsgMarker.vue";
 import MessageBadges from "./MessageBadges.vue";
@@ -198,6 +154,7 @@ export default defineComponent({
 	name: "Message",
 	components: {
 		...MessageTypes,
+		ReplyContext,
 		StatusmsgMarker,
 		MessageBadges,
 	},
@@ -211,6 +168,8 @@ export default defineComponent({
 	},
 	setup(props) {
 		const store = useStore();
+		let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+		let highlightTimer: ReturnType<typeof setTimeout> | null = null;
 
 		const timeFormat = computed(() => {
 			let format: keyof typeof constants.timeFormats;
@@ -236,14 +195,6 @@ export default defineComponent({
 			return "message-" + (props.message.type || "invalid"); // TODO: force existence of type in sharedmsg
 		});
 
-		const isAction = () => {
-			if (!props.message.type) {
-				return false;
-			}
-
-			return typeof MessageTypes["message-" + props.message.type] !== "undefined";
-		};
-
 		// IRC Bridge formatter
 		const prettyMessage = computed(() => {
 			if (
@@ -257,36 +208,36 @@ export default defineComponent({
 			return shoutboxParser(props.message);
 		});
 
+		// Without server +reply support, replying falls back to pre-filling "nick: "
 		const canReply = computed(() => {
 			if (store.state.settings.enableReplyToMessage === false) {
 				return false;
 			}
 
-			return Boolean(prettyMessage.value.from?.nick && props.message.text);
-		});
+			if (!prettyMessage.value.from?.nick || !props.message.text) {
+				return false;
+			}
 
-		const messageActions = computed(() => {
+			const t = props.message.type;
 			return (
-				(
-					prettyMessage.value as ClientMessage & {
-						actions?: Array<{
-							class: string;
-							callback: (message: ClientMessage) => void;
-						}>;
-					}
-				).actions || []
+				t === MessageType.MESSAGE || t === MessageType.ACTION || t === MessageType.NOTICE
 			);
 		});
 
-		const replyToMessage = () => {
-			const nick = prettyMessage.value.from?.nick;
-			const content = prettyMessage.value.text;
-
-			if (!nick || !content) {
-				return;
+		const parentInHistory = computed(() => {
+			if (!props.message.replyTo || !props.channel) {
+				return false;
 			}
 
-			eventbus.emit("message:reply", `\x02${nick}\x02: \x0314,99"\x1D${content}\x1D"\x03`);
+			return props.channel.messages.some((m) => m.msgid === props.message.replyTo);
+		});
+
+		const isAction = () => {
+			if (!props.message.type) {
+				return false;
+			}
+
+			return typeof MessageTypes["message-" + props.message.type] !== "undefined";
 		};
 
 		const requestReleaseName = computed(() => {
@@ -315,17 +266,96 @@ export default defineComponent({
 			return releaseName.length > 0 ? releaseName : null;
 		});
 
+		const startReply = () => {
+			// Use the parsed message so bridged shoutbox messages reply to the real user
+			eventbus.emit("reply:start", {
+				msgid: props.message.msgid,
+				nick: prettyMessage.value.from?.nick,
+				text: prettyMessage.value.text,
+			});
+		};
+
+		const scrollToParent = () => {
+			if (!props.message.replyTo) {
+				return;
+			}
+
+			const el = document.querySelector(
+				`.msg[data-msgid="${CSS.escape(props.message.replyTo)}"]`
+			);
+
+			if (el) {
+				const wasHighlighted = el.classList.contains("highlight");
+
+				el.scrollIntoView({block: "center", behavior: "smooth"});
+				el.classList.add("highlight");
+
+				if (highlightTimer !== null) {
+					clearTimeout(highlightTimer);
+				}
+
+				highlightTimer = setTimeout(() => {
+					highlightTimer = null;
+
+					// We don't want to reset e.g. pings/keyword matches
+					if (!wasHighlighted) {
+						el.classList.remove("highlight");
+					}
+				}, 2000);
+			}
+		};
+
+		const onTouchStart = () => {
+			if (canReply.value) {
+				longPressTimer = setTimeout(() => {
+					longPressTimer = null;
+					startReply();
+				}, 500);
+			}
+		};
+
+		const clearLongPress = () => {
+			if (longPressTimer !== null) {
+				clearTimeout(longPressTimer);
+				longPressTimer = null;
+			}
+		};
+
+		const onTouchEnd = (e: TouchEvent) => {
+			if (longPressTimer === null && canReply.value) {
+				e.preventDefault();
+			}
+
+			clearLongPress();
+		};
+
+		const onTouchCancel = () => {
+			clearLongPress();
+		};
+
+		onBeforeUnmount(() => {
+			clearLongPress();
+
+			if (highlightTimer !== null) {
+				clearTimeout(highlightTimer);
+			}
+		});
+
 		return {
 			timeFormat,
 			prettyMessage,
 			messageTime,
 			messageTimeLocale,
 			messageComponent,
-			isAction,
 			canReply,
-			messageActions,
-			replyToMessage,
+			parentInHistory,
+			isAction,
 			requestReleaseName,
+			startReply,
+			scrollToParent,
+			onTouchStart,
+			onTouchEnd,
+			onTouchCancel,
 		};
 	},
 });

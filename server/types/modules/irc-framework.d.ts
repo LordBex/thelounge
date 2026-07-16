@@ -126,6 +126,7 @@ declare module "irc-framework" {
 
 			supports(feature: "MODES"): string;
 			supports(feature: string): boolean;
+			supportsTag(tag_name: string): boolean;
 		};
 		// End of added by Max
 
@@ -169,6 +170,7 @@ declare module "irc-framework" {
 		startPeriodicPing(): void;
 
 		raw(...raw_data_line: string[]): void;
+		raw(message: Message): void;
 
 		rawString(...parameters: Array<string>): string;
 
@@ -180,11 +182,16 @@ declare module "irc-framework" {
 
 		changeNick(nick: string): void;
 
-		sendMessage(commandName: string, target: string, message: string): string[];
+		sendMessage(
+			commandName: string,
+			target: string,
+			message: string,
+			tags?: {[key: string]: string}
+		): string[];
 
-		say(target: string, message: string): string[];
+		say(target: string, message: string, tags?: {[key: string]: string}): string[];
 
-		notice(target: string, message: string): string[];
+		notice(target: string, message: string, tags?: {[key: string]: string}): string[];
 
 		join(channel: string, key?: string): void;
 
@@ -215,7 +222,7 @@ declare module "irc-framework" {
 
 		ctcpResponse(target: string, type: string, ...params: Array<string>): void;
 
-		action(target: string, message: string): string[];
+		action(target: string, message: string, tags?: {[key: string]: string | boolean}): string[];
 
 		tagmsg(target: string, tags: {[key: string]: string}): void;
 

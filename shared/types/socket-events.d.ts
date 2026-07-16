@@ -145,7 +145,7 @@ interface ClientToServerEvents {
 
 	names: EventHandler<{target: number}>;
 
-	input: EventHandler<{target: number; text: string}>;
+	input: EventHandler<{target: number; text: string; replyTo?: string}>;
 
 	"upload:auth": (backend: string) => void;
 	"upload:ping": (token: string) => void;

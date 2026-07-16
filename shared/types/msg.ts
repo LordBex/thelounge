@@ -127,4 +127,8 @@ export type SharedMsg = {
 	params?: string[];
 	massEventSummary?: MassEventSummary;
 	badges?: MessageBadge[];
+
+	replyTo?: string;
+	replyToNick?: string;
+	replyToText?: string;
 };

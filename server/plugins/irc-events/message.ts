@@ -30,6 +30,8 @@ type HandleInput = {
 	msgid?: string;
 	/** https://ircv3.net/specs/client-tags/channel-context */
 	channelContext?: string;
+	/** https://ircv3.net/specs/client-tags/reply */
+	replyTo?: string;
 };
 
 function convertForHandle(type: MessageType, data: MessageEventArgs): HandleInput {
@@ -38,6 +40,7 @@ function convertForHandle(type: MessageType, data: MessageEventArgs): HandleInpu
 		type: type,
 		msgid: data.tags?.msgid,
 		channelContext: data.tags?.["+channel-context"],
+		replyTo: data.tags?.["+reply"],
 	};
 }
 
@@ -245,7 +248,25 @@ export default <IrcEventHandler>function (this: Client, irc, network) {
 			highlight: highlight,
 			users: [],
 			msgid: data.msgid,
+			replyTo: data.replyTo,
 		});
+
+		if (data.replyTo && chan) {
+			const parentMsg = chan.messages.find((m) => m.msgid === data.replyTo);
+
+			if (parentMsg) {
+				msg.replyToNick = parentMsg.from?.nick;
+				const cleanReplyToText = parentMsg.text
+					? cleanIrcMessage(parentMsg.text)
+					: parentMsg.text;
+				msg.replyToText = cleanReplyToText?.substring(0, 200);
+
+				// Replies to our own messages should highlight like a mention
+				if (parentMsg.self && !msg.self) {
+					msg.highlight = true;
+				}
+			}
+		}
 
 		if (showInActive) {
 			msg.showInActive = true;
