@@ -24,8 +24,15 @@ function getTarget(cmd: string, args: string[], chan: Chan) {
 	}
 }
 
+// irc-framework rejects a batch that is over the network's advertised
+// draft/multiline limits before anything is written to the socket
+function isMultilineLimitError(error: unknown) {
+	const code = (error as {code?: string} | undefined)?.code;
+	return code === "MULTILINE_MAX_BYTES" || code === "MULTILINE_MAX_LINES";
+}
+
 const input: PluginInputHandler = function (network, chan, cmd, args, extras) {
-	let targetName = getTarget(cmd, args, chan);
+	const targetName = getTarget(cmd, args, chan);
 
 	if (cmd === "query") {
 		if (!targetName) {
@@ -137,7 +144,14 @@ const input: PluginInputHandler = function (network, chan, cmd, args, extras) {
 			const echoChannel = noEcho ? network.getChannel(echoTargetName) : undefined;
 			let chunkReplyTags = replyTags;
 
-			for (const chunk of splitPlaintext(msg, maxBytes)) {
+			// FiSH-encrypted text can't be sent as a draft/multiline batch,
+			// so each line is encrypted and sent on its own
+			const fishChunks = msg
+				.split(/\r?\n/)
+				.filter((line) => line.length > 0)
+				.flatMap((line) => splitPlaintext(line, maxBytes));
+
+			for (const chunk of fishChunks) {
 				const encrypted = createFishMessage(chunk, key, mode);
 
 				// Only the first chunk is marked as reply
@@ -168,33 +182,59 @@ const input: PluginInputHandler = function (network, chan, cmd, args, extras) {
 		}
 	}
 
-	network.irc.say(targetName, msg, replyTags);
 
-	// If the IRCd does not support echo-message, simulate the message
-	// being sent back to us. Emit the same text we sent (encrypted or plain)
-	// so that inbound pipeline can decrypt and store plaintext.
-	if (!network.irc.network.cap.isEnabled("echo-message")) {
-		const parsedTarget = network.irc.network.extractTargetGroup(targetName);
-		let targetGroup: string | undefined = undefined;
+	const lines = msg.split(/\r?\n/);
 
-		if (parsedTarget) {
-			targetName = parsedTarget.target;
-			targetGroup = parsedTarget.target_group;
+	// Networks supporting draft/multiline take the whole message as a single batch.
+	// multilineLimits() is null when the cap is missing or advertises no limits, in
+	// which case the framework sends line by line anyway.
+	let batched = lines.length > 1 && network.irc.network.multilineLimits() !== null;
+
+	if (batched) {
+		try {
+			network.irc.sayMultiline(targetName, lines, replyTags);
+		} catch (error) {
+			if (!isMultilineLimitError(error)) {
+				throw error;
+			}
+
+			// Over the network's max-bytes / max-lines, deliver as separate messages.
+			batched = false;
 		}
+	}
 
-		const channel = network.getChannel(targetName);
+	// Blank lines carry no text, the IRCd would reject them (ERR_NOTEXTTOSEND)
+	const sentLines = lines.filter((line) => line.length > 0);
 
-		if (typeof channel !== "undefined") {
-			network.irc.emit("privmsg", {
-				nick: network.irc.user.nick,
-				ident: network.irc.user.username,
-				hostname: network.irc.user.host,
-				target: targetName,
-				group: targetGroup,
-				message: msg,
-				tags: replyTo ? {"+reply": replyTo} : undefined,
-			});
-		}
+	if (!batched) {
+		sentLines.forEach((line) => network.irc.say(targetName, line, replyTags));
+	}
+
+	if (network.irc.network.cap.isEnabled("echo-message")) {
+		return true;
+	}
+
+	const parsedTarget = network.irc.network.extractTargetGroup(targetName);
+	const echoTarget = parsedTarget ? parsedTarget.target : targetName;
+	const targetGroup = parsedTarget ? parsedTarget.target_group : undefined;
+
+	if (typeof network.getChannel(echoTarget) === "undefined") {
+		return true;
+	}
+
+	const echoBase = {
+		nick: network.irc.user.nick,
+		ident: network.irc.user.username,
+		hostname: network.irc.user.host,
+		target: echoTarget,
+		group: targetGroup,
+		tags: replyTo ? {"+reply": replyTo} : undefined,
+	};
+
+	if (batched) {
+		network.irc.emit("privmsg", {...echoBase, message: lines.join("\n"), multiline: true});
+	} else {
+		sentLines.forEach((line) => network.irc.emit("privmsg", {...echoBase, message: line}));
 	}
 
 	return true;

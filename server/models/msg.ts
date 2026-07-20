@@ -50,6 +50,7 @@ class Msg {
 	params!: string[];
 	massEventSummary?: MassEventSummary;
 	badges?: MessageBadge[];
+	multiline?: boolean;
 
 	constructor(attr?: Partial<Msg>) {
 		// Some properties need to be copied in the Msg object instead of referenced

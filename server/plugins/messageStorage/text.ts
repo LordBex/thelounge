@@ -100,6 +100,11 @@ class TextFileMessageStorage implements MessageStorage {
 				return;
 		}
 
+		// Split draft/multiline messages into individual lines
+		if (line.includes("\n")) {
+			line = line.replaceAll("\n", `\n[${msg.time.toISOString()}] | `);
+		}
+
 		line += "\n";
 
 		try {

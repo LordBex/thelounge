@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions -- Chai expect statements */
 import {expect} from "chai";
 import util from "../util.ts";
-import tagmsg from "../../dist/server/plugins/irc-events/tagmsg.js";
-import Chan from "../../dist/server/models/chan.js";
-import {ChanType} from "../../dist/shared/types/chan.js";
+import tagmsg from "../../server/plugins/irc-events/tagmsg.js";
+import Chan from "../../server/models/chan.js";
+import {ChanType} from "../../shared/types/chan.js";
 
 describe("tagmsg handler", function () {
 	let irc: any;

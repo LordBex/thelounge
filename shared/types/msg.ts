@@ -131,4 +131,5 @@ export type SharedMsg = {
 	replyTo?: string;
 	replyToNick?: string;
 	replyToText?: string;
+	multiline?: boolean;
 };
