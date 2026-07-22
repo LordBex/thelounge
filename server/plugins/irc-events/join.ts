@@ -1,10 +1,47 @@
 import Msg from "../../models/msg.js";
+import Chan from "../../models/chan.js";
 import User from "../../models/user.js";
 import type {IrcEventHandler} from "../../client.js";
 import {MessageType} from "../../../shared/types/msg.js";
-import {ChanState} from "../../../shared/types/chan.js";
+import {ChanType, ChanState} from "../../../shared/types/chan.js";
 
 export default <IrcEventHandler>function (irc, network) {
+	const performWhoOnChannel = (chan: Chan) => {
+		if (chan.type !== ChanType.CHANNEL) {
+			return;
+		}
+
+		irc.who(chan.name, (whoData: {users: {nick: string; away: boolean}[]}) => {
+			for (const whoUser of whoData.users) {
+				const user = chan.findUser(whoUser.nick);
+
+				if (user && (!whoUser.away || !user.away)) {
+					// WHO only tells us whether they are away, not why, so keep a
+					// reason we already have from away-notify
+					user.away = whoUser.away ? "away" : "";
+				}
+
+				// Sync away status to matching query channel
+				const away = whoUser.away ? "away" : null;
+				const queryChan = network.getChannel(whoUser.nick);
+
+				if (queryChan?.type === ChanType.QUERY && queryChan.userAway !== away) {
+					queryChan.userAway = away;
+
+					this.emit("user:away", {
+						chan: queryChan.id,
+						nick: whoUser.nick,
+						away: away,
+					});
+				}
+			}
+
+			this.emit("users", {
+				chan: chan.id,
+			});
+		});
+	};
+
 	irc.on("join", (data) => {
 		let chan = network.getChannel(data.channel);
 
@@ -68,6 +105,11 @@ export default <IrcEventHandler>function (irc, network) {
 			// Not in mass event mode - process normally
 			chan.pushMessage(this, msg);
 			updateUserList();
+		}
+
+		// When we join a channel, send WHO to get initial away statuses
+		if (data.nick === irc.user.nick) {
+			performWhoOnChannel(chan);
 		}
 	});
 };

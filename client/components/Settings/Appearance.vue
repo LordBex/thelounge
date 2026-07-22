@@ -205,6 +205,14 @@
 			</label>
 			<label class="opt">
 				<input
+					:checked="store.state.settings.statusIndicators"
+					type="checkbox"
+					name="statusIndicators"
+				/>
+				Show online/away status indicators
+			</label>
+			<label class="opt">
+				<input
 					:checked="store.state.settings.autocomplete"
 					type="checkbox"
 					name="autocomplete"

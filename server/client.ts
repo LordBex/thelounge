@@ -47,6 +47,7 @@ const events = [
 	"list",
 	"mode",
 	"modelist",
+	"monitor",
 	"motd",
 	"message",
 	"names",
@@ -841,6 +842,10 @@ class Client {
 	}
 
 	part(network: Network, chan: Chan) {
+		if (chan.type === ChanType.QUERY) {
+			network.removeMonitor(chan.name);
+		}
+
 		network.channels = _.without(network.channels, chan);
 		this.mentions = this.mentions.filter((msg) => !(msg.chanId === chan.id));
 		chan.destroy();

@@ -39,7 +39,8 @@ class Chan {
 	blowfishKey?: string;
 	blowfishMode?: import("../utils/fish.js").FishMode;
 
-	userAway?: boolean;
+	isOnline?: boolean | null;
+	userAway!: string | null;
 	special?: SpecialChanType;
 	data?: unknown;
 	closed?: boolean;
@@ -61,7 +62,12 @@ class Chan {
 			users: new Map(),
 			muted: false,
 			pinned: false,
+			userAway: null,
 		});
+
+		if (this.type === ChanType.QUERY) {
+			this.isOnline = this.isOnline ?? null;
+		}
 	}
 
 	destroy() {
@@ -226,6 +232,8 @@ class Chan {
 			state: this.state,
 			pinned: this.pinned,
 
+			isOnline: this.isOnline,
+			userAway: this.userAway,
 			special: this.special,
 			data: this.data,
 			closed: this.closed,

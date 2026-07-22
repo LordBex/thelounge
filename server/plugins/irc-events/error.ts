@@ -6,6 +6,10 @@ import {MessageType} from "../../../shared/types/msg.js";
 
 export default <IrcEventHandler>function (irc, network) {
 	irc.on("irc error", (data) => {
+		if (data.error === "monitor_list_full") {
+			return;
+		}
+
 		const msg = new Msg({
 			type: MessageType.ERROR,
 			error: data.error,

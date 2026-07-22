@@ -5,7 +5,7 @@ import {ChanType} from "../../../shared/types/chan.js";
 
 export default <IrcEventHandler>function (irc, network) {
 	const handleAway = (type: MessageType, data) => {
-		const away = data.message;
+		const away = data.message ?? null;
 
 		if (data.self) {
 			const msg = new Msg({
@@ -37,6 +37,12 @@ export default <IrcEventHandler>function (irc, network) {
 					// because query windows have no users
 					chan.userAway = away;
 
+					this.emit("user:away", {
+						chan: chan.id,
+						nick: data.nick,
+						away: away,
+					});
+
 					user = chan.getUser(data.nick);
 
 					const msg = new Msg({
@@ -59,6 +65,12 @@ export default <IrcEventHandler>function (irc, network) {
 					}
 
 					user.away = away;
+
+					this.emit("user:away", {
+						chan: chan.id,
+						nick: data.nick,
+						away: away,
+					});
 
 					break;
 				}

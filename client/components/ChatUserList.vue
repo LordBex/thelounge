@@ -39,16 +39,15 @@
 						{{ group }}
 					</div>
 					<template v-if="userSearchInput.length > 0">
-						<!-- eslint-disable vue/no-v-text-v-html-on-component -->
 						<Username
 							v-for="user in users"
 							:key="user.original!.nick + '-search'"
 							:on-hover="hoverUser"
 							:active="user.original === activeUser"
 							:user="user.original!"
-							v-html="user.string"
+							:include-status-icon="showStatusIndicators"
+							:html="user.string"
 						/>
-						<!-- eslint-enable -->
 					</template>
 					<template v-else>
 						<Username
@@ -57,6 +56,7 @@
 							:on-hover="hoverUser"
 							:active="user === activeUser"
 							:user="user"
+							:include-status-icon="showStatusIndicators"
 						/>
 					</template>
 				</div>
@@ -69,16 +69,15 @@
 					:class="['user-mode', getModeClass(String(mode))]"
 				>
 					<template v-if="userSearchInput.length > 0">
-						<!-- eslint-disable vue/no-v-text-v-html-on-component -->
 						<Username
 							v-for="user in users"
 							:key="user.original.nick + '-search'"
 							:on-hover="hoverUser"
 							:active="user.original === activeUser"
 							:user="user.original"
-							v-html="user.string"
+							:include-status-icon="showStatusIndicators"
+							:html="user.string"
 						/>
-						<!-- eslint-enable -->
 					</template>
 					<template v-else>
 						<Username
@@ -87,6 +86,7 @@
 							:on-hover="hoverUser"
 							:active="user === activeUser"
 							:user="user"
+							:include-status-icon="showStatusIndicators"
 						/>
 					</template>
 				</div>
@@ -133,8 +133,8 @@ import {filter as fuzzyFilter} from "fuzzy";
 import {computed, defineComponent, nextTick, PropType, ref} from "vue";
 import type {UserInMessage} from "../../shared/types/msg";
 import type {ClientChan, ClientUser} from "../js/types";
-import Username from "./Username.vue";
 import {useStore} from "../js/store";
+import Username from "./Username.vue";
 
 const modes = {
 	"~": "owner",
@@ -380,6 +380,8 @@ export default defineComponent({
 			scrollToActiveUser();
 		};
 
+		const showStatusIndicators = computed(() => store.state.settings.statusIndicators);
+
 		return {
 			filteredUsers,
 			groupedUsers,
@@ -388,6 +390,7 @@ export default defineComponent({
 			activeUser,
 			userlist,
 			getGroupSlug,
+			showStatusIndicators,
 			setUserSearchInput,
 			getModeClass,
 			selectUser,

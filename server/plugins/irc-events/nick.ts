@@ -2,6 +2,7 @@ import {IrcEventHandler} from "../../client.js";
 
 import Msg from "../../models/msg.js";
 import {MessageType} from "../../../shared/types/msg.js";
+import {ChanType} from "../../../shared/types/chan.js";
 
 export default <IrcEventHandler>function (irc, network) {
 	irc.on("nick", (data) => {
@@ -27,6 +28,30 @@ export default <IrcEventHandler>function (irc, network) {
 			const user = chan.findUser(data.nick);
 
 			if (typeof user === "undefined") {
+				// Update monitor list for query channels that match the old nick
+				if (
+					chan.type === ChanType.QUERY &&
+					chan.name.toLowerCase() === data.nick.toLowerCase()
+				) {
+					network.renameMonitor(chan.name, data.new_nick);
+					chan.name = data.new_nick;
+
+					const nickMsg = new Msg({
+						time: data.time,
+						from: chan.getUser(data.nick),
+						type: MessageType.NICK,
+						new_nick: data.new_nick,
+					});
+					chan.pushMessage(this, nickMsg);
+
+					this.emit("channel:rename", {
+						chan: chan.id,
+						name: data.new_nick,
+					});
+
+					this.save();
+				}
+
 				return;
 			}
 
