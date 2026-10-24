@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions -- Chai expect statements */
 import {expect, assert} from "chai";
 import {isEncrypted} from "../../server/utils/secretCrypto.js";
 import sinon from "sinon";
