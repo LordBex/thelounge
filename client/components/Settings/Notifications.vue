@@ -91,7 +91,7 @@
 
 		<!-- Highlights -->
 		<SettingCard v-if="!store.state.serverConfiguration?.public" title="Highlights">
-			<label for="highlights" class="setting-row-text">
+			<label for="highlights" class="setting-row-text" style="margin-top: 10px">
 				<div class="setting-row-label">Custom highlights</div>
 				<div class="setting-row-description">
 					Comma-separated words or phrases that trigger a highlight
@@ -105,6 +105,7 @@
 				class="input"
 				autocomplete="off"
 				placeholder="e.g. word, some phrase, another"
+				style="margin-bottom: 10px"
 			/>
 			<label for="highlightExceptions" class="setting-row-text">
 				<div class="setting-row-label">Highlight exceptions</div>
