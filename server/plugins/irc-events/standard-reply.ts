@@ -1,7 +1,7 @@
-import {IrcEventHandler} from "../../client";
+import {IrcEventHandler} from "../../client.js";
 
-import Msg from "../../models/msg";
-import {MessageType} from "../../../shared/types/msg";
+import Msg from "../../models/msg.js";
+import {MessageType} from "../../../shared/types/msg.js";
 
 const typeMap: Record<string, MessageType> = {
 	FAIL: MessageType.ERROR,
@@ -10,9 +10,7 @@ const typeMap: Record<string, MessageType> = {
 };
 
 export default <IrcEventHandler>function (irc, network) {
-	const client = this;
-
-	irc.on("standard reply", function (data) {
+	irc.on("standard reply", (data) => {
 		const type = typeMap[data.type] || MessageType.ERROR;
 
 		let target = network.getLobby();
@@ -30,7 +28,7 @@ export default <IrcEventHandler>function (irc, network) {
 		}
 
 		target.pushMessage(
-			client,
+			this,
 			new Msg({
 				type,
 				text: data.description,

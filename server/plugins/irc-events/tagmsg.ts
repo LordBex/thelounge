@@ -4,9 +4,7 @@ import {ChanType} from "../../../shared/types/chan.js";
 import {VALID_TYPING_STATUSES, TypingStatus} from "../../../shared/types/typing.js";
 
 export default <IrcEventHandler>function (irc, network) {
-	const client = this;
-
-	irc.on("tagmsg", function (data) {
+	irc.on("tagmsg", (data) => {
 		if (data.nick === irc.user.nick) {
 			return;
 		}
@@ -39,7 +37,7 @@ export default <IrcEventHandler>function (irc, network) {
 		const typing = data.tags["+typing"];
 
 		if (typing && VALID_TYPING_STATUSES.has(typing as TypingStatus)) {
-			client.emit("typing", {
+			this.emit("typing", {
 				network: network.uuid,
 				chan: chan.id,
 				nick: data.nick,

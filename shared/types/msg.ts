@@ -32,7 +32,7 @@ export enum MessageType {
 	NOTE = "note",
 }
 
-import {SharedUser} from "./user";
+import {SharedUser} from "./user.js";
 
 export type UserInMessage = Partial<SharedUser> & {
 	mode: string;
