@@ -42,10 +42,10 @@ describe("Identification", function () {
 			let reply = "";
 			const socket = fakeSocket({
 				...querySocket,
-				write: ((data: string) => {
+				write(data: string) {
 					reply += data;
 					return true;
-				}) as Socket["write"],
+				},
 			});
 
 			ident.respondToIdent(socket, query);

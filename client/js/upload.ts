@@ -28,7 +28,7 @@ class Uploader {
 
 	mounted() {
 		this.overlay = document.getElementById("upload-overlay") as HTMLDivElement;
-		this.uploadProgressbar = document.getElementById("upload-progressbar") as HTMLSpanElement;
+		this.uploadProgressbar = document.getElementById("upload-progressbar");
 
 		document.addEventListener("dragenter", this.onDragEnter);
 		document.addEventListener("dragover", this.onDragOver);

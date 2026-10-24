@@ -14,6 +14,9 @@
     "files": true
   },
   "compilerOptions": {
+    "types": [
+      "node"
+    ] /* Specify type package names to be included without being referenced in a source file. */,
     "noEmit": false /* Disable emitting file from a compilation. See more: https://www.typescriptlang.org/tsconfig#noEmit */,
     // TODO: Remove eventually
     "noImplicitAny": false /*Enable error reporting for expressions and declarations with an implied any type. See more: https://www.typescriptlang.org/tsconfig#noImplicitAny */

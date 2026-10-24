@@ -259,7 +259,7 @@ class Network {
 			// FiSH defaults
 			fishGlobalKey: "",
 			fishKeys: {},
-			fishGlobalKeyMode: "ecb" as FishMode,
+			fishGlobalKeyMode: "ecb",
 			fishKeyModes: {},
 			fishExcludeList: [],
 

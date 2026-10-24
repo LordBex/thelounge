@@ -506,7 +506,7 @@ const fishDecryptECB = (ciphertext: string, key: string): DecryptResult => {
 		return {
 			text: decryptedText,
 			status: isPartial ? "partial" : "success",
-			mode: "ecb" as FishMode,
+			mode: "ecb",
 		};
 	} catch {
 		return {text: "", status: "error"};
@@ -629,7 +629,7 @@ const fishDecryptCBC = (base64Ciphertext: string, key: string): DecryptResult =>
 		return {
 			text: decryptedText,
 			status: "success",
-			mode: "cbc" as FishMode,
+			mode: "cbc",
 		};
 	} catch {
 		return {text: "", status: "error"};

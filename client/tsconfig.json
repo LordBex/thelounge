@@ -11,6 +11,10 @@
   ] /* If no 'files' or 'include' property is present in a tsconfig.json, the compiler defaults to including all files in the containing directory and subdirectories except those specified by 'exclude'. When a 'files' property is specified, only those files and those specified by 'include' are included. */,
   // "exclude": [],
   "compilerOptions": {
+    "types": [
+      "node",
+      "webpack-env"
+    ] /* Specify type package names to be included without being referenced in a source file. */,
     "sourceMap": false /*Create source map files for emitted JavaScript files. See more: https://www.typescriptlang.org/tsconfig#sourceMap */,
     "jsx": "preserve" /* Specify what JSX code is generated. */,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
@@ -19,7 +23,8 @@
     "strict": true,
     // if using webpack 2+ or rollup, to leverage tree shaking:
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "node" /* vuex 4 ships no "types" export condition, so "bundler" can't resolve its types */,
+    "ignoreDeprecations": "6.0" /* TODO: "node" (node10) resolution is removed in TypeScript 7.0 */,
 
     // TODO: Remove eventually
     "noImplicitAny": false /*Enable error reporting for expressions and declarations with an implied any type. See more: https://www.typescriptlang.org/tsconfig#noImplicitAny */

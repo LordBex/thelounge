@@ -234,12 +234,7 @@ export default defineComponent({
 				}
 			}
 
-			return groups as {
-				[group: string]: (ClientUser & {
-					original: UserInMessage;
-					string: string;
-				})[];
-			};
+			return groups;
 		});
 
 		const standardGroupedUsers = computed(() => {
@@ -267,12 +262,7 @@ export default defineComponent({
 				}
 			}
 
-			return groups as {
-				[mode: string]: (ClientUser & {
-					original: UserInMessage;
-					string: string;
-				})[];
-			};
+			return groups;
 		});
 
 		const groupedUsers = computed(() => {

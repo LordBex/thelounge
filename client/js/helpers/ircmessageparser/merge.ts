@@ -72,7 +72,7 @@ function merge(parts: MergedParts, styleFragments: Fragment[], cleanText: string
 			.filter((fragment) => anyIntersection(part, fragment))
 			.map((fragment) => assign(part, fragment));
 
-		return {...part, fragments} as MergedPart;
+		return {...part, fragments};
 	});
 }
 

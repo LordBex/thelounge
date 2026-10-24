@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import type {Element} from "domhandler";
 import {URL} from "url";
 import mime from "mime-types";
 
@@ -210,7 +211,7 @@ function parseHtmlMedia(
 				return;
 			}
 
-			$(`meta[property="og:${type}:type"]`).each(function (this: cheerio.Element, i: number) {
+			$(`meta[property="og:${type}:type"]`).each(function (this: Element, i: number) {
 				const mimeType = $(this).attr("content");
 
 				if (!mimeType) {

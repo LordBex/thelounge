@@ -15,6 +15,11 @@
     "files": true,
     "transpileOnly": true,
     "compilerOptions": {
+      "types": [
+        "node",
+        "webpack-env",
+        "mocha"
+      ] /* Specify type package names to be included without being referenced in a source file. */,
       "module": "ESNext",
       "moduleResolution": "bundler"
     }
