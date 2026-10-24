@@ -17,12 +17,9 @@ jobs:
       - uses: actions/checkout@master
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          # Pinned to 22.x (current LTS) — "latest" pulls Node 24, for which
-          # better-sqlite3 12.4.1 ships no prebuilt binaries and the install
-          # gyp build fails silently, breaking the test step.
-          node-version: "22.x"
+          node-version-file: ".node-version"
           registry-url: "https://registry.npmjs.org/"
 
       - name: Enable Corepack
