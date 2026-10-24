@@ -322,7 +322,7 @@ export default <IrcEventHandler>function (this: Client, irc, network) {
 			let title = chan.name;
 			// Notifications are single line, so preview the first line that has text
 			let body = cleanMessage.includes("\n")
-				? cleanMessage.split("\n").find((line) => line.trim().length > 0) ?? cleanMessage
+				? (cleanMessage.split("\n").find((line) => line.trim().length > 0) ?? cleanMessage)
 				: cleanMessage;
 
 			if (msg.type === MessageType.ACTION) {

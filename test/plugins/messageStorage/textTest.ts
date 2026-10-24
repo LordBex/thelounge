@@ -35,9 +35,9 @@ describe("TextFileMessageStorage", function () {
 		);
 	}
 
-	it("writes a single line for a normal message", function () {
+	it("writes a single line for a normal message", async function () {
 		const storage = new TextFileMessageStorage("alice");
-		storage.enable();
+		await storage.enable();
 
 		const network = new Network({name: "freenode"});
 		const channel = new Chan({name: "#test"});
@@ -48,15 +48,15 @@ describe("TextFileMessageStorage", function () {
 			time: new Date("2026-05-01T12:00:00.000Z"),
 		});
 
-		storage.index(network, channel, msg);
+		await storage.index(network, channel, msg);
 
 		const contents = fs.readFileSync(logPathFor(network, channel), "utf8");
 		expect(contents).to.equal("[2026-05-01T12:00:00.000Z] <bob> hello world\n");
 	});
 
-	it("re-prefixes continuation lines so each row stays parseable", function () {
+	it("re-prefixes continuation lines so each row stays parseable", async function () {
 		const storage = new TextFileMessageStorage("alice");
-		storage.enable();
+		await storage.enable();
 
 		const network = new Network({name: "freenode"});
 		const channel = new Chan({name: "#test"});
@@ -67,7 +67,7 @@ describe("TextFileMessageStorage", function () {
 			time: new Date("2026-05-01T12:00:00.000Z"),
 		});
 
-		storage.index(network, channel, msg);
+		await storage.index(network, channel, msg);
 
 		const contents = fs.readFileSync(logPathFor(network, channel), "utf8");
 		expect(contents).to.equal(
@@ -77,9 +77,9 @@ describe("TextFileMessageStorage", function () {
 		);
 	});
 
-	it("preserves embedded newlines in ACTION messages", function () {
+	it("preserves embedded newlines in ACTION messages", async function () {
 		const storage = new TextFileMessageStorage("alice");
-		storage.enable();
+		await storage.enable();
 
 		const network = new Network({name: "freenode"});
 		const channel = new Chan({name: "#test"});
@@ -90,7 +90,7 @@ describe("TextFileMessageStorage", function () {
 			time: new Date("2026-05-01T12:00:00.000Z"),
 		});
 
-		storage.index(network, channel, msg);
+		await storage.index(network, channel, msg);
 
 		const contents = fs.readFileSync(logPathFor(network, channel), "utf8");
 		expect(contents).to.equal(

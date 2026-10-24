@@ -182,7 +182,6 @@ const input: PluginInputHandler = function (network, chan, cmd, args, extras) {
 		}
 	}
 
-
 	const lines = msg.split(/\r?\n/);
 
 	// Networks supporting draft/multiline take the whole message as a single batch.
