@@ -1,242 +1,196 @@
 <template>
 	<div>
-		<div v-if="canRegisterProtocol || hasInstallPromptEvent">
-			<h2>Native app</h2>
-			<button
-				v-if="hasInstallPromptEvent"
-				type="button"
-				class="btn"
-				@click.prevent="nativeInstallPrompt"
-			>
-				Add The Lounge to Home screen
-			</button>
-			<button
-				v-if="canRegisterProtocol"
-				type="button"
-				class="btn"
-				@click.prevent="registerProtocol"
-			>
-				Open irc:// URLs with The Lounge
-			</button>
-		</div>
-		<div v-if="store.state.settings.searchEnabled">
-			<h2>Enhanced search</h2>
-			<label class="opt">
-				<input
-					:checked="store.state.settings.enableEnhancedSearch"
-					type="checkbox"
-					name="enableEnhancedSearch"
-				/>
-				Enable enhanced search with 'Jump to message'
-			</label>
-		</div>
-		<div>
-			<h2>Input</h2>
-			<label class="opt">
-				<input
-					:checked="store.state.settings.enableRainbowHotkey"
-					type="checkbox"
-					name="enableRainbowHotkey"
-				/>
-				Enable rainbow messages with 'Ctrl+R' hotkey
-				<span
-					class="tooltipped tooltipped-n tooltipped-no-delay"
-					aria-label="You can still use rainbow text with '/rainbow' or '/rgb'"
-				>
-					<button class="extra-help" />
-				</span>
-			</label>
-			<label class="opt">
-				<input
-					:checked="store.state.settings.enableReplyToMessage"
-					type="checkbox"
-					name="enableReplyToMessage"
-				/>
-				Enable reply to message button
-				<span
-					class="tooltipped tooltipped-n tooltipped-no-delay"
-					aria-label="Allow you to reply to a message with a button"
-				>
-					<button class="extra-help" />
-				</span>
-			</label>
-		</div>
-		<div v-if="!store.state.serverConfiguration?.public">
-			<h2>Settings synchronisation</h2>
-			<label class="opt">
-				<input
-					:checked="store.state.settings.syncSettings"
-					type="checkbox"
-					name="syncSettings"
-				/>
-				Synchronize settings with other clients
-			</label>
-			<template v-if="!store.state.settings.syncSettings">
-				<div v-if="store.state.serverHasSettings" class="settings-sync-panel">
-					<p>
-						<strong>Warning:</strong> Checking this box will override the settings of
-						this client with those stored on the server.
-					</p>
-					<p>
-						Use the button below to enable synchronization, and override any settings
-						already synced to the server.
-					</p>
-					<button type="button" class="btn btn-small" @click="onForceSyncClick">
-						Sync settings and enable
-					</button>
+		<!-- Native app -->
+		<SettingCard v-if="canRegisterProtocol || hasInstallPromptEvent" title="Native app">
+			<div v-if="hasInstallPromptEvent" class="setting-action-row">
+				<div class="setting-card-intro">
+					Install The Lounge as a standalone app on your device
 				</div>
-				<div v-else class="settings-sync-panel">
-					<p>
-						<strong>Warning:</strong> No settings have been synced before. Enabling this
-						will sync all settings of this client as the base for other clients.
-					</p>
-				</div>
-			</template>
-		</div>
-		<div>
-			<h2>Typing indicators</h2>
+				<button type="button" class="btn btn-small" @click.prevent="nativeInstallPrompt">
+					Add to Home screen
+				</button>
+			</div>
+			<div v-if="canRegisterProtocol" class="setting-action-row">
+				<div class="setting-card-intro">Handle irc:// links directly in The Lounge</div>
+				<button type="button" class="btn btn-small" @click.prevent="registerProtocol">
+					Register as irc:// handler
+				</button>
+			</div>
+		</SettingCard>
+
+		<!-- Input -->
+		<SettingCard title="Input">
+			<SettingToggle
+				name="enableReplyToMessage"
+				label="Reply button"
+				description="Show a reply button on messages. Uses IRCv3 replies where the server supports them."
+				:checked="store.state.settings.enableReplyToMessage"
+			/>
+			<SettingToggle
+				name="enableRainbowHotkey"
+				label="Rainbow hotkey"
+				description="Turn the message into rainbow text with Ctrl+R. /rainbow and /rgb work either way."
+				:checked="store.state.settings.enableRainbowHotkey"
+			/>
+		</SettingCard>
+
+		<!-- Typing indicators -->
+		<SettingCard title="Typing indicators">
+			<div class="setting-card-intro">
+				Show when others are typing, and let them see when you are
+			</div>
 			<label for="typing" class="sr-only">Typing indicators</label>
 			<select id="typing" :value="store.state.settings.typing" name="typing" class="input">
 				<option value="on">Send &amp; receive</option>
 				<option value="receive">Receive only</option>
 				<option value="off">Off</option>
 			</select>
-		</div>
-		<div v-if="!store.state.serverConfiguration?.public">
-			<h2>Automatic away message</h2>
+		</SettingCard>
 
-			<label class="opt">
-				<label for="awayMessage" class="sr-only">Automatic away message</label>
-				<input
-					id="awayMessage"
-					:value="store.state.settings.awayMessage"
-					type="text"
-					name="awayMessage"
-					class="input"
-					placeholder="Away message if The Lounge is not open"
-				/>
-			</label>
-		</div>
-		<div v-if="store.state.serverConfiguration?.fileUpload">
-			<h2>File uploads</h2>
-			<div>
-				<label class="opt">
-					<input
-						:checked="store.state.settings.uploadCanvas"
-						type="checkbox"
-						name="uploadCanvas"
-					/>
-					Attempt to remove metadata from images before uploading
-					<span
-						class="tooltipped tooltipped-n tooltipped-no-delay"
-						aria-label="This option renders the image into a canvas element to remove metadata from the image.
-	This may break orientation if your browser does not support that."
-					>
-						<button class="extra-help" />
-					</span>
-				</label>
-			</div>
+		<!-- Search -->
+		<SettingCard v-if="store.state.settings.searchEnabled" title="Search">
+			<SettingToggle
+				name="enableEnhancedSearch"
+				label="Enhanced search"
+				description='Show search results with a "Jump to message" action'
+				:checked="store.state.settings.enableEnhancedSearch"
+			/>
+		</SettingCard>
+
+		<!-- File uploads -->
+		<SettingCard v-if="store.state.serverConfiguration?.fileUpload" title="File uploads">
+			<SettingToggle
+				name="uploadCanvas"
+				label="Strip image metadata"
+				description="Re-render images to remove EXIF data before uploading. May affect orientation in older browsers."
+				:checked="store.state.settings.uploadCanvas"
+			/>
 			<template
 				v-if="
 					store.state.serverConfiguration?.allowFileUploadBackendSelection &&
 					!store.state.serverConfiguration?.public
 				"
 			>
-				<!-- Image Backend -->
-				<label class="opt">Backend</label>
-				<select
-					name="imageUploadBackend"
-					:value="store.state.settings.imageUploadBackend"
-					class="input"
-				>
-					<option v-for="b in allBackends" :key="b.id" :value="b.id">
-						{{ b.displayName }}
-					</option>
-				</select>
-				<p v-if="selectedImageBackend?.supportNote" class="upload-note">
-					{{ selectedImageBackend.supportNote }}
-				</p>
-
-				<!-- API Key for image backend -->
-				<template v-if="selectedImageBackend?.requiresToken">
-					<label class="opt">{{ selectedImageBackend.displayName }} API Key</label>
-					<RevealPassword v-slot:default="slotProps">
-						<input
-							:type="slotProps.isVisible ? 'text' : 'password'"
+				<div class="upload-backend">
+					<div class="setting-field">
+						<label for="imageUploadBackend" class="setting-row-label">Backend</label>
+						<select
+							id="imageUploadBackend"
+							name="imageUploadBackend"
+							:value="store.state.settings.imageUploadBackend"
 							class="input"
-							:value="apiKeys[imageBackend]"
-							@input="
-								apiKeys[imageBackend] = ($event.target as HTMLInputElement).value
-							"
-						/>
-					</RevealPassword>
-				</template>
+						>
+							<option v-for="b in allBackends" :key="b.id" :value="b.id">
+								{{ b.displayName }}
+							</option>
+						</select>
+						<p v-if="selectedImageBackend?.supportNote" class="setting-hint">
+							{{ selectedImageBackend.supportNote }}
+						</p>
+					</div>
 
-				<!-- URL for image backend (x0 / xbackbone) -->
-				<template v-if="selectedImageBackend?.requiresUrl">
-					<label class="opt">{{ selectedImageBackend.displayName }} URL</label>
-					<input
-						type="text"
-						class="input"
-						:placeholder="
-							imageBackend === 'x0' ? 'https://x0.at' : 'https://example.com'
-						"
-						:value="apiUrls[imageBackend]"
-						@blur="normalizeUrl(imageBackend)"
-						@input="apiUrls[imageBackend] = ($event.target as HTMLInputElement).value"
-					/>
-					<p
-						v-if="apiUrls[imageBackend] && !isValidUrl(apiUrls[imageBackend])"
-						class="error"
-					>
-						Ungültige URL. Bitte verwende z.B. "https://x0.at" oder "x0.at" (wird
-						automatisch zu https:// konvertiert)
-					</p>
-				</template>
-
-				<template v-if="selectedImageBackend?.ttl">
-					<label class="opt">{{ selectedImageBackend.displayName }} — Ablauf</label>
-					<select
-						class="input"
-						:value="effectiveTtl(imageBackend)"
-						@change="apiTtls[imageBackend] = ($event.target as HTMLSelectElement).value"
-					>
-						<option v-for="p in selectedImageBackend.ttl" :key="p.id" :value="p.id">
-							{{ p.label }}
-						</option>
-					</select>
-				</template>
-
-				<!-- File Backend — only shown when image backend is image-only -->
-				<template v-if="selectedImageBackend?.category === 'image'">
-					<hr class="upload-section-divider" />
-					<label class="opt">File Backend (fallback for non-images)</label>
-					<select
-						name="fileUploadBackend"
-						:value="store.state.settings.fileUploadBackend"
-						class="input"
-					>
-						<option v-for="b in fileCapableBackends" :key="b.id" :value="b.id">
-							{{ b.displayName }}
-						</option>
-					</select>
-
-					<template v-if="selectedFileBackend?.requiresToken">
-						<label class="opt">{{ selectedFileBackend.displayName }} API Key</label>
+					<div v-if="selectedImageBackend?.requiresToken" class="setting-field">
+						<label class="setting-row-label"
+							>{{ selectedImageBackend.displayName }} API key</label
+						>
 						<RevealPassword v-slot:default="slotProps">
 							<input
 								:type="slotProps.isVisible ? 'text' : 'password'"
 								class="input"
+								autocomplete="off"
+								:value="apiKeys[imageBackend]"
+								@input="
+									apiKeys[imageBackend] = (
+										$event.target as HTMLInputElement
+									).value
+								"
+							/>
+						</RevealPassword>
+					</div>
+
+					<div v-if="selectedImageBackend?.requiresUrl" class="setting-field">
+						<label class="setting-row-label"
+							>{{ selectedImageBackend.displayName }} URL</label
+						>
+						<input
+							type="text"
+							class="input"
+							:placeholder="
+								imageBackend === 'x0' ? 'https://x0.at' : 'https://example.com'
+							"
+							:value="apiUrls[imageBackend]"
+							@blur="normalizeUrl(imageBackend)"
+							@input="
+								apiUrls[imageBackend] = ($event.target as HTMLInputElement).value
+							"
+						/>
+						<p
+							v-if="apiUrls[imageBackend] && !isValidUrl(apiUrls[imageBackend])"
+							class="error"
+						>
+							Ungültige URL. Bitte verwende z.B. "https://x0.at" oder "x0.at" (wird
+							automatisch zu https:// konvertiert)
+						</p>
+					</div>
+
+					<div v-if="selectedImageBackend?.ttl" class="setting-field">
+						<label class="setting-row-label"
+							>{{ selectedImageBackend.displayName }} — Ablauf</label
+						>
+						<select
+							class="input"
+							:value="effectiveTtl(imageBackend)"
+							@change="
+								apiTtls[imageBackend] = ($event.target as HTMLSelectElement).value
+							"
+						>
+							<option v-for="p in selectedImageBackend.ttl" :key="p.id" :value="p.id">
+								{{ p.label }}
+							</option>
+						</select>
+					</div>
+				</div>
+
+				<!-- File backend, only needed when the image backend can't take other files -->
+				<div v-if="selectedImageBackend?.category === 'image'" class="upload-backend">
+					<div class="setting-field">
+						<label for="fileUploadBackend" class="setting-row-label"
+							>File backend</label
+						>
+						<div class="setting-row-description">Used for files that aren't images</div>
+						<select
+							id="fileUploadBackend"
+							name="fileUploadBackend"
+							:value="store.state.settings.fileUploadBackend"
+							class="input"
+						>
+							<option v-for="b in fileCapableBackends" :key="b.id" :value="b.id">
+								{{ b.displayName }}
+							</option>
+						</select>
+					</div>
+
+					<div v-if="selectedFileBackend?.requiresToken" class="setting-field">
+						<label class="setting-row-label"
+							>{{ selectedFileBackend.displayName }} API key</label
+						>
+						<RevealPassword v-slot:default="slotProps">
+							<input
+								:type="slotProps.isVisible ? 'text' : 'password'"
+								class="input"
+								autocomplete="off"
 								:value="apiKeys[fileBackend]"
 								@input="
 									apiKeys[fileBackend] = ($event.target as HTMLInputElement).value
 								"
 							/>
 						</RevealPassword>
-					</template>
+					</div>
 
-					<template v-if="selectedFileBackend?.requiresUrl">
-						<label class="opt">{{ selectedFileBackend.displayName }} URL</label>
+					<div v-if="selectedFileBackend?.requiresUrl" class="setting-field">
+						<label class="setting-row-label"
+							>{{ selectedFileBackend.displayName }} URL</label
+						>
 						<input
 							type="text"
 							class="input"
@@ -256,10 +210,12 @@
 							Ungültige URL. Bitte verwende z.B. "https://example.com" oder
 							"example.com" (wird automatisch zu https:// konvertiert)
 						</p>
-					</template>
+					</div>
 
-					<template v-if="selectedFileBackend?.ttl">
-						<label class="opt">{{ selectedFileBackend.displayName }} — Ablauf</label>
+					<div v-if="selectedFileBackend?.ttl" class="setting-field">
+						<label class="setting-row-label"
+							>{{ selectedFileBackend.displayName }} — Ablauf</label
+						>
 						<select
 							class="input"
 							:value="effectiveTtl(fileBackend)"
@@ -271,30 +227,30 @@
 								{{ p.label }}
 							</option>
 						</select>
-					</template>
-				</template>
+					</div>
+				</div>
 
-				<button class="btn btn-small" type="button" @click="saveUploadConfig">
-					Save Upload Settings
-				</button>
-				<span v-if="saveStatus" class="upload-save-status">{{ saveStatus }}</span>
+				<div class="setting-action-row upload-save">
+					<button class="btn btn-small" type="button" @click="saveUploadConfig">
+						Save upload settings
+					</button>
+					<span v-if="saveStatus" class="upload-save-status">{{ saveStatus }}</span>
+				</div>
 			</template>
-		</div>
-		<div v-if="!store.state.serverConfiguration?.public">
-			<h2>Custom Commands</h2>
-			<p class="help">
-				Define shortcuts for frequently used commands. Placeholders:
-				<code>$1</code> = first argument, <code>$2</code> = second argument,
-				<code>$*</code> = all arguments.
-			</p>
-			<p class="help example">
-				Example: <code>op</code> → <code>/msg chanserv op #mychannel $1</code><br />
-				Usage: <code>/op SomeUser</code> expands to
-				<code>/msg chanserv op #mychannel SomeUser</code>
+		</SettingCard>
+
+		<!-- Custom commands -->
+		<SettingCard v-if="!store.state.serverConfiguration?.public" title="Custom commands">
+			<div class="setting-card-intro">
+				Shortcuts for frequently used commands. Placeholders: <code>$1</code> = first
+				argument, <code>$2</code> = second argument, <code>$*</code> = all arguments.
+			</div>
+			<p class="setting-hint">
+				Example: <code>op</code> → <code>/msg chanserv op #mychannel $1</code>, then
+				<code>/op SomeUser</code> runs <code>/msg chanserv op #mychannel SomeUser</code>
 			</p>
 
-			<div v-if="!showRawJson">
-				<!-- List-based editor -->
+			<div v-if="!showRawJson" class="custom-commands">
 				<div
 					v-for="(expansion, cmd) in customCommandsList"
 					:key="cmd"
@@ -316,6 +272,7 @@
 						type="text"
 						class="input"
 						placeholder="shortcut"
+						aria-label="Shortcut name"
 						@keypress.enter.prevent="addCommand"
 					/>
 					<input
@@ -323,6 +280,7 @@
 						type="text"
 						class="input"
 						placeholder="/msg chanserv ..."
+						aria-label="Command to run"
 						@keypress.enter.prevent="addCommand"
 					/>
 					<button type="button" class="btn btn-small" @click="addCommand">Add</button>
@@ -330,8 +288,7 @@
 				<p v-if="commandError" class="error">{{ commandError }}</p>
 			</div>
 
-			<div v-else>
-				<!-- Raw JSON editor -->
+			<div v-else class="custom-commands">
 				<label for="customCommandsRaw" class="sr-only">Custom commands JSON</label>
 				<textarea
 					id="customCommandsRaw"
@@ -347,17 +304,85 @@
 			<button type="button" class="btn btn-small toggle-raw" @click="toggleRawJson">
 				{{ showRawJson ? "Show list editor" : "Show raw JSON" }}
 			</button>
-		</div>
+		</SettingCard>
+
+		<!-- Settings sync -->
+		<SettingCard v-if="!store.state.serverConfiguration?.public" title="Settings sync">
+			<SettingToggle
+				name="syncSettings"
+				label="Sync settings across devices"
+				description="Keep your preferences in sync with other browsers and devices"
+				:checked="store.state.settings.syncSettings"
+			/>
+			<template v-if="!store.state.settings.syncSettings">
+				<div v-if="store.state.serverHasSettings" class="setting-action-row">
+					<div class="setting-card-intro">
+						<strong>Warning:</strong> Enabling sync will override this client's settings
+						with those stored on the server.
+					</div>
+					<button type="button" class="btn btn-small" @click="onForceSyncClick">
+						Sync settings and enable
+					</button>
+				</div>
+				<div v-else class="setting-card-intro">
+					No settings have been synced before. Enabling this will upload your current
+					settings as the starting point for other devices.
+				</div>
+			</template>
+		</SettingCard>
+
+		<!-- Away message -->
+		<SettingCard v-if="!store.state.serverConfiguration?.public" title="Away message">
+			<div>
+				<label for="awayMessage" class="setting-row-text">
+					<div class="setting-row-label">Away message</div>
+					<div class="setting-row-description">
+						Automatically set when The Lounge is not open
+					</div>
+				</label>
+				<input
+					id="awayMessage"
+					:value="store.state.settings.awayMessage"
+					type="text"
+					name="awayMessage"
+					class="input"
+					placeholder="Away message"
+				/>
+			</div>
+		</SettingCard>
 	</div>
 </template>
 
 <style>
+.upload-backend {
+	border-top: 1px solid color-mix(in srgb, var(--body-color) 6%, var(--window-bg-color));
+	padding: 12px 0 4px;
+}
+
+.upload-save {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.upload-save-status {
+	font-size: 13px;
+	color: var(--body-color-muted);
+}
+
+.custom-commands {
+	margin-top: 10px;
+}
+
 .custom-command-row {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	margin-bottom: 8px;
-	padding: 4px 0;
+	padding: 6px 0;
+}
+
+.custom-command-row + .custom-command-row {
+	border-top: 1px solid color-mix(in srgb, var(--body-color) 6%, var(--window-bg-color));
 }
 
 .custom-command-row .arrow {
@@ -371,10 +396,19 @@
 	white-space: nowrap;
 }
 
+.custom-command-row .btn {
+	margin-bottom: 0;
+}
+
 .add-command-form {
 	display: flex;
+	align-items: center;
 	gap: 8px;
-	margin-top: 12px;
+	margin-top: 8px;
+}
+
+.add-command-form .input {
+	margin-top: 0;
 }
 
 .add-command-form .input:first-child {
@@ -382,35 +416,19 @@
 	flex-shrink: 0;
 }
 
+.add-command-form .btn {
+	margin-bottom: 0;
+}
+
 .no-commands {
+	font-size: 13px;
 	color: var(--body-color-muted);
-	margin-bottom: 8px;
-}
-
-.help.example {
-	font-size: 0.9em;
-	color: var(--body-color-muted);
-	margin-top: 4px;
-}
-
-.help.example code {
-	color: var(--body-color);
-}
-
-.upload-section-divider {
-	border: none;
-	border-top: 1px solid var(--body-color-muted);
-	opacity: 0.3;
-	margin: 16px 0 12px;
+	padding: 6px 0;
 }
 
 .toggle-raw {
 	margin-top: 12px;
-}
-
-.error {
-	color: var(--error-color);
-	margin-top: 8px;
+	margin-bottom: 0;
 }
 </style>
 
@@ -422,6 +440,8 @@ import {validateAliases} from "../../js/customCommands";
 import {allBackends, fileCapableBackends} from "../../../shared/upload-backends";
 import socket from "../../js/socket";
 import RevealPassword from "../RevealPassword.vue";
+import SettingCard from "./SettingCard.vue";
+import SettingToggle from "./SettingToggle.vue";
 
 let installPromptEvent: BeforeInstallPromptEvent | null = null;
 
@@ -434,6 +454,8 @@ export default defineComponent({
 	name: "GeneralSettings",
 	components: {
 		RevealPassword,
+		SettingCard,
+		SettingToggle,
 	},
 	setup() {
 		const store = useStore();
@@ -681,7 +703,7 @@ export default defineComponent({
 		};
 
 		const normalizeUrl = (backend: string) => {
-			const url = apiUrls[backend]?.trim();
+			const url = apiUrls.value[backend]?.trim();
 
 			if (!url) {
 				return; // Keep empty URLs as-is
@@ -694,14 +716,14 @@ export default defineComponent({
 
 			// If it looks like a domain or hostname without protocol, add https://
 			if (url.includes(".") || url === "localhost") {
-				apiUrls[backend] = `https://${url}`;
+				apiUrls.value[backend] = `https://${url}`;
 			}
 		};
 
 		const saveUploadConfig = () => {
 			// Validate URLs before saving
 			for (const backend of [imageBackend.value, fileBackend.value]) {
-				if (apiUrls[backend] && !isValidUrl(apiUrls[backend])) {
+				if (apiUrls.value[backend] && !isValidUrl(apiUrls.value[backend])) {
 					store.commit(
 						"currentUserVisibleError",
 						`Ungültige URL für ${backend}: Bitte gib eine vollständige URL ein`

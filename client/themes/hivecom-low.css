@@ -459,3 +459,16 @@ body {
 .status-icon > .status-away::after {
 	background-color: #5e5f5d;
 }
+
+/* Settings */
+.setting-card .input {
+	background-color: var(--body-bg-color);
+	color: var(--body-color);
+	border: 1px solid #2a2a2a;
+}
+
+.setting-card input::placeholder,
+.setting-card textarea::placeholder {
+	color: var(--body-color-muted);
+	opacity: 0.6;
+}
