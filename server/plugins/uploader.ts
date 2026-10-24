@@ -1,5 +1,5 @@
 import Config from "../config.js";
-import busboy, {BusboyHeaders} from "@fastify/busboy";
+import busboy, {BusboyHeaders, BusboyInstance} from "@fastify/busboy";
 import {v4 as uuidv4} from "uuid";
 import path from "node:path";
 import fs from "node:fs";
@@ -231,7 +231,7 @@ class Uploader {
 	}
 
 	static routeUploadFile(this: void, req: Request, res: Response) {
-		let busboyInstance: busboy | null | undefined;
+		let busboyInstance: BusboyInstance | null | undefined;
 		let uploadUrl: string | URL;
 		let randomName: string;
 		let destDir: fs.PathLike;
