@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-expressions -- Chai expect statements */
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -15,14 +14,14 @@ describe("TextFileMessageStorage", function () {
 	let tmpHome: string;
 	let originalHome: string;
 
-	beforeEach(function () {
+	beforeEach(async function () {
 		tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "tl-textstorage-"));
 		originalHome = Config.getHomePath();
-		Config.setHome(tmpHome);
+		await Config.setHome(tmpHome);
 	});
 
-	afterEach(function () {
-		Config.setHome(originalHome);
+	afterEach(async function () {
+		await Config.setHome(originalHome);
 		fs.rmSync(tmpHome, {recursive: true, force: true});
 	});
 

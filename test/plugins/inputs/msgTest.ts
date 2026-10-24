@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-expressions -- Chai expect statements */
 import {expect} from "chai";
 
 import msgInput from "../../../server/plugins/inputs/msg.js";
