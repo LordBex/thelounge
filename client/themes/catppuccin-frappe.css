@@ -421,3 +421,67 @@ form.message-search input::placeholder {
 		content: ">";
 	}
 }
+
+/* IRCv3: reply, message actions, typing, status indicators, standard replies */
+:root {
+	--form-bg-color: var(--window-bg-color);
+}
+
+#chat .msg .reply-context-icon::before {
+	color: #737994;
+}
+
+#chat .msg .reply-context:not(.disabled):hover {
+	background: rgb(255 255 255 / 6%);
+}
+
+#chat .msg .msg-actions {
+	background: var(--window-bg-color);
+	border-color: #414559;
+	box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+}
+
+#chat .msg .msg-actions button {
+	color: var(--body-color-muted);
+}
+
+#chat .msg .msg-actions button:hover,
+#chat .msg .msg-actions button:focus-visible {
+	background: rgb(255 255 255 / 6%);
+	color: #ca9ee6;
+}
+
+#form .reply-bar {
+	background: #292c3c;
+	border-bottom-color: #414559;
+}
+
+#form .reply-bar strong {
+	color: #ca9ee6;
+}
+
+#form .reply-bar-close:hover {
+	color: #e78284;
+}
+
+#chat .msg[data-type="warn"],
+#chat .msg[data-type="warn"] .from {
+	color: #ef9f76;
+}
+
+#chat .msg[data-type="note"],
+#chat .msg[data-type="note"] .from {
+	color: #8caaee;
+}
+
+.status-icon > .status-online::after {
+	background-color: #a6d189;
+}
+
+.status-icon > .status-offline::after {
+	background-color: #e78284;
+}
+
+.status-icon > .status-away::after {
+	background-color: #737994;
+}

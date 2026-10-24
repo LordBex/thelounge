@@ -392,3 +392,66 @@ body {
 	}
 }
 
+/* IRCv3: reply, message actions, typing, status indicators, standard replies */
+:root {
+	--form-bg-color: var(--window-bg-color);
+}
+
+#chat .msg .reply-context-icon::before {
+	color: #5e5f5d;
+}
+
+#chat .msg .reply-context:not(.disabled):hover {
+	background: rgb(168 253 48 / 8%);
+}
+
+#chat .msg .msg-actions {
+	background: var(--window-bg-color);
+	border-color: rgb(168 253 48 / 25%);
+	box-shadow: 0 1px 3px rgb(0 0 0 / 50%);
+}
+
+#chat .msg .msg-actions button {
+	color: var(--body-color-muted);
+}
+
+#chat .msg .msg-actions button:hover,
+#chat .msg .msg-actions button:focus-visible {
+	background: rgb(168 253 48 / 8%);
+	color: var(--button-color);
+}
+
+#form .reply-bar {
+	background: var(--highlight-bg-color);
+	border-bottom-color: rgb(168 253 48 / 25%);
+}
+
+#form .reply-bar strong {
+	color: var(--button-color);
+}
+
+#form .reply-bar-close:hover {
+	color: #ff5c5c;
+}
+
+#chat .msg[data-type="warn"],
+#chat .msg[data-type="warn"] .from {
+	color: #ffb347;
+}
+
+#chat .msg[data-type="note"],
+#chat .msg[data-type="note"] .from {
+	color: #6cb6ff;
+}
+
+.status-icon > .status-online::after {
+	background-color: #a8fd30;
+}
+
+.status-icon > .status-offline::after {
+	background-color: #ff5c5c;
+}
+
+.status-icon > .status-away::after {
+	background-color: #5e5f5d;
+}
