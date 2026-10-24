@@ -276,7 +276,10 @@ export default async function (
 					}
 
 					identd = identHandler;
-					manager.init(identHandler, sockets!);
+					manager.init(identHandler, sockets!).catch((e: unknown) => {
+						log.error(`Could not initialize client manager: ${String(e)}`);
+						process.exit(1);
+					});
 				});
 
 				// Handle ctrl+c and kill gracefully
@@ -776,7 +779,7 @@ function initializeClient(
 			);
 
 			if (registration) {
-				client.manager.webPush.pushSingle(client, registration, {
+				void client.manager.webPush.pushSingle(client, registration, {
 					type: "notification",
 					timestamp: Date.now(),
 					title: "The Lounge",

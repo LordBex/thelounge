@@ -2,7 +2,13 @@ import _ from "lodash";
 import log from "../log.js";
 import fs from "fs";
 import path from "path";
-import WebPushAPI from "web-push";
+import {
+	generateVAPIDKeys,
+	sendNotification,
+	WebPushError,
+	type PushSubscription,
+	type VapidDetails,
+} from "web-push-neo";
 import Config from "../config.js";
 import Client from "../client.js";
 import * as os from "os";
@@ -19,8 +25,9 @@ class WebPush {
 		publicKey: string;
 		privateKey: string;
 	};
+	private vapidDetails?: VapidDetails;
 
-	constructor() {
+	async init() {
 		const vapidPath = path.join(Config.getHomePath(), "vapid.json");
 
 		let vapidStat: fs.Stats | undefined = undefined;
@@ -61,7 +68,7 @@ class WebPush {
 		}
 
 		if (!this.vapidKeys) {
-			this.vapidKeys = WebPushAPI.generateVAPIDKeys();
+			this.vapidKeys = await generateVAPIDKeys();
 
 			fs.writeFileSync(vapidPath, JSON.stringify(this.vapidKeys, null, "\t"), {
 				mode: 0o600,
@@ -70,11 +77,11 @@ class WebPush {
 			log.info("New VAPID key pair has been generated for use with push subscription.");
 		}
 
-		WebPushAPI.setVapidDetails(
-			"https://github.com/lordbex/thelounge",
-			this.vapidKeys.publicKey,
-			this.vapidKeys.privateKey
-		);
+		this.vapidDetails = {
+			subject: "https://github.com/lordbex/thelounge",
+			publicKey: this.vapidKeys.publicKey,
+			privateKey: this.vapidKeys.privateKey,
+		};
 	}
 
 	push(client: Client, payload: WebPushPayload, onlyToOffline: boolean) {
@@ -84,17 +91,23 @@ class WebPush {
 					return;
 				}
 
-				this.pushSingle(client, pushSubscription, payload);
+				void this.pushSingle(client, pushSubscription, payload);
 			}
 		});
 	}
 
-	pushSingle(client: Client, subscription: WebPushAPI.PushSubscription, payload: WebPushPayload) {
-		WebPushAPI.sendNotification(subscription, JSON.stringify(payload)).catch((error) => {
-			if (error.statusCode >= 400 && error.statusCode < 500) {
+	async pushSingle(client: Client, subscription: PushSubscription, payload: WebPushPayload) {
+		try {
+			await sendNotification(subscription, JSON.stringify(payload), {
+				vapidDetails: this.vapidDetails,
+			});
+		} catch (error) {
+			const statusCode = error instanceof WebPushError ? error.statusCode : 0;
+
+			if (statusCode >= 400 && statusCode < 500) {
 				log.warn(
 					`WebPush subscription for ${client.name} returned an error (${String(
-						error.statusCode
+						statusCode
 					)}), removing subscription`
 				);
 
@@ -108,7 +121,7 @@ class WebPush {
 			}
 
 			log.error(`WebPush Error (${String(error)})`);
-		});
+		}
 	}
 }
 

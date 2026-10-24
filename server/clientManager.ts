@@ -23,10 +23,11 @@ class ClientManager {
 		this.clients = [];
 	}
 
-	init(identHandler: Identification, sockets: Server) {
+	async init(identHandler: Identification, sockets: Server) {
 		this.sockets = sockets;
 		this.identHandler = identHandler;
 		this.webPush = new WebPush();
+		await this.webPush.init();
 
 		if (!Config.values.public) {
 			this.loadUsers();
