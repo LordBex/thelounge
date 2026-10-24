@@ -104,6 +104,9 @@
 	.settings-menu {
 		/* the dropdown below is absolutely positioned against this */
 		position: relative;
+
+		/* reset the desktop offset, with position: relative it would push the menu into the container */
+		top: auto;
 		width: min(480px, 100%);
 		align-self: center;
 		margin: 0 auto 12px;
