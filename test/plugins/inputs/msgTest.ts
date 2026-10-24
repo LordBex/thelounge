@@ -2,6 +2,8 @@ import {expect} from "chai";
 
 import msgInput from "../../../server/plugins/inputs/msg.js";
 import Chan from "../../../server/models/chan.js";
+import Client from "../../../server/client.js";
+import {NetworkWithIrcFramework} from "../../../server/models/network.js";
 import {ChanType} from "../../../shared/types/chan.js";
 
 type Sent = {type: "say" | "multiline"; target: string; text: string};
@@ -42,7 +44,14 @@ function setup({limits}: {limits: {maxBytes: number; maxLines: number | null} | 
 	};
 
 	const send = (text: string) =>
-		msgInput.input.call({} as any, network as any, chan, "say", text.split(" "), undefined);
+		msgInput.input.call(
+			{} as Client,
+			network as unknown as NetworkWithIrcFramework,
+			chan,
+			"say",
+			text.split(" "),
+			undefined
+		);
 
 	return {send, sent, echoed};
 }

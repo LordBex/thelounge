@@ -62,12 +62,12 @@ describe("Nickname highlights", function () {
 	it("should respect Unicode word boundaries (issue #4930)", function () {
 		network.setNick("D");
 
-		expect("dzięki").to.not.match(network.highlightRegex as any);
-		expect("hello D").to.match(network.highlightRegex as any);
-		expect("D: hello").to.match(network.highlightRegex as any);
+		expect("dzięki").to.not.match(network.highlightRegex!);
+		expect("hello D").to.match(network.highlightRegex!);
+		expect("D: hello").to.match(network.highlightRegex!);
 
 		network.setNick("Ądam");
 
-		expect("hello ąDAM").to.match(network.highlightRegex as any);
+		expect("hello ąDAM").to.match(network.highlightRegex!);
 	});
 });

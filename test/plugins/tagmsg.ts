@@ -3,12 +3,17 @@ import {expect} from "chai";
 import util from "../util.ts";
 import tagmsg from "../../server/plugins/irc-events/tagmsg.js";
 import Chan from "../../server/models/chan.js";
+import Client from "../../server/client.js";
+import {NetworkWithIrcFramework} from "../../server/models/network.js";
 import {ChanType} from "../../shared/types/chan.js";
+import {TypingStatus} from "../../shared/types/typing.js";
+
+type TypingEvent = {network: string; chan: number; nick: string; status: TypingStatus};
 
 describe("tagmsg handler", function () {
-	let irc: any;
+	let irc: ReturnType<typeof util.createClient> & {user: {nick: string}};
 	let network: ReturnType<typeof util.createNetwork>;
-	let client: any;
+	let client: ReturnType<typeof util.createClient>;
 
 	beforeEach(function () {
 		client = util.createClient();
@@ -18,10 +23,14 @@ describe("tagmsg handler", function () {
 		network = util.createNetwork();
 		network.channels[0].type = ChanType.CHANNEL;
 
-		tagmsg.call(client, irc, network as any);
+		tagmsg.call(
+			client as unknown as Client,
+			irc as unknown as NetworkWithIrcFramework["irc"],
+			network as NetworkWithIrcFramework
+		);
 	});
 
-	function emitTagmsg(overrides: Record<string, any> = {}) {
+	function emitTagmsg(overrides: Record<string, unknown> = {}) {
 		irc.emit("tagmsg", {
 			nick: "other-user",
 			ident: "ident",
@@ -93,7 +102,7 @@ describe("tagmsg handler", function () {
 			const query = new Chan({name: "other-user", type: ChanType.QUERY});
 			network.channels.push(query);
 
-			client.on("typing", function (data: any) {
+			client.on("typing", function (data: TypingEvent) {
 				expect(data.chan).to.equal(query.id);
 				resolve();
 			});
@@ -115,7 +124,7 @@ describe("tagmsg handler", function () {
 	describe("+typing", function () {
 		it("should emit typing event for +typing tag", () =>
 			new Promise<void>((resolve) => {
-				client.on("typing", function (data: any) {
+				client.on("typing", function (data: TypingEvent) {
 					expect(data.nick).to.equal("other-user");
 					expect(data.status).to.equal("active");
 					expect(data.chan).to.equal(network.channels[0].id);
@@ -130,7 +139,7 @@ describe("tagmsg handler", function () {
 			new Promise<void>((resolve) => {
 				const statuses: string[] = [];
 
-				client.on("typing", function (data: any) {
+				client.on("typing", function (data: TypingEvent) {
 					statuses.push(data.status);
 
 					if (statuses.length === 3) {

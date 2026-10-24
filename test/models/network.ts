@@ -644,7 +644,7 @@ describe("Network", function () {
 				addMonitor: addMonitorSpy,
 				removeMonitor: sinon.spy(),
 				connected: true,
-			} as any;
+			} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 100;
 
 			const newQuery = new Chan({name: "someuser", type: ChanType.QUERY});
@@ -661,7 +661,7 @@ describe("Network", function () {
 				addMonitor: addMonitorSpy,
 				removeMonitor: sinon.spy(),
 				connected: true,
-			} as any;
+			} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 100;
 
 			const newChan = new Chan({name: "#channel"});
@@ -677,7 +677,7 @@ describe("Network", function () {
 				addMonitor: addMonitorSpy,
 				removeMonitor: sinon.spy(),
 				connected: false,
-			} as any;
+			} as unknown as Network["irc"];
 
 			const newQuery = new Chan({name: "someuser", type: ChanType.QUERY});
 			network.addChannel(newQuery);
@@ -690,7 +690,10 @@ describe("Network", function () {
 		it("should add target to monitorList and call addMonitor", function () {
 			const addMonitorSpy = sinon.spy();
 			const network = new Network({name: "test"});
-			network.irc = {addMonitor: addMonitorSpy, removeMonitor: sinon.spy()} as any;
+			network.irc = {
+				addMonitor: addMonitorSpy,
+				removeMonitor: sinon.spy(),
+			} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 100;
 
 			network.monitor("TestUser");
@@ -702,7 +705,10 @@ describe("Network", function () {
 		it("should not monitor duplicate nicks (case-insensitive)", function () {
 			const addMonitorSpy = sinon.spy();
 			const network = new Network({name: "test"});
-			network.irc = {addMonitor: addMonitorSpy, removeMonitor: sinon.spy()} as any;
+			network.irc = {
+				addMonitor: addMonitorSpy,
+				removeMonitor: sinon.spy(),
+			} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 100;
 
 			network.monitor("TestUser");
@@ -716,7 +722,10 @@ describe("Network", function () {
 		it("should queue targets when monitor list is full", function () {
 			const addMonitorSpy = sinon.spy();
 			const network = new Network({name: "test"});
-			network.irc = {addMonitor: addMonitorSpy, removeMonitor: sinon.spy()} as any;
+			network.irc = {
+				addMonitor: addMonitorSpy,
+				removeMonitor: sinon.spy(),
+			} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 2;
 
 			network.monitor("user1");
@@ -731,7 +740,10 @@ describe("Network", function () {
 		it("should not send monitor when server does not advertise MONITOR support", function () {
 			const addMonitorSpy = sinon.spy();
 			const network = new Network({name: "test"});
-			network.irc = {addMonitor: addMonitorSpy, removeMonitor: sinon.spy()} as any;
+			network.irc = {
+				addMonitor: addMonitorSpy,
+				removeMonitor: sinon.spy(),
+			} as unknown as Network["irc"];
 
 			network.monitor("user1");
 
@@ -742,7 +754,10 @@ describe("Network", function () {
 		it("should send monitor when server advertises MONITOR with no limit (0)", function () {
 			const addMonitorSpy = sinon.spy();
 			const network = new Network({name: "test"});
-			network.irc = {addMonitor: addMonitorSpy, removeMonitor: sinon.spy()} as any;
+			network.irc = {
+				addMonitor: addMonitorSpy,
+				removeMonitor: sinon.spy(),
+			} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 0;
 
 			network.monitor("user1");
@@ -760,7 +775,7 @@ describe("Network", function () {
 			network.irc = {
 				addMonitor: sinon.spy(),
 				removeMonitor: removeMonitorSpy,
-			} as any;
+			} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 100;
 
 			network.monitor("user1");
@@ -777,7 +792,7 @@ describe("Network", function () {
 			network.irc = {
 				addMonitor: addMonitorSpy,
 				removeMonitor: removeMonitorSpy,
-			} as any;
+			} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 2;
 
 			network.monitor("user1");
@@ -800,7 +815,7 @@ describe("Network", function () {
 			network.irc = {
 				addMonitor: sinon.spy(),
 				removeMonitor: removeMonitorSpy,
-			} as any;
+			} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 1;
 
 			network.monitor("user1");
@@ -819,7 +834,7 @@ describe("Network", function () {
 			network.irc = {
 				addMonitor: sinon.spy(),
 				removeMonitor: removeMonitorSpy,
-			} as any;
+			} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 100;
 
 			network.monitor("TestUser");
@@ -835,7 +850,10 @@ describe("Network", function () {
 			const addMonitorSpy = sinon.spy();
 			const removeMonitorSpy = sinon.spy();
 			const network = new Network({name: "test"});
-			network.irc = {addMonitor: addMonitorSpy, removeMonitor: removeMonitorSpy} as any;
+			network.irc = {
+				addMonitor: addMonitorSpy,
+				removeMonitor: removeMonitorSpy,
+			} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 2;
 
 			network.monitor("alice");
@@ -856,7 +874,10 @@ describe("Network", function () {
 		it("should monitor the new nick when the old one was only queued", function () {
 			const addMonitorSpy = sinon.spy();
 			const network = new Network({name: "test"});
-			network.irc = {addMonitor: addMonitorSpy, removeMonitor: sinon.spy()} as any;
+			network.irc = {
+				addMonitor: addMonitorSpy,
+				removeMonitor: sinon.spy(),
+			} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 1;
 
 			network.monitor("alice");
@@ -873,7 +894,7 @@ describe("Network", function () {
 		it("should send a single raw MONITOR command for multiple targets", function () {
 			const rawSpy = sinon.spy();
 			const network = new Network({name: "test"});
-			network.irc = {raw: rawSpy} as any;
+			network.irc = {raw: rawSpy} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 0;
 
 			network.monitorBatch(["user1", "user2", "user3"]);
@@ -886,7 +907,7 @@ describe("Network", function () {
 		it("should skip duplicates and already-monitored targets", function () {
 			const rawSpy = sinon.spy();
 			const network = new Network({name: "test"});
-			network.irc = {raw: rawSpy} as any;
+			network.irc = {raw: rawSpy} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 0;
 			network.monitorList = ["existing"];
 
@@ -900,7 +921,7 @@ describe("Network", function () {
 		it("should queue targets exceeding MONITOR limit", function () {
 			const rawSpy = sinon.spy();
 			const network = new Network({name: "test"});
-			network.irc = {raw: rawSpy} as any;
+			network.irc = {raw: rawSpy} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 2;
 
 			network.monitorBatch(["user1", "user2", "user3", "user4"]);
@@ -914,7 +935,7 @@ describe("Network", function () {
 		it("should not send anything for empty targets", function () {
 			const rawSpy = sinon.spy();
 			const network = new Network({name: "test"});
-			network.irc = {raw: rawSpy} as any;
+			network.irc = {raw: rawSpy} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 0;
 
 			network.monitorBatch([]);
@@ -925,7 +946,7 @@ describe("Network", function () {
 		it("should not send anything when all targets are duplicates", function () {
 			const rawSpy = sinon.spy();
 			const network = new Network({name: "test"});
-			network.irc = {raw: rawSpy} as any;
+			network.irc = {raw: rawSpy} as unknown as Network["irc"];
 			network.serverOptions.MONITOR = 0;
 			network.monitorList = ["user1", "user2"];
 
@@ -937,7 +958,7 @@ describe("Network", function () {
 		it("should not send anything when server does not advertise MONITOR support", function () {
 			const rawSpy = sinon.spy();
 			const network = new Network({name: "test"});
-			network.irc = {raw: rawSpy} as any;
+			network.irc = {raw: rawSpy} as unknown as Network["irc"];
 
 			network.monitorBatch(["user1", "user2"]);
 

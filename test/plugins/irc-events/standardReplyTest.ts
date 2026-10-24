@@ -2,32 +2,35 @@ import {expect} from "chai";
 import {EventEmitter} from "events";
 
 import standardReply from "../../../server/plugins/irc-events/standard-reply.js";
+import Client from "../../../server/client.js";
+import Msg from "../../../server/models/msg.js";
+import {NetworkWithIrcFramework} from "../../../server/models/network.js";
 import {MessageType} from "../../../shared/types/msg.js";
 
 class FakeChan {
-	pushed: any[] = [];
+	pushed: Msg[] = [];
 	name: string;
 
 	constructor(name: string) {
 		this.name = name;
 	}
 
-	pushMessage(_client: any, msg: any) {
+	pushMessage(_client: Client, msg: Msg) {
 		this.pushed.push(msg);
 	}
 }
 
 function setup() {
-	const irc = new EventEmitter() as any;
+	const irc = new EventEmitter();
 	const lobby = new FakeChan("lobby");
 	const channel = new FakeChan("#thelounge");
 	const network = {
 		getLobby: () => lobby,
 		getChannel: (name: string) => (name === channel.name ? channel : undefined),
-	} as any;
-	const client = {} as any;
+	} as unknown as NetworkWithIrcFramework;
+	const client = {} as Client;
 
-	standardReply.call(client, irc, network);
+	standardReply.call(client, irc as unknown as NetworkWithIrcFramework["irc"], network);
 	return {irc, lobby, channel};
 }
 
