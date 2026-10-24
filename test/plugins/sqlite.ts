@@ -7,6 +7,7 @@ import {MessageType} from "../../dist/shared/types/msg.js";
 import Config from "../../dist/server/config.js";
 import MessageStorage, {
 	currentSchemaVersion,
+	getMessagesQuery,
 	migrations,
 	necessaryMigrations,
 	rollbacks,
@@ -108,6 +109,16 @@ describe("SQLite migrations", function () {
 		}
 
 		await serialize_run("COMMIT TRANSACTION");
+	});
+
+	it("migrated database serves getMessages from the index", function () {
+		const plan = db
+			.prepare(`EXPLAIN QUERY PLAN ${getMessagesQuery}`)
+			.all("8f650427-79a2-4950-b8af-94088b61b37c", "##linux", 100) as {detail: string}[];
+
+		const details = plan.map((row) => row.detail).join("\n");
+		expect(details).to.include("USING INDEX network_channel_time");
+		expect(details).to.not.include("TEMP B-TREE");
 	});
 
 	it("has working down-migrations", async function () {
@@ -358,6 +369,16 @@ describe("SQLite Message Storage", function () {
 		} finally {
 			Config.values.maxHistory = originalMaxHistory;
 		}
+	});
+
+	it("getMessages uses the index instead of sorting the whole channel", function () {
+		const plan = store.database
+			.prepare(`EXPLAIN QUERY PLAN ${getMessagesQuery}`)
+			.all("retrieval-order-test-network", "#channel", 10000) as {detail: string}[];
+
+		const details = plan.map((row) => row.detail).join("\n");
+		expect(details).to.include("USING INDEX network_channel_time");
+		expect(details).to.not.include("TEMP B-TREE");
 	});
 
 	it("should search messages", async function () {

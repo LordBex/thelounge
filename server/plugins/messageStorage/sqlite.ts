@@ -14,7 +14,7 @@ import {SearchQuery, SearchResponse} from "../../../shared/types/storage.js";
 type Migration = {version: number; stmts: string[]};
 type Rollback = {version: number; rollback_forbidden?: boolean; stmts: string[]};
 
-export const currentSchemaVersion = 1703322560448; // use `new Date().getTime()`
+export const currentSchemaVersion = 1780272000000; // use `new Date().getTime()`
 
 // Desired schema, adapt to the newest version and add migrations to the array below
 const schema = [
@@ -31,9 +31,10 @@ const schema = [
         step INTEGER NOT NULL,
         statement TEXT NOT NULL
     )`,
-	"CREATE INDEX network_channel ON messages (network, channel)",
 	"CREATE INDEX time ON messages (time)",
 	"CREATE INDEX msg_type_idx on messages (type)", // needed for efficient storageCleaner queries
+	// needed for efficient history queries (getMessages, getLastMessages, getMessagesBefore, ...)
+	"CREATE INDEX network_channel_time ON messages (network, channel, time)",
 ];
 
 // the migrations will be executed in an exclusive transaction as a whole
@@ -71,6 +72,14 @@ export const migrations: Migration[] = [
 		version: 1703322560448,
 		stmts: ["CREATE INDEX msg_type_idx on messages (type)"],
 	},
+	{
+		// replaces network_channel and also covers the sort in the history queries
+		version: 1780272000000,
+		stmts: [
+			"CREATE INDEX IF NOT EXISTS network_channel_time ON messages (network, channel, time)",
+			"DROP INDEX IF EXISTS network_channel",
+		],
+	},
 ];
 
 // down migrations need to restore the state of the prior version.
@@ -88,7 +97,18 @@ export const rollbacks: Rollback[] = [
 		version: 1703322560448,
 		stmts: ["drop INDEX msg_type_idx"],
 	},
+	{
+		version: 1780272000000,
+		stmts: [
+			"DROP INDEX IF EXISTS network_channel_time",
+			"CREATE INDEX IF NOT EXISTS network_channel ON messages (network, channel)",
+		],
+	},
 ];
+
+// exported for tests
+export const getMessagesQuery =
+	"SELECT id, msg, type, time FROM messages WHERE network = ? AND channel = ? ORDER BY time DESC, id DESC LIMIT ?";
 
 class Deferred {
 	resolve!: () => void;
@@ -209,7 +229,7 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 
 	async _run_migrations(dbVersion: number) {
 		log.info(
-			`sqlite messages schema version is out of date (${dbVersion} < ${currentSchemaVersion}). Running migrations.`
+			`sqlite messages schema version is out of date (${dbVersion} < ${currentSchemaVersion}). Running migrations, this may take a while.`
 		);
 
 		const to_execute = necessaryMigrations(dbVersion);
@@ -516,7 +536,7 @@ class SqliteMessageStorage implements SearchableMessageStorage {
 
 		// Select id from SQLite to use as the canonical message ID
 		const rows = await this.serialize_fetchall(
-			"SELECT id, msg, type, time FROM messages WHERE network = ? AND channel = ? ORDER BY time DESC, id DESC LIMIT ?",
+			getMessagesQuery,
 			network.uuid,
 			channel.name.toLowerCase(),
 			limit
